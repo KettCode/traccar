@@ -47,4 +47,27 @@
   <include file="changelog-6.3.xml" relativeToChangelogFile="true" />
   <include file="changelog-6.6.xml" relativeToChangelogFile="true" />
 
+  <changeSet id="2025-02-01-add-locations-table" author="ek">
+    <createTable tableName="tc_locations">
+      <column name="id" type="int" autoIncrement="true">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="groupId" type="bigint"/>
+      <column name="targetGroupId" type="bigint"/>
+      <column name="start" type="timestamp"/>
+      <column name="frequency" type="bigint"/>
+      <column name="attributes" type="VARCHAR(4096)">
+        <constraints nullable="false" />
+      </column>
+    </createTable>
+
+    <createTable tableName="tc_user_location">
+      <column name="userid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="locationid" type="INT">
+        <constraints nullable="false" />
+      </column>
+    </createTable>
+  </changeSet>
 </databaseChangeLog>
