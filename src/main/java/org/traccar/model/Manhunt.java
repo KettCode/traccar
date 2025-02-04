@@ -1,13 +1,11 @@
 package org.traccar.model;
 
-import org.joda.time.DateTime;
-import org.joda.time.LocalDateTime;
 import org.traccar.storage.StorageName;
 
 import java.util.Date;
 
-@StorageName("tc_locations")
-public class Location extends ExtendedModel {
+@StorageName("tc_manhunt")
+public class Manhunt extends ExtendedModel {
     private long groupId;
     public long getGroupId() {
         return groupId;

@@ -47,8 +47,8 @@
   <include file="changelog-6.3.xml" relativeToChangelogFile="true" />
   <include file="changelog-6.6.xml" relativeToChangelogFile="true" />
 
-  <changeSet id="2025-02-01-add-locations-table" author="ek">
-    <createTable tableName="tc_locations">
+  <changeSet id="2025-02-02-add-locations-table" author="ek">
+    <createTable tableName="tc_manhunt">
       <column name="id" type="int" autoIncrement="true">
         <constraints primaryKey="true"/>
       </column>
@@ -61,7 +61,7 @@
       </column>
     </createTable>
 
-    <createTable tableName="tc_user_location">
+    <createTable tableName="tc_user_manhunt">
       <column name="userid" type="INT">
         <constraints nullable="false" />
       </column>

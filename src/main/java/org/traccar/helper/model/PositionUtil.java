@@ -77,4 +77,19 @@ public final class PositionUtil {
                 .collect(Collectors.toList());
     }
 
+    public static List<Position> getManHuntPositions(Storage storage, long userId) throws StorageException {
+        var devices = storage.getObjects(Device.class, new Request(
+                new Columns.Include("id"),
+                new Condition.Permission(User.class, userId, Device.class)));
+        var deviceIds = devices.stream().map(BaseModel::getId).collect(Collectors.toUnmodifiableSet());
+
+        //load groups
+
+        var positions = storage.getObjects(Position.class, new Request(
+                new Columns.All(), new Condition.LatestPositions()));
+        return positions.stream()
+                .filter(position -> deviceIds.contains(position.getDeviceId()))
+                .collect(Collectors.toList());
+    }
+
 }
