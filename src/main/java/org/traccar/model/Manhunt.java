@@ -4,7 +4,7 @@ import org.traccar.storage.StorageName;
 
 import java.util.Date;
 
-@StorageName("tc_manhunt")
+@StorageName("tc_manhunts")
 public class Manhunt extends ExtendedModel {
     private long groupId;
     public long getGroupId() {
@@ -37,4 +37,12 @@ public class Manhunt extends ExtendedModel {
     public void setFrequency(long frequency) {
         this.frequency = frequency;
     }
+
+    private long speedHuntLimit;
+    public long getSpeedHuntLimit() { return speedHuntLimit; }
+    public void setSpeedHuntLimit(long speedHuntLimit) { this.speedHuntLimit = speedHuntLimit; }
+
+    private long speedHuntRequests;
+    public long getSpeedHuntRequests() { return speedHuntRequests; }
+    public void setSpeedHuntRequests(long speedHuntRequests) { this.speedHuntRequests = speedHuntRequests; }
 }

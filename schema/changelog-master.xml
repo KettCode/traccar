@@ -47,8 +47,8 @@
   <include file="changelog-6.3.xml" relativeToChangelogFile="true" />
   <include file="changelog-6.6.xml" relativeToChangelogFile="true" />
 
-  <changeSet id="2025-02-02-add-locations-table" author="ek">
-    <createTable tableName="tc_manhunt">
+  <changeSet id="2025-02-02-add-manhunts-table" author="ek">
+    <createTable tableName="tc_manhunts">
       <column name="id" type="int" autoIncrement="true">
         <constraints primaryKey="true"/>
       </column>
@@ -59,13 +59,38 @@
       <column name="attributes" type="VARCHAR(4096)">
         <constraints nullable="false" />
       </column>
+      <column name="speedHuntLimit" type="int"/>
+      <column name="speedHuntRequests" type="int"/>
     </createTable>
 
     <createTable tableName="tc_user_manhunt">
       <column name="userid" type="INT">
         <constraints nullable="false" />
       </column>
-      <column name="locationid" type="INT">
+      <column name="manhuntid" type="INT">
+        <constraints nullable="false" />
+      </column>
+    </createTable>
+
+    <addUniqueConstraint tableName="tc_manhunts" columnNames="groupId, targetGroupId" constraintName="tc_manhunts_group_constraint" />
+  </changeSet>
+
+  <changeSet id="2025-02-02-add-speedhunts-table" author="ek">
+    <createTable tableName="tc_speedhunts">
+      <column name="id" type="int" autoIncrement="true">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="manhuntsId" type="int"/>
+      <column name="deviceId" type="int"/>
+      <column name="time" type="timestamp"/>
+      <column name="userId" type="int"/>
+    </createTable>
+
+    <createTable tableName="tc_user_speedhunt">
+      <column name="userid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="speedhuntid" type="INT">
         <constraints nullable="false" />
       </column>
     </createTable>
