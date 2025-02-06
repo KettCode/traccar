@@ -53,14 +53,34 @@
         <constraints primaryKey="true"/>
       </column>
       <column name="groupId" type="bigint"/>
-      <column name="targetGroupId" type="bigint"/>
       <column name="start" type="timestamp"/>
       <column name="frequency" type="bigint"/>
+      <column name="speedHuntLimit" type="int"/>
+      <column name="speedHuntRequests" type="int"/>
       <column name="attributes" type="VARCHAR(4096)">
         <constraints nullable="false" />
       </column>
-      <column name="speedHuntLimit" type="int"/>
-      <column name="speedHuntRequests" type="int"/>
+    </createTable>
+    <addUniqueConstraint tableName="tc_manhunts" columnNames="groupId" constraintName="tc_manhunts_unique_group" />
+
+    <createTable tableName="tc_speedhunts">
+      <column name="id" type="int" autoIncrement="true">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="manhuntsId" type="int"/>
+      <column name="deviceId" type="int"/>
+      <column name="pos" type="int"/>
+      <column name="lastTime" type="timestamp"/>
+    </createTable>
+
+    <createTable tableName="tc_speedhuntRequests">
+      <column name="id" type="int" autoIncrement="true">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="speedhuntsId" type="int"/>
+      <column name="time" type="timestamp"/>
+      <column name="userId" type="int"/>
+      <column name="pos" type="int"/>
     </createTable>
 
     <createTable tableName="tc_user_manhunt">
@@ -72,25 +92,20 @@
       </column>
     </createTable>
 
-    <addUniqueConstraint tableName="tc_manhunts" columnNames="groupId, targetGroupId" constraintName="tc_manhunts_group_constraint" />
-  </changeSet>
-
-  <changeSet id="2025-02-02-add-speedhunts-table" author="ek">
-    <createTable tableName="tc_speedhunts">
-      <column name="id" type="int" autoIncrement="true">
-        <constraints primaryKey="true"/>
-      </column>
-      <column name="manhuntsId" type="int"/>
-      <column name="deviceId" type="int"/>
-      <column name="time" type="timestamp"/>
-      <column name="userId" type="int"/>
-    </createTable>
-
     <createTable tableName="tc_user_speedhunt">
       <column name="userid" type="INT">
         <constraints nullable="false" />
       </column>
       <column name="speedhuntid" type="INT">
+        <constraints nullable="false" />
+      </column>
+    </createTable>
+
+    <createTable tableName="tc_user_speedhuntRequest">
+      <column name="userid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="speedhuntRequestid" type="INT">
         <constraints nullable="false" />
       </column>
     </createTable>

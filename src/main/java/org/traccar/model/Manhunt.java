@@ -14,14 +14,6 @@ public class Manhunt extends ExtendedModel {
         this.groupId = groupId;
     }
 
-    private long targetGroupId;
-    public long getTargetGroupId() {
-        return targetGroupId;
-    }
-    public void setTargetGroupId(long targetGroupId) {
-        this.targetGroupId = targetGroupId;
-    }
-
     private Date start;
     public Date getStart() {
         return start;

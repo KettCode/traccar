@@ -22,19 +22,19 @@ public class Speedhunt extends BaseModel {
         this.deviceId = deviceId;
     }
 
-    private Date time;
-    public Date getTime() {
-        return time;
+    private long pos;
+    public long getPos() {
+        return pos;
     }
-    public void setTime(Date time) {
-        this.time = time;
+    public void setPos(long pos) {
+        this.pos = pos;
     }
 
-    private long userId;
-    public long getUserId() {
-        return userId;
+    private Date lastTime;
+    public Date getLastTime() {
+        return lastTime;
     }
-    public void setUserId(long userId) {
-        this.userId = userId;
+    public void setLastTime(Date lastTime) {
+        this.lastTime = lastTime;
     }
 }
