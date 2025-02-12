@@ -1,7 +1,7 @@
 package org.traccar.api.resource;
 
+import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.traccar.api.BaseObjectResource;
@@ -11,23 +11,22 @@ import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;
 import org.traccar.storage.query.Request;
 
+import javax.management.Query;
 import java.util.Collection;
-import java.util.Date;
 import java.util.LinkedList;
+import java.util.List;
 
 @Path("speedhunts")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class SpeedhuntResource extends BaseObjectResource<Speedhunt> {
-    //private final Storage storage;
-    //private final long userId;
+public class SpeedhuntResource extends BaseObjectResource<SpeedHunt> {
 
     public SpeedhuntResource() {
-        super(Speedhunt.class);
+        super(SpeedHunt.class);
     }
 
     @GET
-    public Collection<Speedhunt> get(
+    public Collection<SpeedHunt> get(
             @QueryParam("all") boolean all, @QueryParam("userId") long userId,
             @QueryParam("groupId") long groupId, @QueryParam("deviceId") long deviceId) throws StorageException {
 
@@ -61,7 +60,7 @@ public class SpeedhuntResource extends BaseObjectResource<Speedhunt> {
 
     @Path("/create")
     @POST
-    public Response Create(Speedhunt entity) throws StorageException {
+    public Response Create(SpeedHunt entity) throws StorageException {
         Device device = storage.getObject(Device.class, new Request(
                 new Columns.All(), new Condition.Equals("id", entity.getDeviceId())));
 
@@ -70,22 +69,22 @@ public class SpeedhuntResource extends BaseObjectResource<Speedhunt> {
 
         var manhunt = storage.getObject(Manhunt.class,
                 new Request(new Columns.All(), new Condition.Equals("groupId", device.getGroupId())));
-        var speedhunts = storage.getObjects(Speedhunt.class,
+        var speedhunts = storage.getObjects(SpeedHunt.class,
                 new Request(new Columns.All(), new Condition.Equals("manhuntsId", manhunt.getId())));
 
-        if(speedhunts.size() >= manhunt.getSpeedHuntLimit())
-            throw new RuntimeException("Das Limit für die Speedhunts ist erreicht.");
+        //if(speedhunts.size() >= manhunt.getSpeedHuntLimit())
+        //    throw new RuntimeException("Das Limit für die Speedhunts ist erreicht.");
 
-        var speedhunt = new Speedhunt();
+        var speedhunt = new SpeedHunt();
         speedhunt.setDeviceId(entity.getDeviceId());
         speedhunt.setLastTime(entity.getLastTime());
         speedhunt.setPos(speedhunts.size() + 1);
         speedhunt.setManhuntsId(manhunt.getId());
         speedhunt.setId(storage.addObject(speedhunt, new Request(new Columns.Exclude("id"))));
 
-        var speedhuntRequest = new SpeedhuntRequest();
+        var speedhuntRequest = new SpeedHuntRequest();
         speedhuntRequest.setPos(1);
-        speedhuntRequest.setSpeedhuntsid(speedhunt.getId());
+        speedhuntRequest.setSpeedHuntsId(speedhunt.getId());
         speedhuntRequest.setTime(entity.getLastTime());
         speedhuntRequest.setUserId(getUserId());
         speedhuntRequest.setId(storage.addObject(speedhuntRequest, new Request(new Columns.Exclude("id"))));
@@ -95,16 +94,16 @@ public class SpeedhuntResource extends BaseObjectResource<Speedhunt> {
 
     @Path("/trigger")
     @POST
-    public Response Trigger(SpeedhuntRequest speedhuntRequest) throws StorageException {
-        var speedhunt = storage.getObject(Speedhunt.class,
-                new Request(new Columns.All(), new Condition.Equals("id", speedhuntRequest.getSpeedhuntsid())));
+    public Response Trigger(SpeedHuntRequest speedhuntRequest) throws StorageException {
+        var speedhunt = storage.getObject(SpeedHunt.class,
+                new Request(new Columns.All(), new Condition.Equals("id", speedhuntRequest.getSpeedHuntsId())));
         var manhunt = storage.getObject(Manhunt.class,
                 new Request(new Columns.All(), new Condition.Equals("id", speedhunt.getManhuntsId())));
-        var speedhuntRequests = storage.getObjects(SpeedhuntRequest.class,
+        var speedhuntRequests = storage.getObjects(SpeedHuntRequest.class,
                 new Request(new Columns.All(), new Condition.Equals("speedhuntsId", speedhunt.getId())));
 
-        if(speedhuntRequests.size() >= manhunt.getSpeedHuntRequests())
-            throw new RuntimeException("Das Limit für die Speedhuntanfragen wurde erreicht");
+        //if(speedhuntRequests.size() >= manhunt.getSpeedHuntRequests())
+        //    throw new RuntimeException("Das Limit für die Speedhuntanfragen wurde erreicht");
 
         speedhunt.setLastTime(speedhuntRequest.getTime());
         storage.updateObject(speedhunt, new Request(
@@ -117,4 +116,37 @@ public class SpeedhuntResource extends BaseObjectResource<Speedhunt> {
 
         return Response.ok(speedhuntRequest).build();
     }
+
+    @Path("current")
+    @GET
+    public Response current() throws StorageException {
+        //var speedhuntRequest = storage.getObject(SpeedhuntRequest.class,
+        //        new Request(new Columns.All(), new Condition.Equals("speedhuntsId", speedhunt.getId())));
+
+        //storage.getObject(SpeedhuntRequest.class, new Request(new Columns.All(), new Condition.LatestPositions()));
+        // Select *
+        // from tc_speedhunts
+        // join tc_manhunts on tc_manhunts.id = tc_speedhunts.manhuntsId
+        // join (
+        //      Select tc_shr.speedhuntsId, MAX(tc_shr.pos) as maxPos
+        //      from tc_speedhuntRequests tc_shr
+        //      where tc_shr.speedhuntsId = tc_speedhunts.id
+        //      GROUP BY tc_shr.speedhuntsId
+        // ) tc_shr_max on tc_speedhunts.id = tc_shr_max.speedhuntsId
+        // join tc_speedhuntRequests
+        // where tc_manhunts.speedHuntRequests < (Select Count(*)
+        //      from tc_speedhuntRequests
+        //      where tc_speedhuntRequests.speedhuntsId = tc_speedhunts.id)
+
+        var request = new SpeedHuntRequest();
+        return Response.ok(request).build();
+    }
+
+    //private Manhunt GetCurrent() {
+    //    List<Manhunt> manhunts = storage.getObjects(Manhunt.class);
+
+        //String sql = "SELECT * FROM tc_manhunts WHERE start < CURRENT_TIMESTAMP ORDER BY start DESC LIMIT 1";
+        //Query query = entityManager.createNativeQuery(sql, Manhunt.class);
+        //return (Manhunt) query.getSingleResult();
+    //}
 }

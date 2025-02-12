@@ -4,8 +4,8 @@ import org.traccar.storage.StorageName;
 
 import java.util.Date;
 
-@StorageName("tc_speedhunts")
-public class Speedhunt extends BaseModel {
+@StorageName("tc_speedHunts")
+public class SpeedHunt extends BaseModel {
     private long manhuntsId;
     public long getManhuntsId() {
         return manhuntsId;
@@ -13,6 +13,10 @@ public class Speedhunt extends BaseModel {
     public void setManhuntsId(long manhuntsId) {
         this.manhuntsId = manhuntsId;
     }
+
+    private long hunterGroupId;
+    public long getHunterGroupId() { return hunterGroupId; }
+    public void setHunterGroupId(long hunterGroupId) { this.hunterGroupId = hunterGroupId; }
 
     private long deviceId;
     public long getDeviceId() {
@@ -31,9 +35,7 @@ public class Speedhunt extends BaseModel {
     }
 
     private Date lastTime;
-    public Date getLastTime() {
-        return lastTime;
-    }
+    public Date getLastTime() { return lastTime; }
     public void setLastTime(Date lastTime) {
         this.lastTime = lastTime;
     }

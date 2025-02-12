@@ -47,39 +47,53 @@
   <include file="changelog-6.3.xml" relativeToChangelogFile="true" />
   <include file="changelog-6.6.xml" relativeToChangelogFile="true" />
 
-  <changeSet id="2025-02-02-add-manhunts-table" author="ek">
+  <changeSet id="2025-02-02-manhunt" author="ek">
+    <addColumn tableName="tc_groups">
+      <column name="manhuntRole" type="int" />
+    </addColumn>
+    <addColumn tableName="tc_groups">
+      <column name="frequency" type="bigint"/>
+    </addColumn>
+    <addColumn tableName="tc_groups">
+      <column name="speedHunts" type="int" />
+    </addColumn>
+    <addColumn tableName="tc_groups">
+      <column name="speedHuntRequests" type="int" />
+    </addColumn>
+
+    <addColumn tableName="tc_users">
+      <column name="groupId" type="int" />
+    </addColumn>
+
     <createTable tableName="tc_manhunts">
       <column name="id" type="int" autoIncrement="true">
         <constraints primaryKey="true"/>
       </column>
-      <column name="groupId" type="bigint"/>
       <column name="start" type="timestamp"/>
-      <column name="frequency" type="bigint"/>
-      <column name="speedHuntLimit" type="int"/>
-      <column name="speedHuntRequests" type="int"/>
+      <column name="finish" type="timestamp"/>
       <column name="attributes" type="VARCHAR(4096)">
         <constraints nullable="false" />
       </column>
     </createTable>
-    <addUniqueConstraint tableName="tc_manhunts" columnNames="groupId" constraintName="tc_manhunts_unique_group" />
 
-    <createTable tableName="tc_speedhunts">
+    <createTable tableName="tc_speedHunts">
       <column name="id" type="int" autoIncrement="true">
         <constraints primaryKey="true"/>
       </column>
       <column name="manhuntsId" type="int"/>
+      <column name="hunterGroupId" type="int"/>
       <column name="deviceId" type="int"/>
       <column name="pos" type="int"/>
       <column name="lastTime" type="timestamp"/>
     </createTable>
 
-    <createTable tableName="tc_speedhuntRequests">
+    <createTable tableName="tc_speedHuntRequests">
       <column name="id" type="int" autoIncrement="true">
         <constraints primaryKey="true"/>
       </column>
-      <column name="speedhuntsId" type="int"/>
-      <column name="time" type="timestamp"/>
+      <column name="speedHuntsId" type="int"/>
       <column name="userId" type="int"/>
+      <column name="time" type="timestamp"/>
       <column name="pos" type="int"/>
     </createTable>
 
@@ -87,25 +101,25 @@
       <column name="userid" type="INT">
         <constraints nullable="false" />
       </column>
-      <column name="manhuntid" type="INT">
+      <column name="manhuntId" type="INT">
         <constraints nullable="false" />
       </column>
     </createTable>
 
-    <createTable tableName="tc_user_speedhunt">
+    <createTable tableName="tc_user_speedHunt">
       <column name="userid" type="INT">
         <constraints nullable="false" />
       </column>
-      <column name="speedhuntid" type="INT">
+      <column name="speedHuntId" type="INT">
         <constraints nullable="false" />
       </column>
     </createTable>
 
-    <createTable tableName="tc_user_speedhuntRequest">
+    <createTable tableName="tc_user_speedHuntRequest">
       <column name="userid" type="INT">
         <constraints nullable="false" />
       </column>
-      <column name="speedhuntRequestid" type="INT">
+      <column name="speedHuntRequestId" type="INT">
         <constraints nullable="false" />
       </column>
     </createTable>

@@ -6,14 +6,6 @@ import java.util.Date;
 
 @StorageName("tc_manhunts")
 public class Manhunt extends ExtendedModel {
-    private long groupId;
-    public long getGroupId() {
-        return groupId;
-    }
-    public void setGroupId(long groupId) {
-        this.groupId = groupId;
-    }
-
     private Date start;
     public Date getStart() {
         return start;
@@ -22,19 +14,11 @@ public class Manhunt extends ExtendedModel {
         this.start = start;
     }
 
-    private long frequency;
-    public long getFrequency() {
-        return frequency;
+    private Date finish;
+    public Date getFinish() {
+        return finish;
     }
-    public void setFrequency(long frequency) {
-        this.frequency = frequency;
+    public void setFinish(Date finish) {
+        this.finish = finish;
     }
-
-    private long speedHuntLimit;
-    public long getSpeedHuntLimit() { return speedHuntLimit; }
-    public void setSpeedHuntLimit(long speedHuntLimit) { this.speedHuntLimit = speedHuntLimit; }
-
-    private long speedHuntRequests;
-    public long getSpeedHuntRequests() { return speedHuntRequests; }
-    public void setSpeedHuntRequests(long speedHuntRequests) { this.speedHuntRequests = speedHuntRequests; }
 }

@@ -15,14 +15,14 @@ import java.util.LinkedList;
 @Path("speedhuntrequests")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class SpeedhuntRequestsResource extends BaseObjectResource<SpeedhuntRequest> {
+public class SpeedhuntRequestsResource extends BaseObjectResource<SpeedHuntRequest> {
 
     public SpeedhuntRequestsResource(){
-        super(SpeedhuntRequest.class);
+        super(SpeedHuntRequest.class);
     }
 
     @GET
-    public Collection<SpeedhuntRequest> get(
+    public Collection<SpeedHuntRequest> get(
             @QueryParam("all") boolean all, @QueryParam("userId") long userId,
             @QueryParam("groupId") long groupId, @QueryParam("deviceId") long deviceId) throws StorageException {
 
