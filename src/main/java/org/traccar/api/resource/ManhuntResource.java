@@ -1,10 +1,12 @@
 package org.traccar.api.resource;
 
+import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.traccar.api.ExtendedObjectResource;
 import org.traccar.model.*;
+import org.traccar.storage.ManhuntDatabaseStorage;
 import org.traccar.storage.StorageException;
 import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;
@@ -19,6 +21,9 @@ import java.util.LinkedList;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class ManhuntResource extends ExtendedObjectResource<Manhunt> {
+
+    @Inject
+    private ManhuntDatabaseStorage manhuntDatabaseStorage;
 
     public ManhuntResource() {
         super(Manhunt.class, "start");
@@ -48,5 +53,12 @@ public class ManhuntResource extends ExtendedObjectResource<Manhunt> {
         lst.add(role3);
 
         return lst;
+    }
+
+    @Path("/getCurrent")
+    @GET
+    public Response getCurrent() throws  StorageException {
+        var manhunt = manhuntDatabaseStorage.getCurrent();
+        return Response.ok(manhunt).build();
     }
 }

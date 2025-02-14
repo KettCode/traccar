@@ -12,12 +12,12 @@ import org.traccar.storage.query.Request;
 import java.util.Collection;
 import java.util.LinkedList;
 
-@Path("speedhuntrequests")
+@Path("speedHuntRequests")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class SpeedhuntRequestsResource extends BaseObjectResource<SpeedHuntRequest> {
+public class SpeedHuntRequestsResource extends BaseObjectResource<SpeedHuntRequest> {
 
-    public SpeedhuntRequestsResource(){
+    public SpeedHuntRequestsResource(){
         super(SpeedHuntRequest.class);
     }
 

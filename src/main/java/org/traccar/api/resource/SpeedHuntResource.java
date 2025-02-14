@@ -6,22 +6,24 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.traccar.api.BaseObjectResource;
 import org.traccar.model.*;
+import org.traccar.storage.ManhuntDatabaseStorage;
 import org.traccar.storage.StorageException;
 import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;
 import org.traccar.storage.query.Request;
 
-import javax.management.Query;
 import java.util.Collection;
 import java.util.LinkedList;
-import java.util.List;
 
-@Path("speedhunts")
+@Path("speedHunts")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class SpeedhuntResource extends BaseObjectResource<SpeedHunt> {
+public class SpeedHuntResource extends BaseObjectResource<SpeedHunt> {
 
-    public SpeedhuntResource() {
+    @Inject
+    private ManhuntDatabaseStorage manhuntDatabaseStorage;
+
+    public SpeedHuntResource() {
         super(SpeedHunt.class);
     }
 
@@ -143,10 +145,13 @@ public class SpeedhuntResource extends BaseObjectResource<SpeedHunt> {
     }
 
     //private Manhunt GetCurrent() {
-    //    List<Manhunt> manhunts = storage.getObjects(Manhunt.class);
+
+        //List<Manhunt> manhunts = storage.getObject(Manhunt.class,
+        //        new Request(new Columns.All(), new Condition.And(new Condition.LatestPositions())));
 
         //String sql = "SELECT * FROM tc_manhunts WHERE start < CURRENT_TIMESTAMP ORDER BY start DESC LIMIT 1";
         //Query query = entityManager.createNativeQuery(sql, Manhunt.class);
         //return (Manhunt) query.getSingleResult();
+    //    return null;
     //}
 }
