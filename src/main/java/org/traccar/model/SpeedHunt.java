@@ -1,8 +1,10 @@
 package org.traccar.model;
 
+import org.traccar.storage.QueryIgnore;
 import org.traccar.storage.StorageName;
 
 import java.util.Date;
+import java.util.List;
 
 @StorageName("tc_speedHunts")
 public class SpeedHunt extends BaseModel {
@@ -38,5 +40,16 @@ public class SpeedHunt extends BaseModel {
     public Date getLastTime() { return lastTime; }
     public void setLastTime(Date lastTime) {
         this.lastTime = lastTime;
+    }
+
+
+    private List<SpeedHuntRequest> speedHuntRequests;
+    @QueryIgnore
+    public List<SpeedHuntRequest> getSpeedHuntRequests() {
+        return speedHuntRequests;
+    }
+    @QueryIgnore
+    public void setSpeedHuntRequests(List<SpeedHuntRequest> speedHuntRequests) {
+        this.speedHuntRequests = speedHuntRequests;
     }
 }

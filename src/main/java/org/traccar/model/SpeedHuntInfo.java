@@ -1,8 +1,10 @@
 package org.traccar.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class SpeedHuntInfo {
+
     private Manhunt manhunt;
     public Manhunt getManhunt() {
         return manhunt;
@@ -19,11 +21,31 @@ public class SpeedHuntInfo {
         this.speedHunts = speedHunts;
     }
 
-    private List<SpeedHuntRequest> speedHuntRequests;
-    public List<SpeedHuntRequest> getSpeedHuntRequests() {
-        return speedHuntRequests;
+    private Group group;
+    public Group getGroup() {
+        return group;
     }
+    public void setGroup(Group group) {
+        this.group = group;
+    }
+
     public void setSpeedHuntRequests(List<SpeedHuntRequest> speedHuntRequests) {
-        this.speedHuntRequests = speedHuntRequests;
+        if(speedHunts.isEmpty())
+            return;
+
+        speedHunts.forEach(x -> {
+            var speedHuntRequestsInternal = speedHuntRequests.stream()
+                    .filter(y -> y.getSpeedHuntsId() == x.getId())
+                    .toList();
+            x.setSpeedHuntRequests(speedHuntRequestsInternal);
+        });
+    }
+
+    private boolean isSpeedHuntRunning;
+    public boolean getIsSpeedHuntRunning() {
+        if(group == null || speedHunts.isEmpty())
+            return false;
+
+        return speedHunts.getLast().getSpeedHuntRequests().size() < group.getSpeedHuntRequests();
     }
 }

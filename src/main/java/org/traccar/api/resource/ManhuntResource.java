@@ -16,6 +16,7 @@ import redis.clients.jedis.util.KeyValue;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 
 @Path("manhunts")
 @Produces(MediaType.APPLICATION_JSON)
@@ -55,10 +56,16 @@ public class ManhuntResource extends ExtendedObjectResource<Manhunt> {
         return lst;
     }
 
-    @Path("/getCurrent")
+    @Path("current")
     @GET
-    public Response getCurrent() throws  StorageException {
+    public Response current() throws  StorageException {
         var manhunt = manhuntDatabaseStorage.getCurrent();
         return Response.ok(manhunt).build();
+    }
+
+    @Path("huntedDevices")
+    @GET
+    public Collection<Device> huntedDevices() throws StorageException {
+        return manhuntDatabaseStorage.getHuntedDevices(getUserId());
     }
 }
