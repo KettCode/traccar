@@ -27,20 +27,9 @@ import javax.sql.DataSource;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
-import java.sql.Types;
+import java.sql.*;
+import java.util.*;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 
 @SuppressWarnings("UnusedReturnValue")
 public final class QueryBuilder {
@@ -256,6 +245,24 @@ public final class QueryBuilder {
                     statement.setNull(i, Types.BLOB);
                 } else {
                     statement.setBytes(i, value);
+                }
+            } catch (SQLException error) {
+                statement.close();
+                connection.close();
+                throw error;
+            }
+        }
+        return this;
+    }
+
+    public QueryBuilder setArray(String name, Object[] value, boolean nullIfZero) throws SQLException {
+        for (int i : indexes(name)) {
+            try {
+                if (value.length == 0 && nullIfZero) {
+                    statement.setNull(i, Types.ARRAY);
+                } else {
+                    var arr = connection.createArrayOf("VARCHAR", value);
+                    statement.setArray(i, arr);
                 }
             } catch (SQLException error) {
                 statement.close();

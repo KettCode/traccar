@@ -12,8 +12,10 @@ import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;
 import org.traccar.storage.query.Request;
 
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.stream.Collectors;
 
 @Path("speedHunts")
 @Produces(MediaType.APPLICATION_JSON)
@@ -58,6 +60,24 @@ public class SpeedHuntResource extends BaseObjectResource<SpeedHunt> {
 
         return storage.getObjects(baseClass, new Request(
                 new Columns.All(), Condition.merge(conditions), null));
+    }
+
+    @Path("/getSpeedHuntInfo")
+    @GET
+    public Response getSpeedHuntInfo(@QueryParam("userId") long userId) throws StorageException {
+        var manhunt = manhuntDatabaseStorage.getCurrent();
+        if(manhunt == null)
+            throw new RuntimeException("Es wurde kein laufender Manhunt gefunden.");
+
+        var speedHunts = manhuntDatabaseStorage.getSpeedHunts(userId, manhunt.getId());
+        var speedHuntIds = speedHunts.stream().map(SpeedHunt::getId).toList();
+        var speedHuntRequests = manhuntDatabaseStorage.getSpeedHuntRequests(speedHuntIds);
+
+        var speedHuntInfo = new SpeedHuntInfo();
+        speedHuntInfo.setManhunt(manhunt);
+        speedHuntInfo.setSpeedHunts(speedHunts);
+        speedHuntInfo.setSpeedHuntRequests(speedHuntRequests);
+        return Response.ok(speedHuntInfo).build();
     }
 
     @Path("/create")
