@@ -122,29 +122,4 @@ public class SpeedHuntResource extends BaseObjectResource<SpeedHunt> {
 
         return Response.ok(speedHunt).build();
     }
-
-    @Path("trigger")
-    @POST
-    public Response Trigger(SpeedHuntRequest speedhuntRequest) throws StorageException {
-        var speedhunt = storage.getObject(SpeedHunt.class,
-                new Request(new Columns.All(), new Condition.Equals("id", speedhuntRequest.getSpeedHuntsId())));
-        var manhunt = storage.getObject(Manhunt.class,
-                new Request(new Columns.All(), new Condition.Equals("id", speedhunt.getManhuntsId())));
-        var speedhuntRequests = storage.getObjects(SpeedHuntRequest.class,
-                new Request(new Columns.All(), new Condition.Equals("speedhuntsId", speedhunt.getId())));
-
-        //if(speedhuntRequests.size() >= manhunt.getSpeedHuntRequests())
-        //    throw new RuntimeException("Das Limit für die Speedhuntanfragen wurde erreicht");
-
-        speedhunt.setLastTime(speedhuntRequest.getTime());
-        storage.updateObject(speedhunt, new Request(
-                new Columns.Exclude("id"),
-                new Condition.Equals("id", speedhunt.getId())));
-
-        speedhuntRequest.setPos(speedhuntRequests.size() + 1);
-        speedhuntRequest.setUserId(getUserId());
-        speedhuntRequest.setId(storage.addObject(speedhuntRequest, new Request(new Columns.Exclude("id"))));
-
-        return Response.ok(speedhuntRequest).build();
-    }
 }

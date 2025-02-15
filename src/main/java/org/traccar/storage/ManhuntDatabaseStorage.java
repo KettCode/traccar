@@ -70,6 +70,11 @@ public class ManhuntDatabaseStorage {
         }
     }
 
+    public SpeedHunt getSpeedHunt(long speedHuntId) throws StorageException {
+        return storage.getObject(SpeedHunt.class,
+                new Request(new Columns.All(), new Condition.Equals("id", speedHuntId)));
+    }
+
     public List<SpeedHunt> getSpeedHunts(long groupId, long manhuntId) throws StorageException {
         try {
             var query = "SELECT * " +
@@ -85,6 +90,11 @@ public class ManhuntDatabaseStorage {
         } catch (SQLException e) {
             throw new StorageException(e);
         }
+    }
+
+    public List<SpeedHuntRequest> getSpeedHuntRequests(long speedHuntId) throws StorageException {
+        return storage.getObjects(SpeedHuntRequest.class,
+                new Request(new Columns.All(), new Condition.Equals("speedHuntsId", speedHuntId)));
     }
 
     public List<SpeedHuntRequest> getSpeedHuntRequests(List<Long> speedHuntIds) throws StorageException {
