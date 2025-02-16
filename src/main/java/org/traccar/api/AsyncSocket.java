@@ -27,6 +27,7 @@ import org.traccar.model.Event;
 import org.traccar.model.LogRecord;
 import org.traccar.model.Position;
 import org.traccar.session.ConnectionManager;
+import org.traccar.storage.ManhuntDatabaseStorage;
 import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
 
@@ -48,14 +49,16 @@ public class AsyncSocket extends WebSocketAdapter implements ConnectionManager.U
     private final ConnectionManager connectionManager;
     private final Storage storage;
     private final long userId;
+    private final ManhuntDatabaseStorage manhuntDatabaseStorage;
 
     private boolean includeLogs;
 
-    public AsyncSocket(ObjectMapper objectMapper, ConnectionManager connectionManager, Storage storage, long userId) {
+    public AsyncSocket(ObjectMapper objectMapper, ConnectionManager connectionManager, Storage storage, long userId, ManhuntDatabaseStorage manhuntDatabaseStorage) {
         this.objectMapper = objectMapper;
         this.connectionManager = connectionManager;
         this.storage = storage;
         this.userId = userId;
+        this.manhuntDatabaseStorage = manhuntDatabaseStorage;
     }
 
     @Override
@@ -64,7 +67,8 @@ public class AsyncSocket extends WebSocketAdapter implements ConnectionManager.U
 
         try {
             Map<String, Collection<?>> data = new HashMap<>();
-            data.put(KEY_POSITIONS, PositionUtil.getLatestPositions(storage, userId));
+            data.put(KEY_POSITIONS, manhuntDatabaseStorage.getManhuntPositions(userId));
+            //data.put(KEY_POSITIONS, PositionUtil.getLatestPositions(storage, userId));
             sendData(data);
             connectionManager.addListener(userId, this);
         } catch (StorageException e) {

@@ -17,6 +17,7 @@ package org.traccar.storage.query;
 
 import org.traccar.model.GroupedModel;
 
+import java.util.Date;
 import java.util.List;
 
 public interface Condition {
@@ -205,6 +206,30 @@ public interface Condition {
 
         public long getDeviceId() {
             return deviceId;
+        }
+    }
+
+    class ManhuntPositions implements  Condition {
+        private final Date start;
+        private final long manhuntId;
+        private final long hunterGroupId;
+
+        public ManhuntPositions(Date start, long manhuntId, long hunterGroupId){
+            this.start = start;
+            this.manhuntId = manhuntId;
+            this.hunterGroupId = hunterGroupId;
+        }
+
+        public Date getStart() {
+            return start;
+        }
+
+        public long getManhuntId() {
+            return manhuntId;
+        }
+
+        public long getHunterGroupId() {
+            return hunterGroupId;
         }
     }
 

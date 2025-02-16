@@ -5,6 +5,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.traccar.api.ExtendedObjectResource;
+import org.traccar.api.security.PermissionsService;
 import org.traccar.model.*;
 import org.traccar.storage.ManhuntDatabaseStorage;
 import org.traccar.storage.StorageException;
@@ -25,6 +26,9 @@ public class ManhuntResource extends ExtendedObjectResource<Manhunt> {
 
     @Inject
     private ManhuntDatabaseStorage manhuntDatabaseStorage;
+
+    @Inject
+    private PermissionsService permissionsService;
 
     public ManhuntResource() {
         super(Manhunt.class, "start");
@@ -66,6 +70,12 @@ public class ManhuntResource extends ExtendedObjectResource<Manhunt> {
     @Path("huntedDevices")
     @GET
     public Collection<Device> huntedDevices() throws StorageException {
-        return manhuntDatabaseStorage.getHuntedDevices(getUserId());
+        return manhuntDatabaseStorage.getHuntedDevices(getUserId(), permissionsService.notAdmin(getUserId()));
+    }
+
+    @Path("positions")
+    @GET
+    public Collection<Position> positions() throws StorageException {
+        return manhuntDatabaseStorage.getManhuntPositions(getUserId());
     }
 }

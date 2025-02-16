@@ -2,8 +2,10 @@ package org.traccar.storage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import org.traccar.api.security.PermissionsService;
 import org.traccar.config.Config;
+import org.traccar.helper.model.PositionUtil;
 import org.traccar.model.*;
 import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;
@@ -24,9 +26,6 @@ public class ManhuntDatabaseStorage {
     private Storage storage;
 
     @Inject
-    protected PermissionsService permissionsService;
-
-    @Inject
     public ManhuntDatabaseStorage(Config config, DataSource dataSource, ObjectMapper objectMapper) {
         this.config = config;
         this.dataSource = dataSource;
@@ -44,11 +43,11 @@ public class ManhuntDatabaseStorage {
         }
     }
 
-    public List<Device> getHuntedDevices(long userId) throws StorageException {
+    public List<Device> getHuntedDevices(long userId, boolean isAdmin) throws StorageException {
         try {
             var conditions = new LinkedList<Condition>();
 
-            if (permissionsService.notAdmin(userId)) {
+            if (!isAdmin) {
                 conditions.add(new Condition.Permission(User.class, userId, Device.class));
             }
 
@@ -142,5 +141,22 @@ public class ManhuntDatabaseStorage {
         } catch (SQLException e) {
             throw new StorageException(e);
         }
+    }
+
+    public List<Device> getDevices(long userId) throws StorageException {
+        return storage.getObjects(Device.class, new Request(
+                new Columns.Include("id"),
+                new Condition.Permission(User.class, userId, Device.class)));
+    }
+
+    public List<Position> getManhuntPositions(long userId) throws StorageException {
+
+        var manhunt = getCurrent();
+        var hunterGroup = getHunterGroup(userId);
+
+        if(manhunt == null || hunterGroup == null)
+            return PositionUtil.getLatestPositions(storage, userId);
+
+        return PositionUtil.getManhuntPositions(storage, userId, manhunt.getStart(), manhunt.getId(), hunterGroup.getId());
     }
 }
