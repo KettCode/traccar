@@ -111,6 +111,21 @@ public class ManhuntDatabaseStorage {
         }
     }
 
+    public List<User> getHunterUser(List<Long> userIds) throws StorageException {
+        try {
+            var query = "SELECT * " +
+                    "FROM tc_users " +
+                    "JOIN tc_groups ON tc_groups.id = tc_users.groupId " +
+                    "WHERE tc_users.id = ANY(:userIds) and tc_groups.manhuntRole = 1 ";
+
+            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
+            builder.setArray("userIds", userIds.toArray(), true);
+            return builder.executeQuery(User.class);
+        } catch (SQLException e) {
+            throw new StorageException(e);
+        }
+    }
+
     public Group getHunterGroup(long userId) throws StorageException {
         try {
             var query = "SELECT * " +

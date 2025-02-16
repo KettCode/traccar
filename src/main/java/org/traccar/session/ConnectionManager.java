@@ -27,13 +27,9 @@ import org.traccar.config.Config;
 import org.traccar.config.Keys;
 import org.traccar.database.DeviceLookupService;
 import org.traccar.database.NotificationManager;
-import org.traccar.model.BaseModel;
-import org.traccar.model.Device;
-import org.traccar.model.Event;
-import org.traccar.model.LogRecord;
-import org.traccar.model.Position;
-import org.traccar.model.User;
+import org.traccar.model.*;
 import org.traccar.session.cache.CacheManager;
+import org.traccar.storage.ManhuntDatabaseStorage;
 import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
 import org.traccar.storage.query.Columns;
@@ -76,6 +72,7 @@ public class ConnectionManager implements BroadcastInterface {
     private final Timer timer;
     private final BroadcastService broadcastService;
     private final DeviceLookupService deviceLookupService;
+    private final ManhuntDatabaseStorage manhuntDatabaseStorage;
 
     private final Map<Long, Set<UpdateListener>> listeners = new HashMap<>();
     private final Map<Long, Set<Long>> userDevices = new HashMap<>();
@@ -87,7 +84,7 @@ public class ConnectionManager implements BroadcastInterface {
     public ConnectionManager(
             Config config, CacheManager cacheManager, Storage storage,
             NotificationManager notificationManager, Timer timer, BroadcastService broadcastService,
-            DeviceLookupService deviceLookupService) {
+            DeviceLookupService deviceLookupService, ManhuntDatabaseStorage manhuntDatabaseStorage) {
         this.config = config;
         this.cacheManager = cacheManager;
         this.storage = storage;
@@ -95,6 +92,7 @@ public class ConnectionManager implements BroadcastInterface {
         this.timer = timer;
         this.broadcastService = broadcastService;
         this.deviceLookupService = deviceLookupService;
+        this.manhuntDatabaseStorage = manhuntDatabaseStorage;
         deviceTimeout = config.getLong(Keys.STATUS_TIMEOUT);
         showUnknownDevices = config.getBoolean(Keys.WEB_SHOW_UNKNOWN_DEVICES);
         broadcastService.registerListener(this);
@@ -309,7 +307,22 @@ public class ConnectionManager implements BroadcastInterface {
         if (local) {
             broadcastService.updatePosition(true, position);
         }
-        for (long userId : deviceUsers.getOrDefault(position.getDeviceId(), Collections.emptySet())) {
+
+
+        var userIds = new HashSet<>(deviceUsers.getOrDefault(position.getDeviceId(), Collections.emptySet()));
+        try {
+            var group = manhuntDatabaseStorage.getHuntedGroup(position.getDeviceId());
+            if(group != null) {
+                var hunterUserIds = manhuntDatabaseStorage
+                        .getHunterUser(userIds.stream().toList())
+                        .stream().map(User::getId)
+                        .collect(Collectors.toSet());
+                userIds.removeAll(hunterUserIds);
+            }
+        } catch (StorageException e) {
+            throw new RuntimeException(e);
+        }
+        for (long userId : userIds) {
             if (listeners.containsKey(userId)) {
                 for (UpdateListener listener : listeners.get(userId)) {
                     listener.onUpdatePosition(position);
