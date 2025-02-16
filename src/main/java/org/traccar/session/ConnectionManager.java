@@ -315,6 +315,22 @@ public class ConnectionManager implements BroadcastInterface {
         }
     }
 
+    public synchronized void updateSpeedHuntPosition(boolean local, Position position, List<Long> userIds) {
+        if (local) {
+            broadcastService.updatePosition(true, position);
+        }
+
+        for (long userId : deviceUsers.getOrDefault(position.getDeviceId(), Collections.emptySet())) {
+            if (listeners.containsKey(userId)) {
+                if(!userIds.contains(userId))
+                    return;
+                for (UpdateListener listener : listeners.get(userId)) {
+                    listener.onUpdatePosition(position);
+                }
+            }
+        }
+    }
+
     @Override
     public synchronized void updateEvent(boolean local, long userId, Event event) {
         if (local) {

@@ -98,7 +98,12 @@ public class SpeedHuntRequestsResource extends BaseObjectResource<SpeedHuntReque
         speedHuntRequest.setPos(speedHuntRequests.size() + 1);
         speedHuntRequest.setId(storage.addObject(speedHuntRequest, new Request(new Columns.Exclude("id"))));
 
-        //connectionManager.updatePosition(true, null);
+        var position = storage.getObject(Position.class, new Request(
+                new Columns.All(), new Condition.LatestPositions(speedHunt.getDeviceId())));
+        var userIds = manhuntDatabaseStorage.getUsers(speedHunt.getHunterGroupId())
+                .stream().map(User::getId)
+                .toList();
+        connectionManager.updateSpeedHuntPosition(true, position, userIds);
 
         return Response.ok(speedHuntRequest).build();
     }

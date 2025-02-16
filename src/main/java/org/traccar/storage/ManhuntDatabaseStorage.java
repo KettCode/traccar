@@ -2,8 +2,6 @@ package org.traccar.storage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
-import org.traccar.api.security.PermissionsService;
 import org.traccar.config.Config;
 import org.traccar.helper.model.PositionUtil;
 import org.traccar.model.*;
@@ -128,21 +126,6 @@ public class ManhuntDatabaseStorage {
         }
     }
 
-    public List<User> getHunterUser(List<Long> userIds) throws StorageException {
-        try {
-            var query = "SELECT * " +
-                    "FROM tc_users " +
-                    "JOIN tc_groups ON tc_groups.id = tc_users.groupId " +
-                    "WHERE tc_users.id = ANY(:userIds) and tc_groups.manhuntRole = 1 ";
-
-            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
-            builder.setArray("userIds", userIds.toArray(), true);
-            return builder.executeQuery(User.class);
-        } catch (SQLException e) {
-            throw new StorageException(e);
-        }
-    }
-
     public Group getHunterGroup(long userId) throws StorageException {
         try {
             var query = "SELECT * " +
@@ -175,10 +158,19 @@ public class ManhuntDatabaseStorage {
         }
     }
 
-    public List<Device> getDevices(long userId) throws StorageException {
-        return storage.getObjects(Device.class, new Request(
-                new Columns.Include("id"),
-                new Condition.Permission(User.class, userId, Device.class)));
+    public List<User> getUsers(long groupId) throws StorageException {
+        try {
+            var query = "SELECT * " +
+                    "FROM tc_users " +
+                    "JOIN tc_groups ON tc_groups.id = tc_users.groupId " +
+                    "WHERE tc_groups.id = :groupId ";
+
+            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
+            builder.setLong("groupId", groupId);
+            return builder.executeQuery(User.class);
+        } catch (SQLException e) {
+            throw new StorageException(e);
+        }
     }
 
     public List<Position> getManhuntPositions(long userId) throws StorageException {

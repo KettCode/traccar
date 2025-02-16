@@ -6,6 +6,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.traccar.api.BaseObjectResource;
 import org.traccar.model.*;
+import org.traccar.session.ConnectionManager;
 import org.traccar.storage.ManhuntDatabaseStorage;
 import org.traccar.storage.StorageException;
 import org.traccar.storage.query.Columns;
@@ -23,6 +24,9 @@ public class SpeedHuntResource extends BaseObjectResource<SpeedHunt> {
 
     @Inject
     private ManhuntDatabaseStorage manhuntDatabaseStorage;
+
+    @Inject
+    private ConnectionManager connectionManager;
 
     public SpeedHuntResource() {
         super(SpeedHunt.class);
@@ -119,6 +123,13 @@ public class SpeedHuntResource extends BaseObjectResource<SpeedHunt> {
         speedhuntRequest.setTime(time);
         speedhuntRequest.setPos(1);
         speedhuntRequest.setId(storage.addObject(speedhuntRequest, new Request(new Columns.Exclude("id"))));
+
+        var position = storage.getObject(Position.class, new Request(
+                new Columns.All(), new Condition.LatestPositions(speedHunt.getDeviceId())));
+        var userIds = manhuntDatabaseStorage.getUsers(speedHunt.getHunterGroupId())
+                .stream().map(User::getId)
+                .toList();
+        connectionManager.updateSpeedHuntPosition(true, position, userIds);
 
         return Response.ok(speedHunt).build();
     }
