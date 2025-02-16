@@ -40,15 +40,7 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -77,6 +69,7 @@ public class ConnectionManager implements BroadcastInterface {
     private final Map<Long, Set<UpdateListener>> listeners = new HashMap<>();
     private final Map<Long, Set<Long>> userDevices = new HashMap<>();
     private final Map<Long, Set<Long>> deviceUsers = new HashMap<>();
+    private final Map<Long, Set<Long>> userHuntedDevices = new HashMap<>();
 
     private final Map<Long, Timeout> timeouts = new ConcurrentHashMap<>();
 
@@ -308,22 +301,13 @@ public class ConnectionManager implements BroadcastInterface {
             broadcastService.updatePosition(true, position);
         }
 
-
-        var userIds = new HashSet<>(deviceUsers.getOrDefault(position.getDeviceId(), Collections.emptySet()));
-        try {
-            var group = manhuntDatabaseStorage.getHuntedGroup(position.getDeviceId());
-            if(group != null) {
-                var hunterUserIds = manhuntDatabaseStorage
-                        .getHunterUser(userIds.stream().toList())
-                        .stream().map(User::getId)
-                        .collect(Collectors.toSet());
-                userIds.removeAll(hunterUserIds);
-            }
-        } catch (StorageException e) {
-            throw new RuntimeException(e);
-        }
-        for (long userId : userIds) {
+        for (long userId : deviceUsers.getOrDefault(position.getDeviceId(), Collections.emptySet())) {
             if (listeners.containsKey(userId)) {
+                if(userHuntedDevices.containsKey(userId)){
+                    var huntedDeviceIds = userHuntedDevices.get(userId);
+                    if(huntedDeviceIds.contains(position.getDeviceId()))
+                        return;
+                }
                 for (UpdateListener listener : listeners.get(userId)) {
                     listener.onUpdatePosition(position);
                 }
@@ -394,6 +378,12 @@ public class ConnectionManager implements BroadcastInterface {
                     new Columns.Include("id"), new Condition.Permission(User.class, userId, Device.class)));
             userDevices.put(userId, devices.stream().map(BaseModel::getId).collect(Collectors.toSet()));
             devices.forEach(device -> deviceUsers.computeIfAbsent(device.getId(), id -> new HashSet<>()).add(userId));
+
+            var user = manhuntDatabaseStorage.getHunterGroup(userId);
+            if(user != null) {
+                var huntedDevices = manhuntDatabaseStorage.getHuntedDevices(devices);
+                userHuntedDevices.put(userId, huntedDevices.stream().map(BaseModel::getId).collect(Collectors.toSet()));
+            }
         }
         set.add(listener);
     }
@@ -408,6 +398,8 @@ public class ConnectionManager implements BroadcastInterface {
                 userIds.remove(userId);
                 return userIds.isEmpty() ? null : userIds;
             }));
+
+            userHuntedDevices.remove(userId);
         }
     }
 

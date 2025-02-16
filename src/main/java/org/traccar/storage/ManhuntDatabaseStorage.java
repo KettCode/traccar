@@ -69,6 +69,23 @@ public class ManhuntDatabaseStorage {
         }
     }
 
+    public List<Device> getHuntedDevices(List<Device> devices) throws StorageException {
+        try {
+            var ids = devices.stream().map(Device::getId).toArray();
+            var query = "SELECT * " +
+                    "FROM tc_devices " +
+                    "JOIN tc_groups ON tc_groups.id = tc_devices.groupId " +
+                    "WHERE tc_devices.id = ANY(:deviceIds) and tc_groups.manhuntRole = 2 ";
+
+            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
+            builder.setArray("deviceIds", ids, true);
+            return builder.executeQuery(Device.class);
+
+        } catch (SQLException e) {
+            throw new StorageException(e);
+        }
+    }
+
     public SpeedHunt getSpeedHunt(long speedHuntId) throws StorageException {
         return storage.getObject(SpeedHunt.class,
                 new Request(new Columns.All(), new Condition.Equals("id", speedHuntId)));
