@@ -103,7 +103,7 @@ public class SpeedHuntRequestsResource extends BaseObjectResource<SpeedHuntReque
         var userIds = manhuntDatabaseStorage.getUsers(speedHunt.getHunterGroupId())
                 .stream().map(User::getId)
                 .toList();
-        connectionManager.updateSpeedHuntPosition(true, position, userIds);
+        connectionManager.updateHunterPosition(true, position, userIds);
 
         return Response.ok(speedHuntRequest).build();
     }

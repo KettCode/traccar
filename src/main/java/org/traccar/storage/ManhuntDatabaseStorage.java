@@ -84,6 +84,21 @@ public class ManhuntDatabaseStorage {
         }
     }
 
+    public List<Device> getDevices(long groupId) throws StorageException {
+        try {
+            var query = "SELECT * " +
+                    "FROM tc_devices " +
+                    "JOIN tc_groups ON tc_groups.id = tc_devices.groupId " +
+                    "WHERE tc_groups.id = :groupId ";
+
+            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
+            builder.setLong("groupId", groupId);
+            return builder.executeQuery(Device.class);
+        } catch (SQLException e) {
+            throw new StorageException(e);
+        }
+    }
+
     public SpeedHunt getSpeedHunt(long speedHuntId) throws StorageException {
         return storage.getObject(SpeedHunt.class,
                 new Request(new Columns.All(), new Condition.Equals("id", speedHuntId)));
@@ -137,6 +152,20 @@ public class ManhuntDatabaseStorage {
             builder.setLong("userId", userId);
             var groups = builder.executeQuery(Group.class);
             return groups.isEmpty() ? null : groups.get(0);
+        } catch (SQLException e) {
+            throw new StorageException(e);
+        }
+    }
+
+    public List<Group> getGroups(long manhuntRole) throws StorageException {
+        try {
+            var query = "SELECT * " +
+                    "FROM tc_groups " +
+                    "WHERE tc_groups.manhuntRole = :manhuntRole ";
+
+            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
+            builder.setLong("manhuntRole", manhuntRole);
+            return builder.executeQuery(Group.class);
         } catch (SQLException e) {
             throw new StorageException(e);
         }

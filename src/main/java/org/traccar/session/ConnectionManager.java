@@ -40,9 +40,9 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 @Singleton
@@ -73,6 +73,9 @@ public class ConnectionManager implements BroadcastInterface {
 
     private final Map<Long, Timeout> timeouts = new ConcurrentHashMap<>();
 
+    private final ConcurrentHashMap<Long, ScheduledFuture<?>> groupSchedules = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(10);
+
     @Inject
     public ConnectionManager(
             Config config, CacheManager cacheManager, Storage storage,
@@ -89,6 +92,7 @@ public class ConnectionManager implements BroadcastInterface {
         deviceTimeout = config.getLong(Keys.STATUS_TIMEOUT);
         showUnknownDevices = config.getBoolean(Keys.WEB_SHOW_UNKNOWN_DEVICES);
         broadcastService.registerListener(this);
+        initSchedules();
     }
 
     public DeviceSession getDeviceSession(long deviceId) {
@@ -306,7 +310,7 @@ public class ConnectionManager implements BroadcastInterface {
                 if(userHuntedDevices.containsKey(userId)){
                     var huntedDeviceIds = userHuntedDevices.get(userId);
                     if(huntedDeviceIds.contains(position.getDeviceId()))
-                        return;
+                        continue;
                 }
                 for (UpdateListener listener : listeners.get(userId)) {
                     listener.onUpdatePosition(position);
@@ -315,7 +319,7 @@ public class ConnectionManager implements BroadcastInterface {
         }
     }
 
-    public synchronized void updateSpeedHuntPosition(boolean local, Position position, List<Long> userIds) {
+    public synchronized void updateHunterPosition(boolean local, Position position, List<Long> userIds) {
         if (local) {
             broadcastService.updatePosition(true, position);
         }
@@ -323,7 +327,21 @@ public class ConnectionManager implements BroadcastInterface {
         for (long userId : deviceUsers.getOrDefault(position.getDeviceId(), Collections.emptySet())) {
             if (listeners.containsKey(userId)) {
                 if(!userIds.contains(userId))
-                    return;
+                    continue;
+                for (UpdateListener listener : listeners.get(userId)) {
+                    listener.onUpdatePosition(position);
+                }
+            }
+        }
+    }
+
+    public synchronized void updateAllPosition(boolean local, Position position) {
+        if (local) {
+            broadcastService.updatePosition(true, position);
+        }
+
+        for (long userId : deviceUsers.getOrDefault(position.getDeviceId(), Collections.emptySet())) {
+            if (listeners.containsKey(userId)) {
                 for (UpdateListener listener : listeners.get(userId)) {
                     listener.onUpdatePosition(position);
                 }
@@ -416,6 +434,61 @@ public class ConnectionManager implements BroadcastInterface {
             }));
 
             userHuntedDevices.remove(userId);
+        }
+    }
+
+    private void initSchedules() {
+        try {
+            var groups = manhuntDatabaseStorage.getGroups(2);
+            for(var group : groups) {
+                scheduleUpdates(group);
+            }
+        } catch (StorageException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void scheduleUpdates(Group group) throws StorageException {
+        cancelScheduler(group);
+
+        var manhunt = manhuntDatabaseStorage.getCurrent();
+        var frequency = group.getFrequency();
+        if(frequency <= 0)
+            frequency = 3600;
+        var start = manhunt.getStart();
+
+        var now = new Date();
+        var initialDelay = now.before(start) ? Duration.between(now.toInstant(), start.toInstant()).toSeconds() : 0;
+
+        ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(() -> {
+            try {
+                var deviceIds = manhuntDatabaseStorage.getDevices(group.getId())
+                        .stream().map(Device::getId)
+                        .toList();
+
+                var positions = storage.getObjects(Position.class, new Request(
+                        new Columns.All(), new Condition.LatestPositions()))
+                        .stream().filter(x -> deviceIds.contains(x.getDeviceId()))
+                        .toList();
+
+                for(var position : positions) {
+                    updateAllPosition(true, position);
+                }
+            } catch (StorageException e) {
+                throw new RuntimeException(e);
+            }
+        }, initialDelay, frequency, TimeUnit.SECONDS);
+
+        groupSchedules.put(group.getId(), future);
+    }
+
+    public void cancelScheduler(Group group) {
+        if(!groupSchedules.containsKey(group.getId()))
+            return;
+
+        var future = groupSchedules.get(group.getId());
+        if(future != null && future.isCancelled()) {
+            future.cancel(false);
         }
     }
 
