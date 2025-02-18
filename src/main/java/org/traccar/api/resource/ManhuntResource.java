@@ -7,6 +7,7 @@ import jakarta.ws.rs.core.Response;
 import org.traccar.api.ExtendedObjectResource;
 import org.traccar.api.security.PermissionsService;
 import org.traccar.model.*;
+import org.traccar.session.ConnectionManager;
 import org.traccar.storage.ManhuntDatabaseStorage;
 import org.traccar.storage.StorageException;
 import org.traccar.storage.query.Columns;
@@ -29,6 +30,9 @@ public class ManhuntResource extends ExtendedObjectResource<Manhunt> {
 
     @Inject
     private PermissionsService permissionsService;
+
+    @Inject
+    private ConnectionManager connectionManager;
 
     public ManhuntResource() {
         super(Manhunt.class, "start");
@@ -77,5 +81,24 @@ public class ManhuntResource extends ExtendedObjectResource<Manhunt> {
     @GET
     public Collection<Position> positions() throws StorageException {
         return manhuntDatabaseStorage.getManhuntPositions(getUserId());
+    }
+
+    @Path("scheduleUpdates")
+    @GET
+    public Response scheduleUpdates(@QueryParam("groupId") long groupId) throws StorageException {
+        var group = storage.getObject(Group.class,
+                new Request(new Columns.All(), new Condition.Equals("id", groupId)));
+        if(group.getManhuntRole() == 2)
+            connectionManager.scheduleUpdates(group);
+        else
+            connectionManager.cancelScheduler(group);
+        return Response.ok(true).build();
+    }
+
+    @Path("scheduleAllUpdates")
+    @GET
+    public Response scheduleAllUpdates() throws StorageException {
+        connectionManager.initSchedules();
+        return Response.ok(true).build();
     }
 }

@@ -32,7 +32,7 @@ public class ManhuntDatabaseStorage {
 
     public Manhunt getCurrent() throws StorageException {
         try {
-            var query = "SELECT * FROM tc_manhunts WHERE start < CURRENT_TIMESTAMP ORDER BY start DESC LIMIT 1";
+            var query = "SELECT * FROM tc_manhunts ORDER BY start DESC LIMIT 1";
             QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
             var manhunts = builder.executeQuery(Manhunt.class);
             return manhunts.isEmpty() ? null : manhunts.get(0);

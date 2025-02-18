@@ -437,7 +437,7 @@ public class ConnectionManager implements BroadcastInterface {
         }
     }
 
-    private void initSchedules() {
+    public void initSchedules() {
         try {
             var groups = manhuntDatabaseStorage.getGroups(2);
             for(var group : groups) {
@@ -458,7 +458,9 @@ public class ConnectionManager implements BroadcastInterface {
         var start = manhunt.getStart();
 
         var now = new Date();
-        var initialDelay = now.before(start) ? Duration.between(now.toInstant(), start.toInstant()).toSeconds() : 0;
+        var durationBetween = Duration.between(start.toInstant(), now.toInstant()).getSeconds();;
+        var remainder = durationBetween % frequency;
+        var initialDelay = remainder == 0 ? 0 : (frequency - remainder);
 
         ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(() -> {
             try {
@@ -487,7 +489,7 @@ public class ConnectionManager implements BroadcastInterface {
             return;
 
         var future = groupSchedules.get(group.getId());
-        if(future != null && future.isCancelled()) {
+        if(future != null && !future.isCancelled()) {
             future.cancel(false);
         }
     }
