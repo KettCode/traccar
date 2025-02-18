@@ -458,9 +458,14 @@ public class ConnectionManager implements BroadcastInterface {
         var start = manhunt.getStart();
 
         var now = new Date();
-        var durationBetween = Duration.between(start.toInstant(), now.toInstant()).getSeconds();;
-        var remainder = durationBetween % frequency;
-        var initialDelay = remainder == 0 ? 0 : (frequency - remainder);
+        var initialDelay = 0L;
+        if(now.before(start)){
+            initialDelay = Duration.between(now.toInstant(), start.toInstant()).getSeconds();
+        }  else {
+            var durationBetween = Duration.between(start.toInstant(), now.toInstant()).getSeconds();
+            var remainder = durationBetween % frequency;
+            initialDelay = remainder == 0 ? 0 : (frequency - remainder);
+        }
 
         ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(() -> {
             try {
