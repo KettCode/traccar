@@ -47,9 +47,8 @@ public class GroupResource extends SimpleObjectResource<Group> {
     @POST
     public Response add(Group entity) throws Exception {
         var response = super.add(entity);
-        var group = (Group) response.getEntity();
-        if(group.getManhuntRole() == 2)
-            connectionManager.scheduleUpdates(group);
+        if(entity.getManhuntRole() == 2)
+            connectionManager.scheduleUpdates(entity);
         return response;
     }
 
@@ -59,6 +58,8 @@ public class GroupResource extends SimpleObjectResource<Group> {
         var response = super.update(entity);
         if(entity.getManhuntRole() == 2)
             connectionManager.scheduleUpdates(entity);
+        else
+            connectionManager.cancelScheduler(entity.getId());
         return response;
     }
 
