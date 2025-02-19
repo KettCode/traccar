@@ -83,22 +83,26 @@ public class ManhuntResource extends ExtendedObjectResource<Manhunt> {
         return manhuntDatabaseStorage.getManhuntPositions(getUserId());
     }
 
-    @Path("scheduleUpdates")
-    @GET
-    public Response scheduleUpdates(@QueryParam("groupId") long groupId) throws StorageException {
-        var group = storage.getObject(Group.class,
-                new Request(new Columns.All(), new Condition.Equals("id", groupId)));
-        if(group.getManhuntRole() == 2)
-            connectionManager.scheduleUpdates(group);
-        else
-            connectionManager.cancelScheduler(group);
-        return Response.ok(true).build();
+    @POST
+    public Response add(Manhunt entity) throws Exception {
+        var response = super.add(entity);
+        connectionManager.initSchedules();
+        return response;
     }
 
-    @Path("scheduleAllUpdates")
-    @GET
-    public Response scheduleAllUpdates() throws StorageException {
+    @Path("{id}")
+    @PUT
+    public Response update(Manhunt entity) throws Exception {
+        var response = super.update(entity);
         connectionManager.initSchedules();
-        return Response.ok(true).build();
+        return response;
+    }
+
+    @Path("{id}")
+    @DELETE
+    public Response remove(@PathParam("id") long id) throws Exception {
+        var response = super.remove(id);
+        connectionManager.initSchedules();
+        return response;
     }
 }

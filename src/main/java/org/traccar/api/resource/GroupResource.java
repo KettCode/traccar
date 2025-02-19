@@ -15,21 +15,59 @@
  */
 package org.traccar.api.resource;
 
+import jakarta.inject.Inject;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Response;
 import org.traccar.api.SimpleObjectResource;
+import org.traccar.api.security.ServiceAccountUser;
+import org.traccar.helper.LogAction;
 import org.traccar.model.Group;
 
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import org.traccar.model.ObjectOperation;
+import org.traccar.model.Permission;
+import org.traccar.model.User;
+import org.traccar.session.ConnectionManager;
+import org.traccar.storage.query.Columns;
+import org.traccar.storage.query.Condition;
+import org.traccar.storage.query.Request;
 
 @Path("groups")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class GroupResource extends SimpleObjectResource<Group> {
 
+    @Inject
+    private ConnectionManager connectionManager;
+
     public GroupResource() {
         super(Group.class, "name");
+    }
+
+    @POST
+    public Response add(Group entity) throws Exception {
+        var response = super.add(entity);
+        var group = (Group) response.getEntity();
+        if(group.getManhuntRole() == 2)
+            connectionManager.scheduleUpdates(group);
+        return response;
+    }
+
+    @Path("{id}")
+    @PUT
+    public Response update(Group entity) throws Exception {
+        var response = super.update(entity);
+        if(entity.getManhuntRole() == 2)
+            connectionManager.scheduleUpdates(entity);
+        return response;
+    }
+
+    @Path("{id}")
+    @DELETE
+    public Response remove(@PathParam("id") long id) throws Exception {
+        var response = super.remove(id);
+        connectionManager.cancelScheduler(id);
+        return response;
     }
 
 }

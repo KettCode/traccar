@@ -449,7 +449,7 @@ public class ConnectionManager implements BroadcastInterface {
     }
 
     public void scheduleUpdates(Group group) throws StorageException {
-        cancelScheduler(group);
+        cancelScheduler(group.getId());
 
         var manhunt = manhuntDatabaseStorage.getCurrent();
         var frequency = group.getFrequency();
@@ -489,14 +489,15 @@ public class ConnectionManager implements BroadcastInterface {
         groupSchedules.put(group.getId(), future);
     }
 
-    public void cancelScheduler(Group group) {
-        if(!groupSchedules.containsKey(group.getId()))
+    public void cancelScheduler(long groupId) {
+        if(!groupSchedules.containsKey(groupId))
             return;
 
-        var future = groupSchedules.get(group.getId());
+        var future = groupSchedules.get(groupId);
         if(future != null && !future.isCancelled()) {
             future.cancel(false);
         }
+        groupSchedules.remove(groupId);
     }
 
 }
