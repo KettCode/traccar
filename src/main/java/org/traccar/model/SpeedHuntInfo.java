@@ -46,6 +46,6 @@ public class SpeedHuntInfo {
         if(group == null || speedHunts.isEmpty())
             return false;
 
-        return speedHunts.getLast().getSpeedHuntRequests().size() < group.getSpeedHuntRequests();
+        return speedHunts.get(speedHunts.size() - 1).getSpeedHuntRequests().size() < group.getSpeedHuntRequests();
     }
 }
