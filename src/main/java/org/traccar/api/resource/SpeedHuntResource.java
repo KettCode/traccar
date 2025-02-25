@@ -5,6 +5,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.traccar.api.BaseObjectResource;
+import org.traccar.api.TraccarException;
 import org.traccar.model.*;
 import org.traccar.session.ConnectionManager;
 import org.traccar.storage.ManhuntDatabaseStorage;
@@ -67,45 +68,33 @@ public class SpeedHuntResource extends BaseObjectResource<SpeedHunt> {
 
     @Path("speedHuntInfo")
     @GET
-    public Response speedHuntInfo() throws StorageException {
-        var manhunt = manhuntDatabaseStorage.getCurrent();
-        if(manhunt == null)
-            throw new RuntimeException("Es wurde kein laufender Manhunt gefunden.");
-
-        var group = manhuntDatabaseStorage.getHunterGroup(getUserId());
-        if(group == null)
-            throw new RuntimeException("Dem Benutzer wurde keine Gruppe mit der Rolle Jaeger zugewiesen.");
-
-        var speedHunts = manhuntDatabaseStorage.getSpeedHunts(group.getId(), manhunt.getId());
-        var speedHuntIds = speedHunts.stream().map(SpeedHunt::getId).toList();
-        var speedHuntRequests = manhuntDatabaseStorage.getSpeedHuntRequests(speedHuntIds);
-
-        var speedHuntInfo = new SpeedHuntInfo();
-        speedHuntInfo.setManhunt(manhunt);
-        speedHuntInfo.setSpeedHunts(speedHunts);
-        speedHuntInfo.setSpeedHuntRequests(speedHuntRequests);
-        speedHuntInfo.setGroup(group);
+    public Response speedHuntInfo() throws StorageException, TraccarException {
+        var speedHuntInfo = manhuntDatabaseStorage.getSpeedHuntInfo(getUserId());
         return Response.ok(speedHuntInfo).build();
     }
 
     @Path("create")
     @POST
-    public Response create(@QueryParam("deviceId") long deviceId) throws StorageException {
-        var manhunt = manhuntDatabaseStorage.getCurrent();
-        if(manhunt == null)
-            throw new RuntimeException("Es wurde kein laufender Manhunt gefunden.");
+    public Response create(@QueryParam("deviceId") long deviceId) throws StorageException, TraccarException {
+        var speedHuntInfo = manhuntDatabaseStorage.getSpeedHuntInfo(getUserId());
+        var manhunt = speedHuntInfo.getManhunt();
+        var group = speedHuntInfo.getGroup();
+        var speedHunts = speedHuntInfo.getSpeedHunts();
 
-        var group = manhuntDatabaseStorage.getHunterGroup(getUserId());
-        if(group == null)
-            throw new RuntimeException("Dem Benutzer wurde keine Gruppe mit der Rolle 'Jaeger' zugewiesen.");
+        if(speedHuntInfo.getIsSpeedHuntRunning())
+            throw new TraccarException("Es gibt bereits einen aktiven Speedhunt.");
 
-        var speedHunts = manhuntDatabaseStorage.getSpeedHunts(group.getId(), manhunt.getId());
         if(speedHunts.size() >= group.getSpeedHunts())
-            throw new RuntimeException("Das Limit der Speedhunts wurde bereits erreicht.");
+            throw new TraccarException("Das Limit der Speedhunts wurde bereits erreicht.");
 
         var huntedGroup = manhuntDatabaseStorage.getHuntedGroup(deviceId);
         if(huntedGroup == null)
-            throw new RuntimeException("Dem Zielgerät wurde keine Gruppe mit der Rolle 'Gejagter' zugewiesen.");
+            throw new TraccarException("Dem Zielgerät wurde keine Gruppe mit der Rolle 'Gejagter' zugewiesen.");
+
+        var position = storage.getObject(Position.class, new Request(
+                new Columns.All(), new Condition.LatestPositions(deviceId)));
+        if(position == null)
+            throw new TraccarException("Es konnte keine Position gefunden werden.");
 
         var time = new Date();
 
@@ -124,8 +113,6 @@ public class SpeedHuntResource extends BaseObjectResource<SpeedHunt> {
         speedhuntRequest.setPos(1);
         speedhuntRequest.setId(storage.addObject(speedhuntRequest, new Request(new Columns.Exclude("id"))));
 
-        var position = storage.getObject(Position.class, new Request(
-                new Columns.All(), new Condition.LatestPositions(speedHunt.getDeviceId())));
         var userIds = manhuntDatabaseStorage.getUsers(speedHunt.getHunterGroupId())
                 .stream().map(User::getId)
                 .toList();

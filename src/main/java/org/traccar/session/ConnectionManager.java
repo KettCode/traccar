@@ -452,6 +452,9 @@ public class ConnectionManager implements BroadcastInterface {
         cancelScheduler(group.getId());
 
         var manhunt = manhuntDatabaseStorage.getCurrent();
+        if(manhunt == null)
+            return;
+
         var frequency = group.getFrequency();
         if(frequency <= 0)
             frequency = 3600;

@@ -32,6 +32,8 @@ public class ResourceErrorHandler implements ExceptionMapper<Exception> {
 
         if (exception instanceof WebApplicationException webException) {
             return Response.fromResponse(webException.getResponse()).entity(stringWriter.toString()).build();
+        } else if (exception instanceof TraccarException) {
+          return Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage()).build();
         } else {
             return Response.status(Response.Status.BAD_REQUEST).entity(stringWriter.toString()).build();
         }

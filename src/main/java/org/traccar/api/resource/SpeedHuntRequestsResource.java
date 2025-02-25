@@ -5,6 +5,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.traccar.api.BaseObjectResource;
+import org.traccar.api.TraccarException;
 import org.traccar.model.*;
 import org.traccar.session.ConnectionManager;
 import org.traccar.storage.ManhuntDatabaseStorage;
@@ -67,22 +68,31 @@ public class SpeedHuntRequestsResource extends BaseObjectResource<SpeedHuntReque
 
     @Path("create")
     @POST
-    public Response create(@QueryParam("speedHuntId") long speedHuntId) throws StorageException {
-        var manhunt = manhuntDatabaseStorage.getCurrent();
-        if(manhunt == null)
-            throw new RuntimeException("Es wurde kein laufender Manhunt gefunden.");
+    public Response create(@QueryParam("speedHuntId") long speedHuntId) throws StorageException, TraccarException {
+        var speedHuntInfo = manhuntDatabaseStorage.getSpeedHuntInfo(getUserId());
+        var group = speedHuntInfo.getGroup();
 
-        var group = manhuntDatabaseStorage.getHunterGroup(getUserId());
-        if(group == null)
-            throw new RuntimeException("Dem Benutzer wurde keine Gruppe mit der Rolle 'Jaeger' zugewiesen.");
+        if(!speedHuntInfo.getIsSpeedHuntRunning())
+            throw new TraccarException("Es gibt keinen aktiven Speedhunt.");
 
-        var speedHunt = manhuntDatabaseStorage.getSpeedHunt(speedHuntId);
+        var speedHunt = speedHuntInfo
+                .getSpeedHunts()
+                .stream()
+                .filter(x -> x.getId() == speedHuntId)
+                .findFirst()
+                .orElse(null);
+
         if(speedHunt == null)
-            throw new RuntimeException("Es wurde kein Speedhunt gefunden.");
+            throw new TraccarException("Es wurde kein Speedhunt gefunden.");
 
-        var speedHuntRequests = manhuntDatabaseStorage.getSpeedHuntRequests(speedHuntId);
+        var speedHuntRequests = speedHunt.getSpeedHuntRequests();
         if(speedHuntRequests.size() >= group.getSpeedHuntRequests())
-            throw new RuntimeException("Das Limit der Standortanfragen wurde bereits erreicht.");
+            throw new TraccarException("Das Limit der Standortanfragen wurde bereits erreicht.");
+
+        var position = storage.getObject(Position.class, new Request(
+                new Columns.All(), new Condition.LatestPositions(speedHunt.getDeviceId())));
+        if(position == null)
+            throw new TraccarException("Es konnte keine Position gefunden werden.");
 
         var time = new Date();
 
@@ -98,8 +108,6 @@ public class SpeedHuntRequestsResource extends BaseObjectResource<SpeedHuntReque
         speedHuntRequest.setPos(speedHuntRequests.size() + 1);
         speedHuntRequest.setId(storage.addObject(speedHuntRequest, new Request(new Columns.Exclude("id"))));
 
-        var position = storage.getObject(Position.class, new Request(
-                new Columns.All(), new Condition.LatestPositions(speedHunt.getDeviceId())));
         var userIds = manhuntDatabaseStorage.getUsers(speedHunt.getHunterGroupId())
                 .stream().map(User::getId)
                 .toList();

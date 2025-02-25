@@ -2,6 +2,7 @@ package org.traccar.storage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
+import org.traccar.api.TraccarException;
 import org.traccar.config.Config;
 import org.traccar.helper.model.PositionUtil;
 import org.traccar.model.*;
@@ -99,11 +100,6 @@ public class ManhuntDatabaseStorage {
         }
     }
 
-    public SpeedHunt getSpeedHunt(long speedHuntId) throws StorageException {
-        return storage.getObject(SpeedHunt.class,
-                new Request(new Columns.All(), new Condition.Equals("id", speedHuntId)));
-    }
-
     public List<SpeedHunt> getSpeedHunts(long groupId, long manhuntId) throws StorageException {
         try {
             var query = "SELECT * " +
@@ -119,11 +115,6 @@ public class ManhuntDatabaseStorage {
         } catch (SQLException e) {
             throw new StorageException(e);
         }
-    }
-
-    public List<SpeedHuntRequest> getSpeedHuntRequests(long speedHuntId) throws StorageException {
-        return storage.getObjects(SpeedHuntRequest.class,
-                new Request(new Columns.All(), new Condition.Equals("speedHuntsId", speedHuntId)));
     }
 
     public List<SpeedHuntRequest> getSpeedHuntRequests(List<Long> speedHuntIds) throws StorageException {
@@ -211,5 +202,26 @@ public class ManhuntDatabaseStorage {
             return PositionUtil.getLatestPositions(storage, userId);
 
         return PositionUtil.getManhuntPositions(storage, userId, manhunt.getStart(), manhunt.getId(), hunterGroup.getId());
+    }
+
+    public SpeedHuntInfo getSpeedHuntInfo(long userId) throws StorageException, TraccarException {
+        var manhunt = getCurrent();
+        if(manhunt == null)
+            throw new TraccarException("Es wurde kein laufender Manhunt gefunden.");
+
+        var group = getHunterGroup(userId);
+        if(group == null)
+            throw new TraccarException("Dem Benutzer wurde keine Gruppe mit der Rolle 'Jaeger' zugewiesen.");
+
+        var speedHunts = getSpeedHunts(group.getId(), manhunt.getId());
+        var speedHuntIds = speedHunts.stream().map(SpeedHunt::getId).toList();
+        var speedHuntRequests = getSpeedHuntRequests(speedHuntIds);
+
+        var speedHuntInfo = new SpeedHuntInfo();
+        speedHuntInfo.setManhunt(manhunt);
+        speedHuntInfo.setSpeedHunts(speedHunts);
+        speedHuntInfo.setSpeedHuntRequests(speedHuntRequests);
+        speedHuntInfo.setGroup(group);
+        return speedHuntInfo;
     }
 }
