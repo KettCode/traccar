@@ -7,9 +7,6 @@ import jakarta.ws.rs.core.Response;
 import org.traccar.api.BaseObjectResource;
 import org.traccar.api.TraccarException;
 import org.traccar.model.*;
-import org.traccar.notification.MessageException;
-import org.traccar.notification.NotificationMessage;
-import org.traccar.notification.NotificatorManager;
 import org.traccar.session.ConnectionManager;
 import org.traccar.storage.ManhuntDatabaseStorage;
 import org.traccar.storage.StorageException;
@@ -20,7 +17,6 @@ import org.traccar.storage.query.Request;
 import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedList;
-import java.util.List;
 
 @Path("speedHunts")
 @Produces(MediaType.APPLICATION_JSON)
@@ -32,9 +28,6 @@ public class SpeedHuntResource extends BaseObjectResource<SpeedHunt> {
 
     @Inject
     private ConnectionManager connectionManager;
-
-    @Inject
-    private NotificatorManager notificatorManager;
 
     public SpeedHuntResource() {
         super(SpeedHunt.class);
