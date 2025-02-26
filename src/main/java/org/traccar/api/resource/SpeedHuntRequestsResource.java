@@ -89,6 +89,11 @@ public class SpeedHuntRequestsResource extends BaseObjectResource<SpeedHuntReque
         if(speedHuntRequests.size() >= group.getSpeedHuntRequests())
             throw new TraccarException("Das Limit der Standortanfragen wurde bereits erreicht.");
 
+        var device = storage.getObject(Device.class, new Request(
+                new Columns.All(), new Condition.Equals("id", speedHunt.getDeviceId())));
+        if(device == null)
+            throw new TraccarException("Das Zielgerät konnte nicht gefunden werden.");
+
         var position = storage.getObject(Position.class, new Request(
                 new Columns.All(), new Condition.LatestPositions(speedHunt.getDeviceId())));
         if(position == null)
@@ -112,6 +117,23 @@ public class SpeedHuntRequestsResource extends BaseObjectResource<SpeedHuntReque
                 .stream().map(User::getId)
                 .toList();
         connectionManager.updateHunterPosition(true, position, userIds);
+
+        var allUserIds = manhuntDatabaseStorage.getAllUsers()
+                .stream().map(User::getId)
+                .toList();
+
+        Event event = new Event();
+        event.setDeviceId(device.getId());
+        event.setType("speedHuntRequest");
+        event.setEventTime(new Date());
+        event.setPositionId(position.getId());
+        event.set("message", "Standort von '" + device.getName() + "' angefragt.");
+        event.set("name", "Standort");
+        event.set("hunterGroup", group.getName());
+
+        allUserIds.forEach(userId -> {
+            connectionManager.updateEvent(true, userId, event);
+        });
 
         return Response.ok(speedHuntRequest).build();
     }

@@ -7,6 +7,9 @@ import jakarta.ws.rs.core.Response;
 import org.traccar.api.BaseObjectResource;
 import org.traccar.api.TraccarException;
 import org.traccar.model.*;
+import org.traccar.notification.MessageException;
+import org.traccar.notification.NotificationMessage;
+import org.traccar.notification.NotificatorManager;
 import org.traccar.session.ConnectionManager;
 import org.traccar.storage.ManhuntDatabaseStorage;
 import org.traccar.storage.StorageException;
@@ -17,6 +20,7 @@ import org.traccar.storage.query.Request;
 import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedList;
+import java.util.List;
 
 @Path("speedHunts")
 @Produces(MediaType.APPLICATION_JSON)
@@ -28,6 +32,9 @@ public class SpeedHuntResource extends BaseObjectResource<SpeedHunt> {
 
     @Inject
     private ConnectionManager connectionManager;
+
+    @Inject
+    private NotificatorManager notificatorManager;
 
     public SpeedHuntResource() {
         super(SpeedHunt.class);
@@ -87,6 +94,11 @@ public class SpeedHuntResource extends BaseObjectResource<SpeedHunt> {
         if(speedHunts.size() >= group.getSpeedHunts())
             throw new TraccarException("Das Limit der Speedhunts wurde bereits erreicht.");
 
+        var device = storage.getObject(Device.class, new Request(
+                new Columns.All(), new Condition.Equals("id", deviceId)));
+        if(device == null)
+            throw new TraccarException("Das Zielgerät konnte nicht gefunden werden.");
+
         var huntedGroup = manhuntDatabaseStorage.getHuntedGroup(deviceId);
         if(huntedGroup == null)
             throw new TraccarException("Dem Zielgerät wurde keine Gruppe mit der Rolle 'Gejagter' zugewiesen.");
@@ -117,6 +129,23 @@ public class SpeedHuntResource extends BaseObjectResource<SpeedHunt> {
                 .stream().map(User::getId)
                 .toList();
         connectionManager.updateHunterPosition(true, position, userIds);
+
+        var allUserIds = manhuntDatabaseStorage.getAllUsers()
+                .stream().map(User::getId)
+                .toList();
+
+        Event event = new Event();
+        event.setDeviceId(deviceId);
+        event.setType("speedHunt");
+        event.setEventTime(new Date());
+        event.setPositionId(position.getId());
+        event.set("message", "Speedhunt auf '" + device.getName() + "' gestartet.");
+        event.set("name", "Speedhunt");
+        event.set("hunterGroup", group.getName());
+
+        allUserIds.forEach(userId -> {
+            connectionManager.updateEvent(true, userId, event);
+        });
 
         return Response.ok(speedHunt).build();
     }

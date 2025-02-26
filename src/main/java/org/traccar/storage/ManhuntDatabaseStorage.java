@@ -193,6 +193,18 @@ public class ManhuntDatabaseStorage {
         }
     }
 
+    public List<User> getAllUsers() throws StorageException {
+        try {
+            var query = "SELECT * " +
+                    "FROM tc_users ";
+
+            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
+            return builder.executeQuery(User.class);
+        } catch (SQLException e) {
+            throw new StorageException(e);
+        }
+    }
+
     public List<Position> getManhuntPositions(long userId) throws StorageException {
 
         var manhunt = getCurrent();
