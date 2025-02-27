@@ -50,6 +50,8 @@ public class ManhuntDatabaseStorage {
                 conditions.add(new Condition.Permission(User.class, userId, Device.class));
             }
 
+            var manhunt = getCurrent();
+
             var devices = storage.getObjects(Device.class, new Request(
                     new Columns.All(), Condition.merge(conditions), new Order("name")));
 
@@ -57,10 +59,12 @@ public class ManhuntDatabaseStorage {
             var query = "SELECT * " +
                     "FROM tc_devices " +
                     "JOIN tc_groups ON tc_groups.id = tc_devices.groupId " +
-                    "WHERE tc_devices.id = ANY(:deviceIds) and tc_groups.manhuntRole = 2 ";
+                    "LEFT JOIN tc_catches ON tc_catches.manhuntsId = :manhuntId and tc_catches.deviceId = tc_devices.id " +
+                    "WHERE tc_devices.id = ANY(:deviceIds) and tc_groups.manhuntRole = 2 and tc_catches.id IS NULL ";
 
             QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
             builder.setArray("deviceIds", ids, true);
+            builder.setLong("manhuntId", manhunt.getId());
             return builder.executeQuery(Device.class);
 
         } catch (SQLException e) {
@@ -95,6 +99,20 @@ public class ManhuntDatabaseStorage {
             QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
             builder.setLong("groupId", groupId);
             return builder.executeQuery(Device.class);
+        } catch (SQLException e) {
+            throw new StorageException(e);
+        }
+    }
+
+    public List<Catches> getCatches(long manhuntId) throws StorageException {
+        try {
+            var query = "SELECT * " +
+                    "FROM tc_catches " +
+                    "WHERE tc_catches.manhuntsId = :manhuntId ";
+
+            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
+            builder.setLong("manhuntId", manhuntId);
+            return builder.executeQuery(Catches.class);
         } catch (SQLException e) {
             throw new StorageException(e);
         }
@@ -228,12 +246,14 @@ public class ManhuntDatabaseStorage {
         var speedHunts = getSpeedHunts(group.getId(), manhunt.getId());
         var speedHuntIds = speedHunts.stream().map(SpeedHunt::getId).toList();
         var speedHuntRequests = getSpeedHuntRequests(speedHuntIds);
+        var catches = getCatches(manhunt.getId());
 
         var speedHuntInfo = new SpeedHuntInfo();
         speedHuntInfo.setManhunt(manhunt);
         speedHuntInfo.setSpeedHunts(speedHunts);
         speedHuntInfo.setSpeedHuntRequests(speedHuntRequests);
         speedHuntInfo.setGroup(group);
+        speedHuntInfo.setCatches(catches);
         return speedHuntInfo;
     }
 }

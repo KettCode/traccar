@@ -13,12 +13,4 @@ public class Manhunt extends ExtendedModel {
     public void setStart(Date start) {
         this.start = start;
     }
-
-    private Date finish;
-    public Date getFinish() {
-        return finish;
-    }
-    public void setFinish(Date finish) {
-        this.finish = finish;
-    }
 }

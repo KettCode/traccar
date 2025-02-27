@@ -29,6 +29,12 @@ public class SpeedHuntInfo {
         this.group = group;
     }
 
+    private List<Catches> catches;
+    public List<Catches> getCatches() { return catches; }
+    public void setCatches(List<Catches> catches) {
+        this.catches = catches;
+    }
+
     public void setSpeedHuntRequests(List<SpeedHuntRequest> speedHuntRequests) {
         if(speedHunts.isEmpty())
             return;
@@ -46,6 +52,12 @@ public class SpeedHuntInfo {
         if(group == null || speedHunts.isEmpty())
             return false;
 
-        return speedHunts.get(speedHunts.size() - 1).getSpeedHuntRequests().size() < group.getSpeedHuntRequests();
+        var lastSpeedHunt = speedHunts.get(speedHunts.size() - 1);
+        var isRunning = lastSpeedHunt.getSpeedHuntRequests().size() < group.getSpeedHuntRequests();
+
+        if(catches == null || catches.isEmpty())
+            return isRunning;
+
+        return isRunning && catches.stream().noneMatch(x -> x.getDeviceId() == lastSpeedHunt.getDeviceId());
     }
 }

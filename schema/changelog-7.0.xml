@@ -29,7 +29,6 @@
         <constraints primaryKey="true"/>
       </column>
       <column name="start" type="timestamp"/>
-      <column name="finish" type="timestamp"/>
       <column name="attributes" type="VARCHAR(4096)">
         <constraints nullable="false" />
       </column>
