@@ -56,6 +56,16 @@
       <column name="pos" type="int"/>
     </createTable>
 
+    <createTable tableName="tc_catches">
+        <column name="id" type="int" autoIncrement="true">
+            <constraints primaryKey="true"/>
+        </column>
+        <column name="manhuntsId" type="int"/>
+        <column name="hunterGroupId" type="int"/>
+        <column name="deviceId" type="int"/>
+        <column name="time" type="timestamp"/>
+    </createTable>
+
     <createTable tableName="tc_user_manhunt">
       <column name="userid" type="INT">
         <constraints nullable="false" />
@@ -81,6 +91,15 @@
       <column name="speedHuntRequestId" type="INT">
         <constraints nullable="false" />
       </column>
+    </createTable>
+
+    <createTable tableName="tc_user_catches">
+        <column name="userid" type="INT">
+            <constraints nullable="false" />
+        </column>
+        <column name="catchesId" type="INT">
+            <constraints nullable="false" />
+        </column>
     </createTable>
   </changeSet>
 
