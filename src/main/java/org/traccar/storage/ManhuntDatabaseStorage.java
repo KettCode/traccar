@@ -156,7 +156,7 @@ public class ManhuntDatabaseStorage {
             var query = "SELECT * " +
                     "FROM tc_groups " +
                     "JOIN tc_devices ON tc_devices.groupId = tc_groups.id " +
-                    "WHERE tc_devices.id = :deviceId and tc_groups.manhuntRole = 2 ";
+                    "WHERE tc_devices.id = :deviceId ";
 
             QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
             builder.setLong("deviceId", deviceId);
