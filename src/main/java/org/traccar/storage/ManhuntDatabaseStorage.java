@@ -135,7 +135,7 @@ public class ManhuntDatabaseStorage {
         }
     }
 
-    public Group getGroup(long userId) throws StorageException {
+    public Group getGroupByUserId(long userId) throws StorageException {
         try {
             var query = "SELECT * " +
                     "FROM tc_groups " +
@@ -151,21 +151,7 @@ public class ManhuntDatabaseStorage {
         }
     }
 
-    public List<Group> getGroups(long manhuntRole) throws StorageException {
-        try {
-            var query = "SELECT * " +
-                    "FROM tc_groups " +
-                    "WHERE tc_groups.manhuntRole = :manhuntRole ";
-
-            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
-            builder.setLong("manhuntRole", manhuntRole);
-            return builder.executeQuery(Group.class);
-        } catch (SQLException e) {
-            throw new StorageException(e);
-        }
-    }
-
-    public Group getHuntedGroup(long deviceId) throws StorageException {
+    public Group getGroupByDeviceId(long deviceId) throws StorageException {
         try {
             var query = "SELECT * " +
                     "FROM tc_groups " +
@@ -176,6 +162,20 @@ public class ManhuntDatabaseStorage {
             builder.setLong("deviceId", deviceId);
             var groups = builder.executeQuery(Group.class);
             return groups.isEmpty() ? null : groups.get(0);
+        } catch (SQLException e) {
+            throw new StorageException(e);
+        }
+    }
+
+    public List<Group> getGroups(long manhuntRole) throws StorageException {
+        try {
+            var query = "SELECT * " +
+                    "FROM tc_groups " +
+                    "WHERE tc_groups.manhuntRole = :manhuntRole ";
+
+            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
+            builder.setLong("manhuntRole", manhuntRole);
+            return builder.executeQuery(Group.class);
         } catch (SQLException e) {
             throw new StorageException(e);
         }
@@ -211,7 +211,7 @@ public class ManhuntDatabaseStorage {
     public List<Position> getManhuntPositions(long userId) throws StorageException {
 
         var manhunt = getCurrent();
-        var group = getGroup(userId);
+        var group = getGroupByUserId(userId);
 
         if(manhunt == null || group == null || group.getManhuntRole() != 1)
             return PositionUtil.getLatestPositions(storage, userId);
@@ -230,7 +230,7 @@ public class ManhuntDatabaseStorage {
 
         var conditions = new LinkedList<Condition>();
         conditions.add(new Condition.Equals("manhuntsId", manhunt.getId()));
-        var group = getGroup(userId);
+        var group = getGroupByUserId(userId);
         if(group != null && group.getManhuntRole() == 1)
             conditions.add(new Condition.Equals("hunterGroupId", group.getId()));
 

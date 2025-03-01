@@ -42,7 +42,7 @@ public class CurrentManhuntResource extends BaseResource {
     @Path("getGroup")
     @GET
     public Response getGroup() throws  StorageException {
-        var group = manhuntDatabaseStorage.getGroup(getUserId());
+        var group = manhuntDatabaseStorage.getGroupByUserId(getUserId());
         return Response.ok(group).build();
     }
 
@@ -92,8 +92,8 @@ public class CurrentManhuntResource extends BaseResource {
         if(device == null)
             throw new TraccarException("Das Zielgerät konnte nicht gefunden werden.");
 
-        var huntedGroup = manhuntDatabaseStorage.getHuntedGroup(deviceId);
-        if(huntedGroup == null)
+        var huntedGroup = manhuntDatabaseStorage.getGroupByDeviceId(deviceId);
+        if(huntedGroup == null || huntedGroup.getManhuntRole() != 2)
             throw new TraccarException("Dem Zielgerät wurde keine Gruppe mit der Rolle 'Gejagter' zugewiesen.");
 
         var position = storage.getObject(Position.class, new Request(
@@ -225,7 +225,7 @@ public class CurrentManhuntResource extends BaseResource {
         if(manhunt == null)
             throw new TraccarException("Es wurde kein laufender Manhunt gefunden.");
 
-        var group = manhuntDatabaseStorage.getGroup(getUserId());
+        var group = manhuntDatabaseStorage.getGroupByUserId(getUserId());
         if(group == null || group.getManhuntRole() != 1)
             throw new TraccarException("Dem Benutzer wurde keine Gruppe mit der Rolle 'Jaeger' zugewiesen.");
 
@@ -234,8 +234,8 @@ public class CurrentManhuntResource extends BaseResource {
         if(device == null)
             throw new TraccarException("Das Zielgerät konnte nicht gefunden werden.");
 
-        var huntedGroup = manhuntDatabaseStorage.getHuntedGroup(deviceId);
-        if(huntedGroup == null)
+        var huntedGroup = manhuntDatabaseStorage.getGroupByDeviceId(deviceId);
+        if(huntedGroup == null || huntedGroup.getManhuntRole() != 2)
             throw new TraccarException("Dem Zielgerät wurde keine Gruppe mit der Rolle 'Gejagter' zugewiesen.");
 
         var currentCatch = storage.getObject(Catches.class, new Request(new Columns.All(),
