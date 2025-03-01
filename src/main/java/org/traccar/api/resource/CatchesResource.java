@@ -67,9 +67,9 @@ public class CatchesResource extends BaseObjectResource<Catches> {
                 new Columns.All(), Condition.merge(conditions), null));
     }
 
-    @Path("getCurrentManhunt")
+    @Path("getForManhunt")
     @GET
-    public Collection<Catches> getCurrentManhunt() throws StorageException, TraccarException {
+    public Collection<Catches> getForManhunt() throws StorageException, TraccarException {
         var manhunt = manhuntDatabaseStorage.getCurrent();
         if(manhunt == null)
             throw new TraccarException("Es wurde kein laufender Manhunt gefunden.");

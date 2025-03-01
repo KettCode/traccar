@@ -77,12 +77,6 @@ public class ManhuntResource extends ExtendedObjectResource<Manhunt> {
         return manhuntDatabaseStorage.getHuntedDevices(getUserId(), permissionsService.notAdmin(getUserId()));
     }
 
-    @Path("positions")
-    @GET
-    public Collection<Position> positions() throws StorageException {
-        return manhuntDatabaseStorage.getManhuntPositions(getUserId());
-    }
-
     @POST
     public Response add(Manhunt entity) throws Exception {
         var response = super.add(entity);
