@@ -5,20 +5,11 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.traccar.api.ExtendedObjectResource;
-import org.traccar.api.security.PermissionsService;
 import org.traccar.model.*;
 import org.traccar.session.ConnectionManager;
-import org.traccar.storage.ManhuntDatabaseStorage;
-import org.traccar.storage.StorageException;
-import org.traccar.storage.query.Columns;
-import org.traccar.storage.query.Condition;
-import org.traccar.storage.query.Request;
-import redis.clients.jedis.util.KeyValue;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
 
 @Path("manhunts")
 @Produces(MediaType.APPLICATION_JSON)
@@ -26,16 +17,33 @@ import java.util.List;
 public class ManhuntResource extends ExtendedObjectResource<Manhunt> {
 
     @Inject
-    private ManhuntDatabaseStorage manhuntDatabaseStorage;
-
-    @Inject
-    private PermissionsService permissionsService;
-
-    @Inject
     private ConnectionManager connectionManager;
 
     public ManhuntResource() {
         super(Manhunt.class, "start");
+    }
+
+    @POST
+    public Response add(Manhunt entity) throws Exception {
+        var response = super.add(entity);
+        connectionManager.initSchedules();
+        return response;
+    }
+
+    @Path("{id}")
+    @PUT
+    public Response update(Manhunt entity) throws Exception {
+        var response = super.update(entity);
+        connectionManager.initSchedules();
+        return response;
+    }
+
+    @Path("{id}")
+    @DELETE
+    public Response remove(@PathParam("id") long id) throws Exception {
+        var response = super.remove(id);
+        connectionManager.initSchedules();
+        return response;
     }
 
     @GET
@@ -62,41 +70,5 @@ public class ManhuntResource extends ExtendedObjectResource<Manhunt> {
         lst.add(role3);
 
         return lst;
-    }
-
-    @Path("current")
-    @GET
-    public Response current() throws  StorageException {
-        var manhunt = manhuntDatabaseStorage.getCurrent();
-        return Response.ok(manhunt).build();
-    }
-
-    @Path("huntedDevices")
-    @GET
-    public Collection<Device> huntedDevices() throws StorageException {
-        return manhuntDatabaseStorage.getHuntedDevices(getUserId(), permissionsService.notAdmin(getUserId()));
-    }
-
-    @POST
-    public Response add(Manhunt entity) throws Exception {
-        var response = super.add(entity);
-        connectionManager.initSchedules();
-        return response;
-    }
-
-    @Path("{id}")
-    @PUT
-    public Response update(Manhunt entity) throws Exception {
-        var response = super.update(entity);
-        connectionManager.initSchedules();
-        return response;
-    }
-
-    @Path("{id}")
-    @DELETE
-    public Response remove(@PathParam("id") long id) throws Exception {
-        var response = super.remove(id);
-        connectionManager.initSchedules();
-        return response;
     }
 }

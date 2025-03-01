@@ -256,4 +256,37 @@ public class ManhuntDatabaseStorage {
         speedHuntInfo.setCatches(catches);
         return speedHuntInfo;
     }
+
+    /*
+    public Manhunt getManhunt() throws StorageException {
+        var manhunt = getCurrent();
+        if(manhunt == null)
+            return null;
+
+        var catches = storage.getObjects(Catches.class, new Request(new Columns.All(),
+                new Condition.Equals("manhuntsId", manhunt.getId())));
+        manhunt.setCatches(catches);
+
+        var speedHunts = storage.getObjects(SpeedHunt.class, new Request(new Columns.All(),
+                new Condition.Equals("manhuntsId", manhunt.getId())));
+        addSpeedHuntRequests(speedHunts);
+        manhunt.setSpeedHunts(speedHunts);
+
+        return manhunt;
+    }
+
+     */
+
+    private List<SpeedHunt> addSpeedHuntRequests(List<SpeedHunt> speedHunts) throws StorageException {
+        var speedHuntIds = speedHunts.stream().map(SpeedHunt::getId).toList();
+        var speedHuntRequests = getSpeedHuntRequests(speedHuntIds);
+        speedHunts.forEach(x -> {
+            var speedHuntRequestsInternal = speedHuntRequests.stream()
+                    .filter(y -> y.getSpeedHuntsId() == x.getId())
+                    .toList();
+            x.setSpeedHuntRequests(speedHuntRequestsInternal);
+        });
+
+        return speedHunts;
+    }
 }
