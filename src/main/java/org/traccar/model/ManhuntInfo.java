@@ -1,9 +1,8 @@
 package org.traccar.model;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class SpeedHuntInfo {
+public class ManhuntInfo {
 
     private Manhunt manhunt;
     public Manhunt getManhunt() {
@@ -35,16 +34,9 @@ public class SpeedHuntInfo {
         this.catches = catches;
     }
 
-    public void setSpeedHuntRequests(List<SpeedHuntRequest> speedHuntRequests) {
-        if(speedHunts.isEmpty())
-            return;
-
-        speedHunts.forEach(x -> {
-            var speedHuntRequestsInternal = speedHuntRequests.stream()
-                    .filter(y -> y.getSpeedHuntsId() == x.getId())
-                    .toList();
-            x.setSpeedHuntRequests(speedHuntRequestsInternal);
-        });
+    private boolean isManhuntRunning;
+    public boolean getIsManhuntRunning() {
+        return getManhunt() != null;
     }
 
     private boolean isSpeedHuntRunning;

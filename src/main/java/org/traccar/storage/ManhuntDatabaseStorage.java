@@ -2,7 +2,6 @@ package org.traccar.storage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
-import org.traccar.api.TraccarException;
 import org.traccar.config.Config;
 import org.traccar.helper.model.PositionUtil;
 import org.traccar.model.*;
@@ -104,20 +103,6 @@ public class ManhuntDatabaseStorage {
         }
     }
 
-    public List<Catches> getCatches(long manhuntId) throws StorageException {
-        try {
-            var query = "SELECT * " +
-                    "FROM tc_catches " +
-                    "WHERE tc_catches.manhuntsId = :manhuntId ";
-
-            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
-            builder.setLong("manhuntId", manhuntId);
-            return builder.executeQuery(Catches.class);
-        } catch (SQLException e) {
-            throw new StorageException(e);
-        }
-    }
-
     public List<SpeedHunt> getSpeedHunts(long groupId, long manhuntId) throws StorageException {
         try {
             var query = "SELECT * " +
@@ -160,7 +145,7 @@ public class ManhuntDatabaseStorage {
             QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
             builder.setLong("userId", userId);
             var groups = builder.executeQuery(Group.class);
-            return groups.isEmpty() ? null : groups.get(0);
+            return groups.isEmpty() ? new Group() : groups.get(0);
         } catch (SQLException e) {
             throw new StorageException(e);
         }
@@ -234,34 +219,10 @@ public class ManhuntDatabaseStorage {
         return PositionUtil.getManhuntPositions(storage, userId, manhunt.getStart(), manhunt.getId(), group.getId());
     }
 
-    public SpeedHuntInfo getSpeedHuntInfo(long userId) throws StorageException, TraccarException {
+    public ManhuntInfo getManhuntInfo(long userId) throws StorageException {
         var manhunt = getCurrent();
         if(manhunt == null)
-            throw new TraccarException("Es wurde kein laufender Manhunt gefunden.");
-
-        var group = getGroup(userId);
-        if(group == null || group.getManhuntRole() != 1)
-            throw new TraccarException("Dem Benutzer wurde keine Gruppe mit der Rolle 'Jaeger' zugewiesen.");
-
-        var speedHunts = getSpeedHunts(group.getId(), manhunt.getId());
-        var speedHuntIds = speedHunts.stream().map(SpeedHunt::getId).toList();
-        var speedHuntRequests = getSpeedHuntRequests(speedHuntIds);
-        var catches = getCatches(manhunt.getId());
-
-        var speedHuntInfo = new SpeedHuntInfo();
-        speedHuntInfo.setManhunt(manhunt);
-        speedHuntInfo.setSpeedHunts(speedHunts);
-        speedHuntInfo.setSpeedHuntRequests(speedHuntRequests);
-        speedHuntInfo.setGroup(group);
-        speedHuntInfo.setCatches(catches);
-        return speedHuntInfo;
-    }
-
-
-    public Manhunt getManhunt(long userId) throws StorageException {
-        var manhunt = getCurrent();
-        if(manhunt == null)
-            return null;
+            return new ManhuntInfo();
 
         var catches = storage.getObjects(Catches.class, new Request(new Columns.All(),
                 new Condition.Equals("manhuntsId", manhunt.getId())));
@@ -283,8 +244,11 @@ public class ManhuntDatabaseStorage {
             x.setSpeedHuntRequests(speedHuntRequestsInternal);
         });
 
-        manhunt.setSpeedHunts(speedHunts);
-
-        return manhunt;
+        var speedHuntInfo = new ManhuntInfo();
+        speedHuntInfo.setManhunt(manhunt);
+        speedHuntInfo.setSpeedHunts(speedHunts);
+        speedHuntInfo.setGroup(group);
+        speedHuntInfo.setCatches(catches);
+        return speedHuntInfo;
     }
 }
