@@ -353,8 +353,8 @@ public class CurrentManhuntResource extends BaseResource {
         if(manhunt == null)
             throw new TraccarException("Es wurde kein laufender Manhunt gefunden.");
 
-        var group = manhuntDatabaseStorage.getHunterGroup(getUserId());
-        if(group == null)
+        var group = manhuntDatabaseStorage.getGroup(getUserId());
+        if(group == null || group.getManhuntRole() != 1)
             throw new TraccarException("Dem Benutzer wurde keine Gruppe mit der Rolle 'Jaeger' zugewiesen.");
 
         var device = storage.getObject(Device.class, new Request(

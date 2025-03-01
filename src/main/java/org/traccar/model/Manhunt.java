@@ -1,8 +1,10 @@
 package org.traccar.model;
 
+import org.traccar.storage.QueryIgnore;
 import org.traccar.storage.StorageName;
 
 import java.util.Date;
+import java.util.List;
 
 @StorageName("tc_manhunts")
 public class Manhunt extends ExtendedModel {
@@ -12,5 +14,23 @@ public class Manhunt extends ExtendedModel {
     }
     public void setStart(Date start) {
         this.start = start;
+    }
+
+    private List<SpeedHunt> speedHunts;
+    @QueryIgnore
+    public List<SpeedHunt> getSpeedHunts() {
+        return speedHunts;
+    }
+    @QueryIgnore
+    public void setSpeedHunts(List<SpeedHunt> speedHunts) {
+        this.speedHunts = speedHunts;
+    }
+
+    private List<Catches> catches;
+    @QueryIgnore
+    public List<Catches> getCatches() { return catches; }
+    @QueryIgnore
+    public void setCatches(List<Catches> catches) {
+        this.catches = catches;
     }
 }

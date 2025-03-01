@@ -413,8 +413,8 @@ public class ConnectionManager implements BroadcastInterface {
             userDevices.put(userId, devices.stream().map(BaseModel::getId).collect(Collectors.toSet()));
             devices.forEach(device -> deviceUsers.computeIfAbsent(device.getId(), id -> new HashSet<>()).add(userId));
 
-            var user = manhuntDatabaseStorage.getHunterGroup(userId);
-            if(user != null) {
+            var group = manhuntDatabaseStorage.getGroup(userId);
+            if(group != null && group.getManhuntRole() == 1) {
                 var huntedDevices = manhuntDatabaseStorage.getHuntedDevices(devices);
                 userHuntedDevices.put(userId, huntedDevices.stream().map(BaseModel::getId).collect(Collectors.toSet()));
             }
