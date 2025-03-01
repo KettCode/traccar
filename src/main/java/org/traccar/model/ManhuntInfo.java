@@ -1,5 +1,6 @@
 package org.traccar.model;
 
+import java.util.Comparator;
 import java.util.List;
 
 public class ManhuntInfo {
@@ -34,6 +35,14 @@ public class ManhuntInfo {
         this.catches = catches;
     }
 
+    public SpeedHunt getLastSpeedHunt() {
+        if(speedHunts.isEmpty())
+            return null;
+
+        speedHunts.sort(Comparator.comparing(SpeedHunt::getId));
+        return speedHunts.get(speedHunts.size() - 1);
+    }
+
     private boolean isManhuntRunning;
     public boolean getIsManhuntRunning() {
         return getManhunt() != null;
@@ -44,7 +53,7 @@ public class ManhuntInfo {
         if(group == null || speedHunts.isEmpty())
             return false;
 
-        var lastSpeedHunt = speedHunts.get(speedHunts.size() - 1);
+        var lastSpeedHunt = getLastSpeedHunt();
         var isRunning = lastSpeedHunt.getSpeedHuntRequests().size() < group.getSpeedHuntRequests();
 
         if(catches == null || catches.isEmpty())

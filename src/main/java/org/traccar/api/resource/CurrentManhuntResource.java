@@ -87,6 +87,9 @@ public class CurrentManhuntResource extends BaseResource {
         if(speedHunts.size() >= group.getSpeedHunts())
             throw new TraccarException("Das Limit der Speedhunts wurde bereits erreicht.");
 
+        if(manhuntInfo.getLastSpeedHunt().getDeviceId() == deviceId)
+            throw new TraccarException("Zwei aufeinanderfolgende Speedhunts auf den selben Spieler sind nicht erlaubt.");
+
         var device = storage.getObject(Device.class, new Request(
                 new Columns.All(), new Condition.Equals("id", deviceId)));
         if(device == null)
