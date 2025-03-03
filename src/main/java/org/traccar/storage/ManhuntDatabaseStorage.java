@@ -235,7 +235,7 @@ public class ManhuntDatabaseStorage {
 
         var catches = storage.getObjects(Catches.class, new Request(new Columns.All(),
                 new Condition.Equals("manhuntsId", manhunt.getId())));
-        manhunt.setCatches(catches);
+        //manhunt.setCatches(catches);
 
         var group = getGroupByUserId(userId);
         var speedHunts = getSpeedHunts(manhunt.getId(), group);
