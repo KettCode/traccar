@@ -35,30 +35,8 @@ public class ManhuntInfo {
         this.catches = catches;
     }
 
-    public SpeedHunt getLastSpeedHunt() {
-        if(speedHunts.isEmpty())
-            return null;
-
-        speedHunts.sort(Comparator.comparing(SpeedHunt::getId));
-        return speedHunts.get(speedHunts.size() - 1);
-    }
-
     private boolean isManhuntRunning;
     public boolean getIsManhuntRunning() {
         return getManhunt() != null;
-    }
-
-    private boolean isSpeedHuntRunning;
-    public boolean getIsSpeedHuntRunning() {
-        if(group == null || speedHunts.isEmpty())
-            return false;
-
-        var lastSpeedHunt = getLastSpeedHunt();
-        var isRunning = lastSpeedHunt.getSpeedHuntRequests().size() < group.getSpeedHuntRequests();
-
-        if(catches == null || catches.isEmpty())
-            return isRunning;
-
-        return isRunning && catches.stream().noneMatch(x -> x.getDeviceId() == lastSpeedHunt.getDeviceId());
     }
 }

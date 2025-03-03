@@ -11,6 +11,7 @@ import org.traccar.storage.query.Order;
 import org.traccar.storage.query.Request;
 
 import javax.sql.DataSource;
+import java.lang.reflect.InvocationTargetException;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -219,18 +220,37 @@ public class ManhuntDatabaseStorage {
         return PositionUtil.getManhuntPositions(storage, userId, manhunt.getStart(), manhunt.getId(), group.getId());
     }
 
-    public ManhuntInfo getManhuntInfo(long userId) throws StorageException {
+    public ManhuntHunterInfo getManhuntHunterInfo(long userId) throws StorageException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+        return getManhuntInfo(userId, ManhuntHunterInfo.class);
+    }
+
+    public ManhuntHuntedInfo getManhuntHuntedInfo(long userId) throws StorageException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+        return getManhuntInfo(userId, ManhuntHuntedInfo.class);
+    }
+
+    public <T extends ManhuntInfo> T getManhuntInfo(long userId, Class<T> type) throws StorageException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         var manhunt = getCurrent();
         if(manhunt == null)
-            return new ManhuntInfo();
+            return type.getDeclaredConstructor().newInstance();
 
         var catches = storage.getObjects(Catches.class, new Request(new Columns.All(),
                 new Condition.Equals("manhuntsId", manhunt.getId())));
         manhunt.setCatches(catches);
 
-        var conditions = new LinkedList<Condition>();
-        conditions.add(new Condition.Equals("manhuntsId", manhunt.getId()));
         var group = getGroupByUserId(userId);
+        var speedHunts = getSpeedHunts(manhunt.getId(), group);
+
+        var speedHuntInfo = type.getDeclaredConstructor().newInstance();
+        speedHuntInfo.setManhunt(manhunt);
+        speedHuntInfo.setSpeedHunts(speedHunts);
+        speedHuntInfo.setGroup(group);
+        speedHuntInfo.setCatches(catches);
+        return speedHuntInfo;
+    }
+
+    private List<SpeedHunt> getSpeedHunts(long manhuntId, Group group) throws StorageException {
+        var conditions = new LinkedList<Condition>();
+        conditions.add(new Condition.Equals("manhuntsId", manhuntId));
         if(group != null && group.getManhuntRole() == 1)
             conditions.add(new Condition.Equals("hunterGroupId", group.getId()));
 
@@ -243,12 +263,6 @@ public class ManhuntDatabaseStorage {
                     .toList();
             x.setSpeedHuntRequests(speedHuntRequestsInternal);
         });
-
-        var speedHuntInfo = new ManhuntInfo();
-        speedHuntInfo.setManhunt(manhunt);
-        speedHuntInfo.setSpeedHunts(speedHunts);
-        speedHuntInfo.setGroup(group);
-        speedHuntInfo.setCatches(catches);
-        return speedHuntInfo;
+        return speedHunts;
     }
 }

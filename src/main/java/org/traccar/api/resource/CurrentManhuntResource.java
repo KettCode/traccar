@@ -14,6 +14,7 @@ import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;
 import org.traccar.storage.query.Request;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.Date;
 
@@ -63,17 +64,24 @@ public class CurrentManhuntResource extends BaseResource {
                 new Columns.All(), new Condition.Equals("manhuntsId", manhunt.getId())));
     }
 
-    @Path("getManhuntInfo")
+    @Path("getManhuntHunterInfo")
     @GET
-    public Response getManhuntInfo() throws StorageException {
-        var speedHuntInfo = manhuntDatabaseStorage.getManhuntInfo(getUserId());
-        return Response.ok(speedHuntInfo).build();
+    public Response getManhuntHunterInfo() throws StorageException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+        var info = manhuntDatabaseStorage.getManhuntHunterInfo(getUserId());
+        return Response.ok(info).build();
+    }
+
+    @Path("getManhuntHuntedInfo")
+    @GET
+    public Response getManhuntHuntedInfo() throws StorageException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+        var info = manhuntDatabaseStorage.getManhuntHuntedInfo(getUserId());
+        return Response.ok(info).build();
     }
 
     @Path("createSpeedHunt")
     @POST
-    public Response createSpeedHunt(@QueryParam("deviceId") long deviceId) throws StorageException, TraccarException {
-        var manhuntInfo = manhuntDatabaseStorage.getManhuntInfo(getUserId());
+    public Response createSpeedHunt(@QueryParam("deviceId") long deviceId) throws StorageException, TraccarException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+        var manhuntInfo = manhuntDatabaseStorage.getManhuntHunterInfo(getUserId());
         if(!manhuntInfo.getIsManhuntRunning())
             throw new TraccarException("Es wurde kein laufender Manhunt gefunden.");
 
@@ -148,8 +156,8 @@ public class CurrentManhuntResource extends BaseResource {
 
     @Path("createSpeedHuntRequest")
     @POST
-    public Response createSpeedHuntRequest(@QueryParam("speedHuntId") long speedHuntId) throws StorageException, TraccarException {
-        var manhuntInfo = manhuntDatabaseStorage.getManhuntInfo(getUserId());
+    public Response createSpeedHuntRequest(@QueryParam("speedHuntId") long speedHuntId) throws StorageException, TraccarException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+        var manhuntInfo = manhuntDatabaseStorage.getManhuntHunterInfo(getUserId());
         if(!manhuntInfo.getIsManhuntRunning())
             throw new TraccarException("Es wurde kein laufender Manhunt gefunden.");
 
