@@ -101,7 +101,7 @@ public class ManhuntInfo {
 
     private long availableSpeedHuntRequests;
     public long getAvailableSpeedHuntRequests() {
-        if(!getIsManhuntRunning())
+        if(!getIsSpeedHuntRunning())
             return 0;
 
         var lastSpeedHunt = getLastSpeedHunt();
