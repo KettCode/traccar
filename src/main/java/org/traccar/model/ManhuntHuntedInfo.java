@@ -5,14 +5,6 @@ import java.time.Instant;
 import java.util.Date;
 
 public class ManhuntHuntedInfo extends ManhuntInfo {
-    private Device device; //How???
-    public Device getDevice() {
-        return device;
-    }
-    public void setDevice(Device device) {
-        this.device = device;
-    }
-
     private Date lastPosition;
     public Date getLastPosition() {
         var manhunt = getManhunt();
@@ -53,19 +45,5 @@ public class ManhuntHuntedInfo extends ManhuntInfo {
         long nextEventSeconds = durationSinceStart + (frequency - (durationSinceStart % frequency));
 
         return Date.from(Instant.ofEpochSecond(start.toInstant().getEpochSecond() + nextEventSeconds));
-    }
-
-    private boolean isHunted;
-    public boolean getIsHunted() {
-        return false;
-    }
-
-    private boolean isCaught;
-    public boolean getIsCaught() {
-        var catches = getCatches();
-        if(catches == null || catches.isEmpty() || device == null)
-            return false;
-
-        return catches.stream().anyMatch(x -> x.getDeviceId() == device.getId());
     }
 }

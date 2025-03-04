@@ -4,15 +4,6 @@ import java.util.Comparator;
 
 public class ManhuntHunterInfo extends ManhuntInfo {
 
-    public SpeedHunt getLastSpeedHunt() {
-        var speedHunts = getSpeedHunts();
-        if(speedHunts.isEmpty())
-            return null;
-
-        speedHunts.sort(Comparator.comparing(SpeedHunt::getId));
-        return speedHunts.get(speedHunts.size() - 1);
-    }
-
     private boolean isSpeedHuntRunning;
     public boolean getIsSpeedHuntRunning() {
         var group = getGroup();

@@ -60,6 +60,55 @@ public class ManhuntInfo {
         this.huntedDevices = huntedDevices;
     }
 
+    private SpeedHunt lastSpeedHunt;
+    public SpeedHunt getLastSpeedHunt() {
+        var speedHunts = getSpeedHunts();
+        if(speedHunts.isEmpty())
+            return null;
+
+        speedHunts.sort(Comparator.comparing(SpeedHunt::getId));
+        return speedHunts.get(speedHunts.size() - 1);
+    }
+
+    private Group lastSpeedHuntGroup;
+    public Group getLastSpeedHuntGroup() {
+        if(getLastSpeedHunt() == null || getGroups() == null)
+            return null;
+
+        var lastSpeedHunt = getLastSpeedHunt();
+        return getGroups()
+                .stream().filter(x -> x.getId() == lastSpeedHunt.getHunterGroupId())
+                .findFirst()
+                .orElse(new Group());
+    }
+
+    private boolean isSpeedHuntRunning;
+    public boolean getIsSpeedHuntRunning() {
+        var speedHunts = getSpeedHunts();
+        if(speedHunts == null || speedHunts.isEmpty() || getGroups() == null)
+            return false;
+
+        var lastSpeedHunt = getLastSpeedHunt();
+        var group = getLastSpeedHuntGroup();
+        var isRunning = lastSpeedHunt.getSpeedHuntRequests().size() < group.getSpeedHuntRequests();
+
+        var catches = getCatches();
+        if(catches == null || catches.isEmpty())
+            return isRunning;
+
+        return isRunning && catches.stream().noneMatch(x -> x.getDeviceId() == lastSpeedHunt.getDeviceId());
+    }
+
+    private long availableSpeedHuntRequests;
+    public long getAvailableSpeedHuntRequests() {
+        if(!getIsManhuntRunning())
+            return 0;
+
+        var lastSpeedHunt = getLastSpeedHunt();
+        var lastSpeedHuntGroup = getLastSpeedHuntGroup();
+        return lastSpeedHuntGroup.getSpeedHuntRequests() - lastSpeedHunt.getSpeedHuntRequests().size();
+    }
+
     private boolean isManhuntRunning;
     public boolean getIsManhuntRunning() {
         return getManhunt() != null;
