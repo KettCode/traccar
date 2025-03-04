@@ -42,13 +42,9 @@ public class ManhuntDatabaseStorage {
         }
     }
 
-    public List<Device> getHuntedDevices(long userId, boolean isAdmin) throws StorageException {
+    public List<Device> getHuntedDevices(long userId) throws StorageException {
         try {
             var conditions = new LinkedList<Condition>();
-
-            if (!isAdmin) {
-                conditions.add(new Condition.Permission(User.class, userId, Device.class));
-            }
 
             var manhunt = getCurrent();
 
@@ -233,19 +229,23 @@ public class ManhuntDatabaseStorage {
         if(manhunt == null)
             return type.getDeclaredConstructor().newInstance();
 
+        var groups = storage.getObjects(Group.class, new Request(new Columns.All()));
+        var devices = storage.getObjects(Device.class, new Request(new Columns.All()));
+        var huntedDevices = getHuntedDevices(userId);
         var catches = storage.getObjects(Catches.class, new Request(new Columns.All(),
                 new Condition.Equals("manhuntsId", manhunt.getId())));
-        //manhunt.setCatches(catches);
-
         var group = getGroupByUserId(userId);
         var speedHunts = getSpeedHunts(manhunt.getId(), group);
 
-        var speedHuntInfo = type.getDeclaredConstructor().newInstance();
-        speedHuntInfo.setManhunt(manhunt);
-        speedHuntInfo.setSpeedHunts(speedHunts);
-        speedHuntInfo.setGroup(group);
-        speedHuntInfo.setCatches(catches);
-        return speedHuntInfo;
+        var manhuntInfo = type.getDeclaredConstructor().newInstance();
+        manhuntInfo.setManhunt(manhunt);
+        manhuntInfo.setSpeedHunts(speedHunts);
+        manhuntInfo.setGroup(group);
+        manhuntInfo.setCatches(catches);
+        manhuntInfo.setGroups(groups);
+        manhuntInfo.setDevices(devices);
+        manhuntInfo.setHuntedDevices(huntedDevices);
+        return manhuntInfo;
     }
 
     private List<SpeedHunt> getSpeedHunts(long manhuntId, Group group) throws StorageException {

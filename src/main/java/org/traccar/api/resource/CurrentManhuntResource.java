@@ -50,18 +50,7 @@ public class CurrentManhuntResource extends BaseResource {
     @Path("getHuntedDevices")
     @GET
     public Collection<Device> getHuntedDevices() throws StorageException {
-        return manhuntDatabaseStorage.getHuntedDevices(getUserId(), permissionsService.notAdmin(getUserId()));
-    }
-
-    @Path("getCatches")
-    @GET
-    public Collection<Catches> getCatches() throws StorageException, TraccarException {
-        var manhunt = manhuntDatabaseStorage.getCurrent();
-        if(manhunt == null)
-            throw new TraccarException("Es wurde kein laufender Manhunt gefunden.");
-
-        return storage.getObjects(Catches.class, new Request(
-                new Columns.All(), new Condition.Equals("manhuntsId", manhunt.getId())));
+        return manhuntDatabaseStorage.getHuntedDevices(getUserId());
     }
 
     @Path("getManhuntHunterInfo")
@@ -95,7 +84,7 @@ public class CurrentManhuntResource extends BaseResource {
         if(speedHunts.size() >= group.getSpeedHunts())
             throw new TraccarException("Das Limit der Speedhunts wurde bereits erreicht.");
 
-        if(manhuntInfo.getLastSpeedHunt().getDeviceId() == deviceId)
+        if(manhuntInfo.getLastSpeedHunt() != null && manhuntInfo.getLastSpeedHunt().getDeviceId() == deviceId)
             throw new TraccarException("Zwei aufeinanderfolgende Speedhunts auf den selben Spieler sind nicht erlaubt.");
 
         var device = storage.getObject(Device.class, new Request(
