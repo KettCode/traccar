@@ -74,13 +74,13 @@ public class CurrentManhuntResource extends BaseResource {
         if(!manhuntInfo.getIsManhuntRunning())
             throw new TraccarException("Es wurde kein laufender Manhunt gefunden.");
 
-        var group = manhuntInfo.getGroup();
-        var speedHunts = manhuntInfo.getSpeedHunts();
-
         if(manhuntInfo.getIsSpeedHuntRunning())
             throw new TraccarException("Es gibt bereits einen aktiven Speedhunt.");
 
-        if(speedHunts.size() >= group.getSpeedHunts())
+        if(manhuntInfo.getGroup() == null || manhuntInfo.getGroup().getManhuntRole() != 1)
+            throw new TraccarException("Dem Benutzer wurde keine Gruppe mit der Rolle 'Jaeger' zugewiesen.");
+
+        if(manhuntInfo.getSpeedHunts().size() >= manhuntInfo.getGroup().getSpeedHunts())
             throw new TraccarException("Das Limit der Speedhunts wurde bereits erreicht.");
 
         if(manhuntInfo.getLastSpeedHunt() != null && manhuntInfo.getLastSpeedHunt().getDeviceId() == deviceId)
@@ -134,10 +134,11 @@ public class CurrentManhuntResource extends BaseResource {
         if(!manhuntInfo.getIsManhuntRunning())
             throw new TraccarException("Es wurde kein laufender Manhunt gefunden.");
 
-        var group = manhuntInfo.getGroup();
-
         if(!manhuntInfo.getIsSpeedHuntRunning())
             throw new TraccarException("Es gibt keinen aktiven Speedhunt.");
+
+        if(manhuntInfo.getGroup() == null || manhuntInfo.getGroup().getManhuntRole() != 1)
+            throw new TraccarException("Dem Benutzer wurde keine Gruppe mit der Rolle 'Jaeger' zugewiesen.");
 
         var speedHunt = manhuntInfo
                 .getSpeedHunts()
@@ -150,7 +151,7 @@ public class CurrentManhuntResource extends BaseResource {
             throw new TraccarException("Es wurde kein Speedhunt gefunden.");
 
         var speedHuntRequests = speedHunt.getSpeedHuntRequests();
-        if(speedHuntRequests.size() >= group.getSpeedHuntRequests())
+        if(speedHuntRequests.size() >= manhuntInfo.getGroup().getSpeedHuntRequests())
             throw new TraccarException("Das Limit der Standortanfragen wurde bereits erreicht.");
 
         var device = storage.getObject(Device.class, new Request(
