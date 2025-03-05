@@ -74,7 +74,6 @@ public class CurrentManhuntResource extends BaseResource {
         if(!manhuntInfo.getIsManhuntRunning())
             throw new TraccarException("Es wurde kein laufender Manhunt gefunden.");
 
-        var manhunt = manhuntInfo.getManhunt();
         var group = manhuntInfo.getGroup();
         var speedHunts = manhuntInfo.getSpeedHunts();
 
@@ -250,7 +249,7 @@ public class CurrentManhuntResource extends BaseResource {
         event.setEventTime(new Date());
         event.setPositionId(position.getId());
         event.set("message", "Standort von '" + device.getName() + "' angefragt");
-        event.set("name", "Standort");
+        event.set("name", "Standortanfrage");
         event.set("hunterGroup", group.getName());
 
         connectionManager.sendEventToAllUsers(event);
@@ -261,7 +260,7 @@ public class CurrentManhuntResource extends BaseResource {
         event.setDeviceId(device.getId());
         event.setType("catch");
         event.setEventTime(new Date());
-        event.set("message", "'" + device.getName() + "' wurde gefangen");
+        event.set("message", "Der Spieler '" + device.getName() + "' wurde gefangen");
         event.set("name", "Catch");
         event.set("hunterGroup", group.getName());
 
