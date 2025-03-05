@@ -484,6 +484,8 @@ public class ConnectionManager implements BroadcastInterface {
                 for(var position : positions) {
                     updateAllPosition(true, position);
                 }
+
+                sendLocationUpdateEvent();
             } catch (StorageException e) {
                 throw new RuntimeException(e);
             }
@@ -501,6 +503,22 @@ public class ConnectionManager implements BroadcastInterface {
             future.cancel(false);
         }
         groupSchedules.remove(groupId);
+    }
+
+    public void sendEventToAllUsers(Event event) throws StorageException {
+        manhuntDatabaseStorage.getAllUsers().forEach(user -> {
+            updateEvent(true, user.getId(), event);
+        });
+    }
+
+    private void sendLocationUpdateEvent() throws StorageException {
+        Event event = new Event();
+        event.setType("locationUpdate");
+        event.setEventTime(new Date());
+        event.set("message", "Standorte wurden aktualisiert");
+        event.set("name", "Standort update");
+
+        sendEventToAllUsers(event);
     }
 
 }

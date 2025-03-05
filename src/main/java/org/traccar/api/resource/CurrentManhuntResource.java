@@ -104,10 +104,10 @@ public class CurrentManhuntResource extends BaseResource {
         var time = new Date();
 
         var speedHunt = new SpeedHunt();
-        speedHunt.setManhuntsId(manhunt.getId());
-        speedHunt.setHunterGroupId(group.getId());
+        speedHunt.setManhuntsId(manhuntInfo.getManhunt().getId());
+        speedHunt.setHunterGroupId(manhuntInfo.getGroup().getId());
         speedHunt.setDeviceId(deviceId);
-        speedHunt.setPos(speedHunts.size() + 1);
+        speedHunt.setPos(manhuntInfo.getSpeedHunts().size() + 1);
         speedHunt.setLastTime(time);
         speedHunt.setId(storage.addObject(speedHunt, new Request(new Columns.Exclude("id"))));
 
@@ -123,22 +123,7 @@ public class CurrentManhuntResource extends BaseResource {
                 .toList();
         connectionManager.updateHunterPosition(true, position, userIds);
 
-        var allUserIds = manhuntDatabaseStorage.getAllUsers()
-                .stream().map(User::getId)
-                .toList();
-
-        Event event = new Event();
-        event.setDeviceId(deviceId);
-        event.setType("speedHunt");
-        event.setEventTime(new Date());
-        event.setPositionId(position.getId());
-        event.set("message", "Speedhunt auf '" + device.getName() + "' gestartet.");
-        event.set("name", "Speedhunt");
-        event.set("hunterGroup", group.getName());
-
-        allUserIds.forEach(userId -> {
-            connectionManager.updateEvent(true, userId, event);
-        });
+        sendSpeedHuntEvent(device, manhuntInfo.getGroup(), position);
 
         return Response.ok(speedHunt).build();
     }
@@ -190,7 +175,7 @@ public class CurrentManhuntResource extends BaseResource {
         speedHuntRequest.setSpeedHuntsId(speedHunt.getId());
         speedHuntRequest.setUserId(getUserId());
         speedHuntRequest.setTime(time);
-        speedHuntRequest.setPos(speedHuntRequests.size() + 1);
+        speedHuntRequest.setPos(speedHunt.getSpeedHuntRequests().size() + 1);
         speedHuntRequest.setId(storage.addObject(speedHuntRequest, new Request(new Columns.Exclude("id"))));
 
         var userIds = manhuntDatabaseStorage.getUsers(speedHunt.getHunterGroupId())
@@ -198,22 +183,7 @@ public class CurrentManhuntResource extends BaseResource {
                 .toList();
         connectionManager.updateHunterPosition(true, position, userIds);
 
-        var allUserIds = manhuntDatabaseStorage.getAllUsers()
-                .stream().map(User::getId)
-                .toList();
-
-        Event event = new Event();
-        event.setDeviceId(device.getId());
-        event.setType("speedHuntRequest");
-        event.setEventTime(new Date());
-        event.setPositionId(position.getId());
-        event.set("message", "Standort von '" + device.getName() + "' angefragt.");
-        event.set("name", "Standort");
-        event.set("hunterGroup", group.getName());
-
-        allUserIds.forEach(userId -> {
-            connectionManager.updateEvent(true, userId, event);
-        });
+        sendSpeedHuntRequestEvent(device, manhuntInfo.getGroup(), position);
 
         return Response.ok(speedHuntRequest).build();
     }
@@ -255,22 +225,46 @@ public class CurrentManhuntResource extends BaseResource {
         catch1.setTime(time);
         catch1.setId(storage.addObject(catch1, new Request(new Columns.Exclude("id"))));
 
-        var allUserIds = manhuntDatabaseStorage.getAllUsers()
-                .stream().map(User::getId)
-                .toList();
+        sendCatchEvent(device, group);
 
+        return Response.ok(catch1).build();
+    }
+
+    private void sendSpeedHuntEvent(Device device, Group group, Position position) throws StorageException {
         Event event = new Event();
-        event.setDeviceId(deviceId);
+        event.setDeviceId(device.getId());
+        event.setType("speedHunt");
+        event.setEventTime(new Date());
+        event.setPositionId(position.getId());
+        event.set("message", "Speedhunt auf '" + device.getName() + "' gestartet");
+        event.set("name", "Speedhunt");
+        event.set("hunterGroup", group.getName());
+
+        connectionManager.sendEventToAllUsers(event);
+    }
+
+    private void sendSpeedHuntRequestEvent(Device device, Group group, Position position) throws StorageException {
+        Event event = new Event();
+        event.setDeviceId(device.getId());
+        event.setType("speedHuntRequest");
+        event.setEventTime(new Date());
+        event.setPositionId(position.getId());
+        event.set("message", "Standort von '" + device.getName() + "' angefragt");
+        event.set("name", "Standort");
+        event.set("hunterGroup", group.getName());
+
+        connectionManager.sendEventToAllUsers(event);
+    }
+
+    private void sendCatchEvent(Device device, Group group) throws StorageException {
+        Event event = new Event();
+        event.setDeviceId(device.getId());
         event.setType("catch");
         event.setEventTime(new Date());
-        event.set("message", "'" + device.getName() + "' wurde gefangen.");
+        event.set("message", "'" + device.getName() + "' wurde gefangen");
         event.set("name", "Catch");
         event.set("hunterGroup", group.getName());
 
-        allUserIds.forEach(userId -> {
-            connectionManager.updateEvent(true, userId, event);
-        });
-
-        return Response.ok(catch1).build();
+        connectionManager.sendEventToAllUsers(event);
     }
 }
