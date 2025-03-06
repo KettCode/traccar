@@ -72,16 +72,16 @@ public class CurrentManhuntResource extends BaseResource {
     public Response createSpeedHunt(@QueryParam("deviceId") long deviceId) throws StorageException, TraccarException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         var manhuntInfo = manhuntDatabaseStorage.getManhuntHunterInfo(getUserId());
         if(!manhuntInfo.getIsManhuntRunning())
-            throw new TraccarException("Es wurde kein laufender Manhunt gefunden.");
+            throw new TraccarException("Es wurde kein laufendes Spiel gefunden.");
 
         if(manhuntInfo.getIsSpeedHuntRunning())
             throw new TraccarException("Es gibt bereits einen aktiven Speedhunt.");
 
         if(manhuntInfo.getGroup() == null || manhuntInfo.getGroup().getManhuntRole() != 1)
-            throw new TraccarException("Dem Benutzer wurde keine Gruppe mit der Rolle 'Jaeger' zugewiesen.");
+            throw new TraccarException("Der Benutzer ist kein 'Jaeger'.");
 
         if(manhuntInfo.getSpeedHunts().size() >= manhuntInfo.getGroup().getSpeedHunts())
-            throw new TraccarException("Das Limit der Speedhunts wurde bereits erreicht.");
+            throw new TraccarException("Es gibt keinen verfügbaren Speedhunt mehr.");
 
         if(manhuntInfo.getLastSpeedHunt() != null && manhuntInfo.getLastSpeedHunt().getDeviceId() == deviceId)
             throw new TraccarException("Zwei aufeinanderfolgende Speedhunts auf den selben Spieler sind nicht erlaubt.");
@@ -89,11 +89,11 @@ public class CurrentManhuntResource extends BaseResource {
         var device = storage.getObject(Device.class, new Request(
                 new Columns.All(), new Condition.Equals("id", deviceId)));
         if(device == null)
-            throw new TraccarException("Das Zielgerät konnte nicht gefunden werden.");
+            throw new TraccarException("Das ausgewählte Gerät konnte nicht gefunden werden.");
 
         var huntedGroup = manhuntDatabaseStorage.getGroupByDeviceId(deviceId);
         if(huntedGroup == null || huntedGroup.getManhuntRole() != 2)
-            throw new TraccarException("Dem Zielgerät wurde keine Gruppe mit der Rolle 'Gejagter' zugewiesen.");
+            throw new TraccarException("Das ausgewählte Gerät ist kein 'Gejagter'.");
 
         var position = storage.getObject(Position.class, new Request(
                 new Columns.All(), new Condition.LatestPositions(deviceId)));
@@ -132,13 +132,13 @@ public class CurrentManhuntResource extends BaseResource {
     public Response createSpeedHuntRequest(@QueryParam("speedHuntId") long speedHuntId) throws StorageException, TraccarException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         var manhuntInfo = manhuntDatabaseStorage.getManhuntHunterInfo(getUserId());
         if(!manhuntInfo.getIsManhuntRunning())
-            throw new TraccarException("Es wurde kein laufender Manhunt gefunden.");
+            throw new TraccarException("Es wurde kein laufendes Spiel gefunden.");
 
         if(!manhuntInfo.getIsSpeedHuntRunning())
             throw new TraccarException("Es gibt keinen aktiven Speedhunt.");
 
         if(manhuntInfo.getGroup() == null || manhuntInfo.getGroup().getManhuntRole() != 1)
-            throw new TraccarException("Dem Benutzer wurde keine Gruppe mit der Rolle 'Jaeger' zugewiesen.");
+            throw new TraccarException("Der Benutzer ist kein 'Jaeger'.");
 
         var speedHunt = manhuntInfo
                 .getSpeedHunts()
@@ -152,12 +152,12 @@ public class CurrentManhuntResource extends BaseResource {
 
         var speedHuntRequests = speedHunt.getSpeedHuntRequests();
         if(speedHuntRequests.size() >= manhuntInfo.getGroup().getSpeedHuntRequests())
-            throw new TraccarException("Das Limit der Standortanfragen wurde bereits erreicht.");
+            throw new TraccarException("Es gibt keine verfügbare Standortanfrage mehr.");
 
         var device = storage.getObject(Device.class, new Request(
                 new Columns.All(), new Condition.Equals("id", speedHunt.getDeviceId())));
         if(device == null)
-            throw new TraccarException("Das Zielgerät konnte nicht gefunden werden.");
+            throw new TraccarException("Das ausgewählte Gerät konnte nicht gefunden werden.");
 
         var position = storage.getObject(Position.class, new Request(
                 new Columns.All(), new Condition.LatestPositions(speedHunt.getDeviceId())));
@@ -193,20 +193,20 @@ public class CurrentManhuntResource extends BaseResource {
     public Response createCatch(@QueryParam("deviceId") long deviceId) throws StorageException, TraccarException {
         var manhunt = manhuntDatabaseStorage.getCurrent();
         if(manhunt == null)
-            throw new TraccarException("Es wurde kein laufender Manhunt gefunden.");
+            throw new TraccarException("Es wurde kein Speedhunt gefunden.");
 
         var group = manhuntDatabaseStorage.getGroupByUserId(getUserId());
         if(group == null || group.getManhuntRole() != 1)
-            throw new TraccarException("Dem Benutzer wurde keine Gruppe mit der Rolle 'Jaeger' zugewiesen.");
+            throw new TraccarException("Der Benutzer ist kein 'Jaeger'.");
 
         var device = storage.getObject(Device.class, new Request(
                 new Columns.All(), new Condition.Equals("id", deviceId)));
         if(device == null)
-            throw new TraccarException("Das Zielgerät konnte nicht gefunden werden.");
+            throw new TraccarException("Das ausgewählte Gerät konnte nicht gefunden werden.");
 
         var huntedGroup = manhuntDatabaseStorage.getGroupByDeviceId(deviceId);
         if(huntedGroup == null || huntedGroup.getManhuntRole() != 2)
-            throw new TraccarException("Dem Zielgerät wurde keine Gruppe mit der Rolle 'Gejagter' zugewiesen.");
+            throw new TraccarException("Das ausgewählte Gerät ist kein 'Gejagter'.");
 
         var currentCatch = storage.getObject(Catches.class, new Request(new Columns.All(),
                 new Condition.And(
@@ -214,7 +214,7 @@ public class CurrentManhuntResource extends BaseResource {
                         new Condition.Equals("deviceId", deviceId)
                 )));
         if(currentCatch != null)
-            throw new TraccarException("Der Spieler wurde bereits gefangen");
+            throw new TraccarException("Der Spieler wurde bereits verhaftet.");
 
         var time = new Date();
 
@@ -261,8 +261,8 @@ public class CurrentManhuntResource extends BaseResource {
         event.setDeviceId(device.getId());
         event.setType("catch");
         event.setEventTime(new Date());
-        event.set("message", "Der Spieler '" + device.getName() + "' wurde gefangen");
-        event.set("name", "Catch");
+        event.set("message", "Der Spieler '" + device.getName() + "' wurde verhaftet");
+        event.set("name", "Verhaftung");
         event.set("hunterGroup", group.getName());
 
         connectionManager.sendEventToAllUsers(event);
