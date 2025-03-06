@@ -515,7 +515,7 @@ public class ConnectionManager implements BroadcastInterface {
         Event event = new Event();
         event.setType("locationUpdate");
         event.setEventTime(new Date());
-        event.set("message", "Die Standorte der Jäger wurden aktualisiert");
+        event.set("message", "Die Standorte der Gejagten wurden aktualisiert");
         event.set("name", "Standort update");
 
         sendEventToAllUsers(event);
