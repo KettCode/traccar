@@ -210,10 +210,15 @@ public class ManhuntDatabaseStorage {
         var manhunt = getCurrent();
         var group = getGroupByUserId(userId);
 
-        if(manhunt == null || group == null || group.getManhuntRole() != 1)
+        if(manhunt == null || group == null)
             return PositionUtil.getLatestPositions(storage, userId);
 
-        return PositionUtil.getManhuntPositions(storage, userId);
+        if (group.getManhuntRole() == 1) {
+            return PositionUtil.getHunterPositions(storage, userId);
+        } else if (group.getManhuntRole() == 2) {
+            return PositionUtil.getHuntedPositions(storage, userId);
+        } else
+            return PositionUtil.getLatestPositions(storage, userId);
     }
 
     public void saveManhuntPosition(Position position) throws StorageException {

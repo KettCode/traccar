@@ -226,7 +226,11 @@ public class DatabaseStorage extends Storage {
             if (condition.getDeviceId() > 0) {
                 results.put("deviceId", condition.getDeviceId());
             }
-        } else if (genericCondition instanceof Condition.ManhuntPositions condition) {
+        } else if (genericCondition instanceof Condition.HunterPositions condition) {
+            if (condition.getDeviceId() > 0) {
+                results.put("deviceId", condition.getDeviceId());
+            }
+        } else if (genericCondition instanceof Condition.HuntedPositions condition) {
             if (condition.getDeviceId() > 0) {
                 results.put("deviceId", condition.getDeviceId());
             }
@@ -288,7 +292,7 @@ public class DatabaseStorage extends Storage {
                 }
                 result.append(")");
 
-            } else if (genericCondition instanceof Condition.ManhuntPositions condition) {
+            } else if (genericCondition instanceof Condition.HunterPositions condition) {
                 result.append("id IN (");
                 result.append("SELECT " +
                     "CASE " +
@@ -299,6 +303,20 @@ public class DatabaseStorage extends Storage {
                     "LEFT JOIN tc_groups g ON g.id = tc_devices.groupId ");
                 if (condition.getDeviceId() > 0) {
                     result.append(" WHERE tc_devices.id = :deviceId");
+                }
+                result.append(")");
+            } else if (genericCondition instanceof Condition.HuntedPositions condition) {
+                result.append("id IN (");
+                result.append("SELECT positionId FROM ");
+                result.append(getStorageName(Device.class));
+                if (condition.getDeviceId() > 0) {
+                    result.append(" WHERE id = :deviceId");
+                }
+                result.append(" UNION ");
+                result.append("SELECT manhuntPositionId as positionId FROM ");
+                result.append(getStorageName(Device.class));
+                if (condition.getDeviceId() > 0) {
+                    result.append(" WHERE id = :deviceId");
                 }
                 result.append(")");
             }
