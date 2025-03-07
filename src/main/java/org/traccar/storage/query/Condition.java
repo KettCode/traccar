@@ -210,26 +210,18 @@ public interface Condition {
     }
 
     class ManhuntPositions implements  Condition {
-        private final Date start;
-        private final long manhuntId;
-        private final long hunterGroupId;
+        private final long deviceId;
 
-        public ManhuntPositions(Date start, long manhuntId, long hunterGroupId){
-            this.start = start;
-            this.manhuntId = manhuntId;
-            this.hunterGroupId = hunterGroupId;
+        public ManhuntPositions(long deviceId) {
+            this.deviceId = deviceId;
         }
 
-        public Date getStart() {
-            return start;
+        public ManhuntPositions(){
+            this(0);
         }
 
-        public long getManhuntId() {
-            return manhuntId;
-        }
-
-        public long getHunterGroupId() {
-            return hunterGroupId;
+        public long getDeviceId() {
+            return deviceId;
         }
     }
 

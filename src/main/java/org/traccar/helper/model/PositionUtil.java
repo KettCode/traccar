@@ -78,14 +78,14 @@ public final class PositionUtil {
                 .collect(Collectors.toList());
     }
 
-    public static List<Position> getManhuntPositions(Storage storage, long userId, Date start, long manhuntId, long hunterGroupId) throws StorageException {
+    public static List<Position> getManhuntPositions(Storage storage, long userId) throws StorageException {
         var devices = storage.getObjects(Device.class, new Request(
                 new Columns.Include("id"),
                 new Condition.Permission(User.class, userId, Device.class)));
         var deviceIds = devices.stream().map(BaseModel::getId).collect(Collectors.toUnmodifiableSet());
 
         var positions = storage.getObjects(Position.class, new Request(
-                new Columns.All(), new Condition.ManhuntPositions(start, manhuntId, hunterGroupId)));
+                new Columns.All(), new Condition.ManhuntPositions()));
         return positions.stream()
                 .filter(position -> deviceIds.contains(position.getDeviceId()))
                 .collect(Collectors.toList());

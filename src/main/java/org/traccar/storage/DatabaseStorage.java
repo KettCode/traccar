@@ -227,9 +227,9 @@ public class DatabaseStorage extends Storage {
                 results.put("deviceId", condition.getDeviceId());
             }
         } else if (genericCondition instanceof Condition.ManhuntPositions condition) {
-            results.put("start", condition.getStart());
-            results.put("manhuntId", condition.getManhuntId());
-            results.put("hunterGroupId", condition.getHunterGroupId());
+            if (condition.getDeviceId() > 0) {
+                results.put("deviceId", condition.getDeviceId());
+            }
         }
         return results;
     }
@@ -290,25 +290,16 @@ public class DatabaseStorage extends Storage {
 
             } else if (genericCondition instanceof Condition.ManhuntPositions condition) {
                 result.append("id IN (");
-                result.append("SELECT MAX(p.id) " +
-                    "FROM tc_positions p " +
-                    "JOIN tc_devices d ON d.id = p.deviceId " +
-                    "LEFT JOIN tc_groups g ON g.id = d.groupId " +
-                    "WHERE " +
-                    "   ((g.manhuntRole IS NOT NULL AND g.manhuntRole = 2) AND " +
-                    "           (p.deviceTime <= " +
-                    "               (SELECT DATEADD(SECOND, FLOOR(DATEDIFF(SECOND, CAST(:start as DATE), NOW()) / g.frequency) * g.frequency, CAST(:start as DATE))) " +
-                    "           OR p.deviceTime <= " +
-                    "               (SELECT MAX(s.lastTime) " +
-                    "                FROM tc_speedHunts s " +
-                    "                JOIN tc_speedHuntRequests sr ON sr.speedHuntsId = s.id " +
-                    "                WHERE s.manhuntsId = :manhuntId " +
-                    "                AND s.hunterGroupId = :hunterGroupId " +
-                    "                AND s.deviceId = d.id) " +
-                    "           )" +
-                    "   ) " +
-                    "OR ((g.manhuntRole IS NULL OR g.manhuntRole <> 2) AND p.id = d.positionId) " +
-                    "GROUP BY p.deviceId");
+                result.append("SELECT " +
+                    "CASE " +
+                    "   WHEN (g.manhuntRole IS NOT NULL AND g.manhuntRole = 2) THEN tc_devices.manhuntPositionId " +
+                    "   ELSE tc_devices.positionId  " +
+                    "END as positionId  " +
+                    "FROM tc_devices " +
+                    "LEFT JOIN tc_groups g ON g.id = tc_devices.groupId ");
+                if (condition.getDeviceId() > 0) {
+                    result.append(" WHERE tc_devices.id = :deviceId");
+                }
                 result.append(")");
             }
         }

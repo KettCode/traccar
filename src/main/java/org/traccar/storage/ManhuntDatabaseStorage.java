@@ -213,13 +213,13 @@ public class ManhuntDatabaseStorage {
         if(manhunt == null || group == null || group.getManhuntRole() != 1)
             return PositionUtil.getLatestPositions(storage, userId);
 
-        return PositionUtil.getManhuntPositions(storage, userId, manhunt.getStart(), manhunt.getId(), group.getId());
+        return PositionUtil.getManhuntPositions(storage, userId);
     }
 
     public void saveManhuntPosition(Position position) throws StorageException {
         Device device = new Device();
         device.setId(position.getDeviceId());
-        device.setPositionId(position.getId());
+        device.setManhuntPositionId(position.getId());
         storage.updateObject(device, new Request(
                 new Columns.Include("manhuntPositionId"),
                 new Condition.Equals("id", device.getId())));
