@@ -100,6 +100,8 @@ public class CurrentManhuntResource extends BaseResource {
         if(position == null)
             throw new TraccarException("Es konnte keine Position gefunden werden.");
 
+        manhuntDatabaseStorage.saveManhuntPosition(position);
+
         var time = new Date();
 
         var speedHunt = new SpeedHunt();
@@ -163,6 +165,8 @@ public class CurrentManhuntResource extends BaseResource {
                 new Columns.All(), new Condition.LatestPositions(speedHunt.getDeviceId())));
         if(position == null)
             throw new TraccarException("Es konnte keine Position gefunden werden.");
+
+        manhuntDatabaseStorage.saveManhuntPosition(position);
 
         var time = new Date();
 
