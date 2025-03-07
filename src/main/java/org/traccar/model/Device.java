@@ -96,6 +96,17 @@ public class Device extends GroupedModel implements Disableable, Schedulable {
         this.positionId = positionId;
     }
 
+    private long manhuntPositionId;
+
+    @QueryIgnore
+    public long getManhuntPositionId() {
+        return manhuntPositionId;
+    }
+
+    public void setManhuntPositionId(long manhuntPositionId) {
+        this.manhuntPositionId = manhuntPositionId;
+    }
+
     private String phone;
 
     public String getPhone() {

@@ -482,6 +482,10 @@ public class ConnectionManager implements BroadcastInterface {
                         .toList();
 
                 for(var position : positions) {
+                    manhuntDatabaseStorage.saveManhuntPosition(position);
+                }
+
+                for(var position : positions) {
                     updateAllPosition(true, position);
                 }
 

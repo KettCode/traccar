@@ -24,6 +24,10 @@
       <column name="groupId" type="int" />
     </addColumn>
 
+    <addColumn tableName="tc_devices">
+        <column name="manhuntPositionId" type="int" />
+    </addColumn>
+
     <createTable tableName="tc_manhunts">
       <column name="id" type="int" autoIncrement="true">
         <constraints primaryKey="true"/>

@@ -216,6 +216,15 @@ public class ManhuntDatabaseStorage {
         return PositionUtil.getManhuntPositions(storage, userId, manhunt.getStart(), manhunt.getId(), group.getId());
     }
 
+    public void saveManhuntPosition(Position position) throws StorageException {
+        Device device = new Device();
+        device.setId(position.getDeviceId());
+        device.setPositionId(position.getId());
+        storage.updateObject(device, new Request(
+                new Columns.Include("manhuntPositionId"),
+                new Condition.Equals("id", device.getId())));
+    }
+
     public ManhuntHunterInfo getManhuntHunterInfo(long userId) throws StorageException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         return getManhuntInfo(userId, ManhuntHunterInfo.class);
     }
