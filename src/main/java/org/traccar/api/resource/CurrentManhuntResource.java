@@ -39,14 +39,7 @@ public class CurrentManhuntResource extends BaseResource {
         var manhunt = manhuntDatabaseStorage.getCurrent();
         return Response.ok(manhunt).build();
     }
-
-    @Path("getGroup")
-    @GET
-    public Response getGroup() throws  StorageException {
-        var group = manhuntDatabaseStorage.getGroupByUserId(getUserId());
-        return Response.ok(group).build();
-    }
-
+    
     @Path("getHuntedDevices")
     @GET
     public Collection<Device> getHuntedDevices() throws StorageException {

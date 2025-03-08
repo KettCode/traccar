@@ -148,4 +148,18 @@ public class UserResource extends BaseObjectResource<User> {
         return super.update(entity);
     }
 
+    @Path("{id}")
+    @GET
+    public Response getSingle(@PathParam("id") long id) throws StorageException {
+        permissionsService.checkPermission(baseClass, getUserId(), id);
+        User entity = storage.getObject(baseClass, new Request(
+                new Columns.All(), new Condition.Equals("id", id)));
+        permissionsService.addGroup(entity);
+        if (entity != null) {
+            return Response.ok(entity).build();
+        } else {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+    }
+
 }
