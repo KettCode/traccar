@@ -228,6 +228,12 @@ public class ManhuntDatabaseStorage {
         storage.updateObject(device, new Request(
                 new Columns.Include("manhuntPositionId"),
                 new Condition.Equals("id", device.getId())));
+
+        position.setIsManhunt(true);
+        storage.updateObject(position, new Request(
+                new Columns.Include("isManhunt"),
+                new Condition.Equals("id", position.getId())
+        ));
     }
 
     public ManhuntHunterInfo getManhuntHunterInfo(long userId) throws StorageException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {

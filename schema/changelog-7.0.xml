@@ -28,6 +28,10 @@
         <column name="manhuntPositionId" type="int" />
     </addColumn>
 
+    <addColumn tableName="tc_positions">
+        <column name="isManhunt" type="BOOLEAN" />
+    </addColumn>
+
     <createTable tableName="tc_manhunts">
       <column name="id" type="int" autoIncrement="true">
         <constraints primaryKey="true"/>

@@ -94,7 +94,7 @@ public final class PositionUtil {
         var deviceIds = devices.stream().map(BaseModel::getId).collect(Collectors.toUnmodifiableSet());
 
         var positions = storage.getObjects(Position.class, new Request(
-                new Columns.All(), new Condition.HuntedPositions()));
+                new Columns.All(), new Condition.HuntedPositions(), new Order("id")));
         return positions.stream()
                 .filter(position -> deviceIds.contains(position.getDeviceId()))
                 .collect(Collectors.toList());
