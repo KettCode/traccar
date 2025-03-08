@@ -119,10 +119,7 @@ public class CurrentManhuntResource extends BaseResource {
         speedhuntRequest.setPos(1);
         speedhuntRequest.setId(storage.addObject(speedhuntRequest, new Request(new Columns.Exclude("id"))));
 
-        var userIds = manhuntDatabaseStorage.getUsers(speedHunt.getHunterGroupId())
-                .stream().map(User::getId)
-                .toList();
-        connectionManager.updateHunterPosition(true, position, userIds);
+        connectionManager.updateAllPosition(true, position);
 
         sendSpeedHuntEvent(device, manhuntInfo.getGroup(), position);
 
@@ -182,10 +179,7 @@ public class CurrentManhuntResource extends BaseResource {
         speedHuntRequest.setPos(speedHunt.getSpeedHuntRequests().size() + 1);
         speedHuntRequest.setId(storage.addObject(speedHuntRequest, new Request(new Columns.Exclude("id"))));
 
-        var userIds = manhuntDatabaseStorage.getUsers(speedHunt.getHunterGroupId())
-                .stream().map(User::getId)
-                .toList();
-        connectionManager.updateHunterPosition(true, position, userIds);
+        connectionManager.updateAllPosition(true, position);
 
         sendSpeedHuntRequestEvent(device, manhuntInfo.getGroup(), position);
 
