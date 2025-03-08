@@ -22,6 +22,7 @@ import org.traccar.config.Keys;
 import org.traccar.database.LdapProvider;
 import org.traccar.helper.DataConverter;
 import org.traccar.helper.model.UserUtil;
+import org.traccar.model.Group;
 import org.traccar.model.User;
 import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
@@ -81,6 +82,7 @@ public class LoginService {
         TokenManager.TokenData tokenData = tokenManager.verifyToken(token);
         User user = storage.getObject(User.class, new Request(
                 new Columns.All(), new Condition.Equals("id", tokenData.getUserId())));
+        addGroup(user);
         if (user != null) {
             checkUserEnabled(user);
         }
@@ -98,6 +100,7 @@ public class LoginService {
                 new Condition.Or(
                         new Condition.Equals("email", email),
                         new Condition.Equals("login", email))));
+        addGroup(user);
         if (user != null) {
             if (ldapProvider != null && user.getLogin() != null && ldapProvider.login(user.getLogin(), password)
                     || !forceLdap && user.isPasswordValid(password)) {
@@ -130,6 +133,7 @@ public class LoginService {
             user.setAdministrator(administrator);
             user.setId(storage.addObject(user, new Request(new Columns.Exclude("id"))));
         }
+        addGroup(user);
         checkUserEnabled(user);
         return new LoginResult(user);
     }
@@ -152,6 +156,15 @@ public class LoginService {
                 throw new SecurityException("User authorization failed");
             }
         }
+    }
+
+    private void addGroup(User user) throws StorageException {
+        if(user == null)
+            return;
+
+        Group group = storage.getObject(Group.class, new Request(
+                new Columns.All(), new Condition.Equals("id", user.getGroupId())));
+        user.setGroup(group);
     }
 
 }

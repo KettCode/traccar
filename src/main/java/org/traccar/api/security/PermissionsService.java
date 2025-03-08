@@ -70,6 +70,22 @@ public class PermissionsService {
         return user;
     }
 
+    public User getUser(long userId, boolean loadGroup) throws StorageException {
+        var user = getUser(userId);
+        if(loadGroup)
+            addGroup(user);
+        return user;
+    }
+
+    public void addGroup(User user) throws StorageException {
+        if(user == null)
+            return;
+
+        Group group = storage.getObject(Group.class, new Request(
+                new Columns.All(), new Condition.Equals("id", user.getGroupId())));
+        user.setGroup(group);
+    }
+
     public boolean notAdmin(long userId) throws StorageException {
         return !getUser(userId).getAdministrator();
     }
