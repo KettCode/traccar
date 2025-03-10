@@ -16,6 +16,14 @@ public class Manhunt extends ExtendedModel {
         this.start = start;
     }
 
+    private long frequency;
+    public long getFrequency() {
+        return frequency;
+    }
+    public void setFrequency(long frequency) {
+        this.frequency = frequency;
+    }
+
     private List<SpeedHunt> speedHunts;
     @QueryIgnore
     public List<SpeedHunt> getSpeedHunts() {

@@ -34,14 +34,6 @@ public class Group extends GroupedModel {
     public long getManhuntRole() { return manhuntRole; }
     public void setManhuntRole(long manhuntRole) { this.manhuntRole = manhuntRole; }
 
-    private long frequency;
-    public long getFrequency() {
-        return frequency;
-    }
-    public void setFrequency(long frequency) {
-        this.frequency = frequency;
-    }
-
     private long speedHunts;
     public long getSpeedHunts() { return speedHunts; }
     public void setSpeedHunts(long speedHunts) { this.speedHunts = speedHunts; }

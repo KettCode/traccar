@@ -63,6 +63,10 @@ public class CurrentManhuntResource extends BaseResource {
     @Path("createSpeedHunt")
     @POST
     public Response createSpeedHunt(@QueryParam("deviceId") long deviceId) throws StorageException, TraccarException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+        var user = permissionsService.getUser(getUserId(), true);
+        if(user.getGroup() == null || user.getGroup().getManhuntRole() != 1)
+            throw new TraccarException("Der Benutzer ist kein 'Jaeger'.");
+
         var manhuntInfo = manhuntDatabaseStorage.getManhuntHunterInfo(getUserId());
         if(!manhuntInfo.getIsManhuntRunning())
             throw new TraccarException("Es wurde kein laufendes Spiel gefunden.");
@@ -70,10 +74,7 @@ public class CurrentManhuntResource extends BaseResource {
         if(manhuntInfo.getIsSpeedHuntRunning())
             throw new TraccarException("Es gibt bereits einen aktiven Speedhunt.");
 
-        if(manhuntInfo.getGroup() == null || manhuntInfo.getGroup().getManhuntRole() != 1)
-            throw new TraccarException("Der Benutzer ist kein 'Jaeger'.");
-
-        if(manhuntInfo.getSpeedHunts().size() >= manhuntInfo.getGroup().getSpeedHunts())
+        if(manhuntInfo.getSpeedHunts().size() >= user.getGroup().getSpeedHunts())
             throw new TraccarException("Es gibt keinen verfügbaren Speedhunt mehr.");
 
         if(manhuntInfo.getLastSpeedHunt() != null && manhuntInfo.getLastSpeedHunt().getDeviceId() == deviceId)
@@ -99,7 +100,7 @@ public class CurrentManhuntResource extends BaseResource {
 
         var speedHunt = new SpeedHunt();
         speedHunt.setManhuntsId(manhuntInfo.getManhunt().getId());
-        speedHunt.setHunterGroupId(manhuntInfo.getGroup().getId());
+        speedHunt.setHunterGroupId(user.getGroup().getId());
         speedHunt.setDeviceId(deviceId);
         speedHunt.setPos(manhuntInfo.getSpeedHunts().size() + 1);
         speedHunt.setLastTime(time);
@@ -114,7 +115,7 @@ public class CurrentManhuntResource extends BaseResource {
 
         connectionManager.updateAllPosition(true, position);
 
-        sendSpeedHuntEvent(device, manhuntInfo.getGroup(), position);
+        sendSpeedHuntEvent(device, user.getGroup(), position);
 
         return Response.ok(speedHunt).build();
     }
@@ -122,15 +123,16 @@ public class CurrentManhuntResource extends BaseResource {
     @Path("createSpeedHuntRequest")
     @POST
     public Response createSpeedHuntRequest(@QueryParam("speedHuntId") long speedHuntId) throws StorageException, TraccarException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+        var user = permissionsService.getUser(getUserId(), true);
+        if(user.getGroup() == null || user.getGroup().getManhuntRole() != 1)
+            throw new TraccarException("Der Benutzer ist kein 'Jaeger'.");
+
         var manhuntInfo = manhuntDatabaseStorage.getManhuntHunterInfo(getUserId());
         if(!manhuntInfo.getIsManhuntRunning())
             throw new TraccarException("Es wurde kein laufendes Spiel gefunden.");
 
         if(!manhuntInfo.getIsSpeedHuntRunning())
             throw new TraccarException("Es gibt keinen aktiven Speedhunt.");
-
-        if(manhuntInfo.getGroup() == null || manhuntInfo.getGroup().getManhuntRole() != 1)
-            throw new TraccarException("Der Benutzer ist kein 'Jaeger'.");
 
         var speedHunt = manhuntInfo
                 .getSpeedHunts()
@@ -143,7 +145,7 @@ public class CurrentManhuntResource extends BaseResource {
             throw new TraccarException("Es wurde kein Speedhunt gefunden.");
 
         var speedHuntRequests = speedHunt.getSpeedHuntRequests();
-        if(speedHuntRequests.size() >= manhuntInfo.getGroup().getSpeedHuntRequests())
+        if(speedHuntRequests.size() >= user.getGroup().getSpeedHuntRequests())
             throw new TraccarException("Es gibt keine verfügbare Standortanfrage mehr.");
 
         var device = storage.getObject(Device.class, new Request(
@@ -174,7 +176,7 @@ public class CurrentManhuntResource extends BaseResource {
 
         connectionManager.updateAllPosition(true, position);
 
-        sendSpeedHuntRequestEvent(device, manhuntInfo.getGroup(), position);
+        sendSpeedHuntRequestEvent(device, user.getGroup(), position);
 
         return Response.ok(speedHuntRequest).build();
     }

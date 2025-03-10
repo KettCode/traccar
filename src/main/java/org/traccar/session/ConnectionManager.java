@@ -439,7 +439,7 @@ public class ConnectionManager implements BroadcastInterface {
         if(manhunt == null)
             return;
 
-        var frequency = group.getFrequency();
+        var frequency = manhunt.getFrequency();
         if(frequency <= 0)
             frequency = 3600;
         var start = manhunt.getStart();

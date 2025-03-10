@@ -11,9 +11,6 @@
       <column name="manhuntRole" type="int" />
     </addColumn>
     <addColumn tableName="tc_groups">
-      <column name="frequency" type="bigint"/>
-    </addColumn>
-    <addColumn tableName="tc_groups">
       <column name="speedHunts" type="int" />
     </addColumn>
     <addColumn tableName="tc_groups">
@@ -37,6 +34,7 @@
         <constraints primaryKey="true"/>
       </column>
       <column name="start" type="timestamp"/>
+      <column name="frequency" type="bigint"/>
       <column name="attributes" type="VARCHAR(4096)">
         <constraints nullable="false" />
       </column>
