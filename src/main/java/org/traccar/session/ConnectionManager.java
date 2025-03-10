@@ -73,7 +73,7 @@ public class ConnectionManager implements BroadcastInterface {
 
     private final Map<Long, Timeout> timeouts = new ConcurrentHashMap<>();
 
-    private final ConcurrentHashMap<Long, ScheduledFuture<?>> groupSchedules = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, ScheduledFuture<?>> manhuntSchedules = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(10);
 
     @Inject
@@ -423,21 +423,19 @@ public class ConnectionManager implements BroadcastInterface {
 
     public void initSchedules() {
         try {
-            var groups = manhuntDatabaseStorage.getGroups(2);
-            for(var group : groups) {
-                scheduleUpdates(group);
-            }
+            cancelAll();
+            scheduleUpdates();
         } catch (StorageException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void scheduleUpdates(Group group) throws StorageException {
-        cancelScheduler(group.getId());
-
+    private void scheduleUpdates() throws StorageException {
         var manhunt = manhuntDatabaseStorage.getCurrent();
         if(manhunt == null)
             return;
+
+        cancelScheduler(manhunt.getId());
 
         var frequency = manhunt.getFrequency();
         if(frequency <= 0)
@@ -456,12 +454,12 @@ public class ConnectionManager implements BroadcastInterface {
 
         ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(() -> {
             try {
-                var deviceIds = manhuntDatabaseStorage.getDevices(group.getId())
+                var deviceIds = manhuntDatabaseStorage.getDevices(2)
                         .stream().map(Device::getId)
                         .toList();
 
                 var positions = storage.getObjects(Position.class, new Request(
-                        new Columns.All(), new Condition.LatestPositions()))
+                                new Columns.All(), new Condition.LatestPositions()))
                         .stream().filter(x -> deviceIds.contains(x.getDeviceId()))
                         .toList();
 
@@ -479,18 +477,27 @@ public class ConnectionManager implements BroadcastInterface {
             }
         }, initialDelay, frequency, TimeUnit.SECONDS);
 
-        groupSchedules.put(group.getId(), future);
+        manhuntSchedules.put(manhunt.getId(), future);
     }
 
-    public void cancelScheduler(long groupId) {
-        if(!groupSchedules.containsKey(groupId))
+    private void cancelAll() {
+        for (ScheduledFuture<?> future : manhuntSchedules.values()) {
+            if (future != null && !future.isCancelled()) {
+                future.cancel(false);
+            }
+        }
+        manhuntSchedules.clear();
+    }
+
+    private void cancelScheduler(long manhuntId) {
+        if(!manhuntSchedules.containsKey(manhuntId))
             return;
 
-        var future = groupSchedules.get(groupId);
+        var future = manhuntSchedules.get(manhuntId);
         if(future != null && !future.isCancelled()) {
             future.cancel(false);
         }
-        groupSchedules.remove(groupId);
+        manhuntSchedules.remove(manhuntId);
     }
 
     public void sendEventToAllUsers(Event event) throws StorageException {

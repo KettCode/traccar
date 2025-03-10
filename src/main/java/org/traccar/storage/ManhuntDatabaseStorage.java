@@ -85,15 +85,15 @@ public class ManhuntDatabaseStorage {
         }
     }
 
-    public List<Device> getDevices(long groupId) throws StorageException {
+    public List<Device> getDevices(long manhuntRole) throws StorageException {
         try {
             var query = "SELECT * " +
                     "FROM tc_devices " +
                     "JOIN tc_groups ON tc_groups.id = tc_devices.groupId " +
-                    "WHERE tc_groups.id = :groupId ";
+                    "WHERE tc_groups.manhuntRole = :manhuntRole ";
 
             QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
-            builder.setLong("groupId", groupId);
+            builder.setLong("manhuntRole", manhuntRole);
             return builder.executeQuery(Device.class);
         } catch (SQLException e) {
             throw new StorageException(e);
