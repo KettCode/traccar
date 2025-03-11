@@ -6,6 +6,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.traccar.api.BaseResource;
 import org.traccar.api.TraccarException;
+import org.traccar.manhunt.ManhuntManager;
 import org.traccar.model.*;
 import org.traccar.session.ConnectionManager;
 import org.traccar.storage.ManhuntDatabaseStorage;
@@ -15,6 +16,7 @@ import org.traccar.storage.query.Condition;
 import org.traccar.storage.query.Request;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 
@@ -28,6 +30,9 @@ public class CurrentManhuntResource extends BaseResource {
 
     @Inject
     private ConnectionManager connectionManager;
+
+    @Inject
+    private ManhuntManager manhuntManager;
 
     public CurrentManhuntResource(){
 
@@ -43,13 +48,21 @@ public class CurrentManhuntResource extends BaseResource {
     @Path("getHuntedDevices")
     @GET
     public Collection<Device> getHuntedDevices() throws StorageException {
-        return manhuntDatabaseStorage.getHuntedDevices(getUserId());
+        var manhunt = manhuntDatabaseStorage.getCurrent();
+        if(manhunt == null)
+            return new ArrayList<>();
+
+        return manhuntDatabaseStorage.getHuntedDevices(manhunt.getId(),false);
     }
 
     @Path("getManhuntHunterInfo")
     @GET
     public Response getManhuntHunterInfo() throws StorageException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         var info = manhuntDatabaseStorage.getManhuntHunterInfo(getUserId());
+
+        var huntedDevices = manhuntManager.getDeviceInfos(info.getManhunt().getId());
+        info.setHuntedDevices(huntedDevices);
+
         return Response.ok(info).build();
     }
 
@@ -57,6 +70,10 @@ public class CurrentManhuntResource extends BaseResource {
     @GET
     public Response getManhuntHuntedInfo() throws StorageException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         var info = manhuntDatabaseStorage.getManhuntHuntedInfo(getUserId());
+
+        var huntedDevices = manhuntManager.getDeviceInfos(info.getManhunt().getId());
+        info.setHuntedDevices(huntedDevices);
+
         return Response.ok(info).build();
     }
 

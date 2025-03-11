@@ -42,25 +42,23 @@ public class ManhuntDatabaseStorage {
         }
     }
 
-    public List<Device> getHuntedDevices(long userId) throws StorageException {
+    public List<Device> getHuntedDevices(long manhuntId, boolean withCaught) throws StorageException {
         try {
-            var conditions = new LinkedList<Condition>();
-
-            var manhunt = getCurrent();
-
-            var devices = storage.getObjects(Device.class, new Request(
-                    new Columns.All(), Condition.merge(conditions), new Order("name")));
-
-            var ids = devices.stream().map(Device::getId).toArray();
             var query = "SELECT * " +
                     "FROM tc_devices " +
                     "JOIN tc_groups ON tc_groups.id = tc_devices.groupId " +
                     "LEFT JOIN tc_catches ON tc_catches.manhuntsId = :manhuntId and tc_catches.deviceId = tc_devices.id " +
-                    "WHERE tc_devices.id = ANY(:deviceIds) and tc_groups.manhuntRole = 2 and tc_catches.id IS NULL ";
+                    "WHERE tc_groups.manhuntRole = 2 ";
+
+            if(withCaught)
+                query += "or tc_catches.id IS NOT NULL ";
+            else
+                query += "and tc_catches.id IS NULL ";
+
+            query += "ORDER BY tc_devices.name ";
 
             QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
-            builder.setArray("deviceIds", ids, true);
-            builder.setLong("manhuntId", manhunt.getId());
+            builder.setLong("manhuntId", manhuntId);
             return builder.executeQuery(Device.class);
 
         } catch (SQLException e) {
@@ -251,7 +249,6 @@ public class ManhuntDatabaseStorage {
 
         var groups = storage.getObjects(Group.class, new Request(new Columns.All()));
         var devices = storage.getObjects(Device.class, new Request(new Columns.All()));
-        var huntedDevices = getHuntedDevices(userId);
         var catches = storage.getObjects(Catches.class, new Request(new Columns.All(),
                 new Condition.Equals("manhuntsId", manhunt.getId())));
         var group = getGroupByUserId(userId);
@@ -264,7 +261,6 @@ public class ManhuntDatabaseStorage {
         manhuntInfo.setCatches(catches);
         manhuntInfo.setGroups(groups);
         manhuntInfo.setDevices(devices);
-        manhuntInfo.setHuntedDevices(huntedDevices);
         return manhuntInfo;
     }
 

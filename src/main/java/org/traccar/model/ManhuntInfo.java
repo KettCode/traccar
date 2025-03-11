@@ -1,5 +1,7 @@
 package org.traccar.model;
 
+import org.traccar.manhunt.DeviceInfo;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
@@ -55,11 +57,11 @@ public class ManhuntInfo {
         this.devices = devices;
     }
 
-    private List<Device> huntedDevices;
-    public List<Device> getHuntedDevices() {
+    private List<DeviceInfo> huntedDevices;
+    public List<DeviceInfo> getHuntedDevices() {
         return huntedDevices;
     }
-    public void setHuntedDevices(List<Device> huntedDevices) {
+    public void setHuntedDevices(List<DeviceInfo> huntedDevices) {
         this.huntedDevices = huntedDevices;
     }
 
