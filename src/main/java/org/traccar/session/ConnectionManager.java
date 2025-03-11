@@ -73,7 +73,7 @@ public class ConnectionManager implements BroadcastInterface {
 
     private final Map<Long, Timeout> timeouts = new ConcurrentHashMap<>();
 
-    private final ConcurrentHashMap<Long, ScheduledFuture<?>> manhuntSchedules = new ConcurrentHashMap<>();
+    private ScheduledFuture<?> manhuntScheduler;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(10);
 
     @Inject
@@ -423,19 +423,18 @@ public class ConnectionManager implements BroadcastInterface {
 
     public void initSchedules() {
         try {
-            cancelAll();
-            scheduleUpdates();
+        scheduleUpdates();
         } catch (StorageException e) {
             throw new RuntimeException(e);
         }
     }
 
     private void scheduleUpdates() throws StorageException {
+        cancelScheduler();
+
         var manhunt = manhuntDatabaseStorage.getCurrent();
         if(manhunt == null)
             return;
-
-        cancelScheduler(manhunt.getId());
 
         var frequency = manhunt.getFrequency();
         if(frequency <= 0)
@@ -452,7 +451,7 @@ public class ConnectionManager implements BroadcastInterface {
             initialDelay = remainder == 0 ? 0 : (frequency - remainder);
         }
 
-        ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(() -> {
+        manhuntScheduler = scheduler.scheduleAtFixedRate(() -> {
             try {
                 var deviceIds = manhuntDatabaseStorage.getDevices(2)
                         .stream().map(Device::getId)
@@ -476,28 +475,12 @@ public class ConnectionManager implements BroadcastInterface {
                 throw new RuntimeException(e);
             }
         }, initialDelay, frequency, TimeUnit.SECONDS);
-
-        manhuntSchedules.put(manhunt.getId(), future);
     }
 
-    private void cancelAll() {
-        for (ScheduledFuture<?> future : manhuntSchedules.values()) {
-            if (future != null && !future.isCancelled()) {
-                future.cancel(false);
-            }
+    private void cancelScheduler() {
+        if(manhuntScheduler != null && !manhuntScheduler.isCancelled()) {
+            manhuntScheduler.cancel(false);
         }
-        manhuntSchedules.clear();
-    }
-
-    private void cancelScheduler(long manhuntId) {
-        if(!manhuntSchedules.containsKey(manhuntId))
-            return;
-
-        var future = manhuntSchedules.get(manhuntId);
-        if(future != null && !future.isCancelled()) {
-            future.cancel(false);
-        }
-        manhuntSchedules.remove(manhuntId);
     }
 
     public void sendEventToAllUsers(Event event) throws StorageException {
