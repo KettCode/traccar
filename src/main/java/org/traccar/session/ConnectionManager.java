@@ -423,7 +423,7 @@ public class ConnectionManager implements BroadcastInterface {
 
     public void initSchedules() {
         try {
-        scheduleUpdates();
+            scheduleUpdates();
         } catch (StorageException e) {
             throw new RuntimeException(e);
         }
