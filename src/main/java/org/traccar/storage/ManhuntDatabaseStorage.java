@@ -106,7 +106,7 @@ public class ManhuntDatabaseStorage {
                     "FROM tc_speedHunts " +
                     "WHERE tc_speedHunts.manhuntsId = :manhuntsId " +
                     "AND tc_speedHunts.hunterGroupId = :groupId " +
-                    "ORDER BY tc_speedHunts.pos";
+                    "ORDER BY tc_speedHunts.time";
 
             QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
             builder.setLong("manhuntsId", manhuntId);
@@ -122,7 +122,7 @@ public class ManhuntDatabaseStorage {
             var query = "SELECT * " +
                     "FROM tc_speedHuntRequests " +
                     "WHERE speedHuntsId = ANY(:speedHuntIds) " +
-                    "ORDER BY speedHuntsId, pos";
+                    "ORDER BY speedHuntsId, time";
 
             QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
             builder.setArray("speedHuntIds", speedHuntIds.toArray(), true);

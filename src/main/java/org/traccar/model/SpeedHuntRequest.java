@@ -26,8 +26,4 @@ public class SpeedHuntRequest extends BaseModel {
     public void setTime(Date time) {
         this.time = time;
     }
-
-    private long pos;
-    public long getPos() { return pos; }
-    public void setPos(long pos) { this.pos = pos; }
 }

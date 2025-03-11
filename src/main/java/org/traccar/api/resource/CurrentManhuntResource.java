@@ -102,15 +102,12 @@ public class CurrentManhuntResource extends BaseResource {
         speedHunt.setManhuntsId(manhuntInfo.getManhunt().getId());
         speedHunt.setHunterGroupId(user.getGroup().getId());
         speedHunt.setDeviceId(deviceId);
-        speedHunt.setPos(manhuntInfo.getSpeedHunts().size() + 1);
-        speedHunt.setLastTime(time);
         speedHunt.setId(storage.addObject(speedHunt, new Request(new Columns.Exclude("id"))));
 
         var speedhuntRequest = new SpeedHuntRequest();
         speedhuntRequest.setSpeedHuntsId(speedHunt.getId());
         speedhuntRequest.setUserId(getUserId());
         speedhuntRequest.setTime(time);
-        speedhuntRequest.setPos(1);
         speedhuntRequest.setId(storage.addObject(speedhuntRequest, new Request(new Columns.Exclude("id"))));
 
         connectionManager.updateAllPosition(true, position);
@@ -162,16 +159,10 @@ public class CurrentManhuntResource extends BaseResource {
 
         var time = new Date();
 
-        speedHunt.setLastTime(time);
-        storage.updateObject(speedHunt, new Request(
-                new Columns.Exclude("id"),
-                new Condition.Equals("id", speedHunt.getId())));
-
         var speedHuntRequest = new SpeedHuntRequest();
         speedHuntRequest.setSpeedHuntsId(speedHunt.getId());
         speedHuntRequest.setUserId(getUserId());
         speedHuntRequest.setTime(time);
-        speedHuntRequest.setPos(speedHunt.getSpeedHuntRequests().size() + 1);
         speedHuntRequest.setId(storage.addObject(speedHuntRequest, new Request(new Columns.Exclude("id"))));
 
         connectionManager.updateAllPosition(true, position);

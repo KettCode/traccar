@@ -28,21 +28,6 @@ public class SpeedHunt extends BaseModel {
         this.deviceId = deviceId;
     }
 
-    private long pos;
-    public long getPos() {
-        return pos;
-    }
-    public void setPos(long pos) {
-        this.pos = pos;
-    }
-
-    private Date lastTime;
-    public Date getLastTime() { return lastTime; }
-    public void setLastTime(Date lastTime) {
-        this.lastTime = lastTime;
-    }
-
-
     private List<SpeedHuntRequest> speedHuntRequests;
     @QueryIgnore
     public List<SpeedHuntRequest> getSpeedHuntRequests() {
