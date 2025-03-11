@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
 import org.traccar.config.Config;
 import org.traccar.helper.model.PositionUtil;
+import org.traccar.manhunt.DeviceInfo;
 import org.traccar.model.*;
 import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;
@@ -42,9 +43,12 @@ public class ManhuntDatabaseStorage {
         }
     }
 
-    public List<Device> getHuntedDevices(long manhuntId, boolean withCaught) throws StorageException {
+    public List<DeviceInfo> getHuntedDevices(long manhuntId, boolean withCaught) throws StorageException {
         try {
-            var query = "SELECT * " +
+            var query = "SELECT tc_devices.id, tc_devices.name, " +
+                    "   CASE " +
+                    "   WHEN tc_catches.id IS NULL THEN 0 " +
+                    "   ELSE 1 END AS isCaught " +
                     "FROM tc_devices " +
                     "JOIN tc_groups ON tc_groups.id = tc_devices.groupId " +
                     "LEFT JOIN tc_catches ON tc_catches.manhuntsId = :manhuntId and tc_catches.deviceId = tc_devices.id " +
@@ -59,7 +63,7 @@ public class ManhuntDatabaseStorage {
 
             QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
             builder.setLong("manhuntId", manhuntId);
-            return builder.executeQuery(Device.class);
+            return builder.executeQuery(DeviceInfo.class);
 
         } catch (SQLException e) {
             throw new StorageException(e);

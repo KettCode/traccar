@@ -6,6 +6,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.traccar.api.BaseResource;
 import org.traccar.api.TraccarException;
+import org.traccar.manhunt.DeviceInfo;
 import org.traccar.manhunt.ManhuntManager;
 import org.traccar.model.*;
 import org.traccar.session.ConnectionManager;
@@ -47,7 +48,7 @@ public class CurrentManhuntResource extends BaseResource {
     
     @Path("getHuntedDevices")
     @GET
-    public Collection<Device> getHuntedDevices() throws StorageException {
+    public Collection<DeviceInfo> getHuntedDevices() throws StorageException {
         var manhunt = manhuntDatabaseStorage.getCurrent();
         if(manhunt == null)
             return new ArrayList<>();
@@ -60,7 +61,7 @@ public class CurrentManhuntResource extends BaseResource {
     public Response getManhuntHunterInfo() throws StorageException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         var info = manhuntDatabaseStorage.getManhuntHunterInfo(getUserId());
 
-        var huntedDevices = manhuntManager.getDeviceInfos(info.getManhunt().getId());
+        var huntedDevices = manhuntDatabaseStorage.getHuntedDevices(info.getManhunt().getId(), true);
         info.setHuntedDevices(huntedDevices);
 
         return Response.ok(info).build();
@@ -71,7 +72,7 @@ public class CurrentManhuntResource extends BaseResource {
     public Response getManhuntHuntedInfo() throws StorageException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         var info = manhuntDatabaseStorage.getManhuntHuntedInfo(getUserId());
 
-        var huntedDevices = manhuntManager.getDeviceInfos(info.getManhunt().getId());
+        var huntedDevices = manhuntDatabaseStorage.getHuntedDevices(info.getManhunt().getId(), true);
         info.setHuntedDevices(huntedDevices);
 
         return Response.ok(info).build();
