@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
 import org.traccar.config.Config;
 import org.traccar.helper.model.PositionUtil;
+import org.traccar.manhunt.CreateSpeedHuntRequestDto;
 import org.traccar.manhunt.DeviceInfo;
 import org.traccar.model.*;
 import org.traccar.storage.query.Columns;
@@ -47,8 +48,8 @@ public class ManhuntDatabaseStorage {
         try {
             var query = "SELECT tc_devices.id, tc_devices.name, " +
                     "   CASE " +
-                    "   WHEN tc_catches.id IS NULL THEN 0 " +
-                    "   ELSE 1 END AS isCaught " +
+                    "       WHEN tc_catches.id IS NULL THEN 0 " +
+                    "       ELSE 1 END AS isCaught " +
                     "FROM tc_devices " +
                     "JOIN tc_groups ON tc_groups.id = tc_devices.groupId " +
                     "LEFT JOIN tc_catches ON tc_catches.manhuntsId = :manhuntId and tc_catches.deviceId = tc_devices.id " +
@@ -102,18 +103,30 @@ public class ManhuntDatabaseStorage {
         }
     }
 
-    public List<SpeedHunt> getSpeedHunts(long groupId, long manhuntId) throws StorageException {
+    public CreateSpeedHuntRequestDto getCreateSpeedHuntRequestDto(long manhuntId, long speedHuntId) throws StorageException {
         try {
-            var query = "SELECT * " +
-                    "FROM tc_speedHunts " +
-                    "WHERE tc_speedHunts.manhuntsId = :manhuntsId " +
-                    "AND tc_speedHunts.hunterGroupId = :groupId " +
-                    "ORDER BY tc_speedHunts.time";
+            var query = "SELECT sh.id, d.name as deviceName, d.id as deviceId, g.manhuntRole as manhuntRole, " +
+                    "   ( " +
+                    "       SELECT COUNT(shr.id) " +
+                    "       FROM tc_speedHuntRequests shr " +
+                    "       WHERE shr.speedHuntsId = sh.id " +
+                    "   ) AS speedHuntRequests, " +
+                    "   CASE " +
+                    "       WHEN c.id IS NULL THEN 0 " +
+                    "       ELSE 1 " +
+                    "   END AS isCaught " +
+                    "FROM tc_speedHunts sh " +
+                    "LEFT JOIN tc_devices d on d.id = sh.deviceId " +
+                    "LEFT JOIN tc_catches c on c.deviceId = sh.deviceId and c.manhuntsId = :manhuntId " +
+                    "LEFT JOIN tc_groups g on g.id = d.groupId " +
+                    "WHERE sh.manhuntsId = :manhuntId " +
+                    "AND sh.id = :speedHuntId ";
 
             QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
-            builder.setLong("manhuntsId", manhuntId);
-            builder.setLong("groupId", groupId);
-            return builder.executeQuery(SpeedHunt.class);
+            builder.setLong("manhuntId", manhuntId);
+            builder.setLong("speedHuntId", speedHuntId);
+            var dto = builder.executeQuery(CreateSpeedHuntRequestDto.class);
+            return dto.isEmpty() ? null : dto.get(0);
         } catch (SQLException e) {
             throw new StorageException(e);
         }

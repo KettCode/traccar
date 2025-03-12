@@ -6,6 +6,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.traccar.api.BaseResource;
 import org.traccar.api.TraccarException;
+import org.traccar.manhunt.CreateSpeedHuntRequestDto;
 import org.traccar.manhunt.DeviceInfo;
 import org.traccar.manhunt.ManhuntManager;
 import org.traccar.model.*;
@@ -142,34 +143,15 @@ public class CurrentManhuntResource extends BaseResource {
         if(user.getGroup() == null || user.getGroup().getManhuntRole() != 1)
             throw new TraccarException("Der Benutzer ist kein 'Jaeger'.");
 
-        var manhuntInfo = manhuntDatabaseStorage.getManhuntHunterInfo(getUserId());
-        if(!manhuntInfo.getIsManhuntRunning())
-            throw new TraccarException("Es wurde kein laufendes Spiel gefunden.");
+        var manhunt = manhuntDatabaseStorage.getCurrent();
+        if(manhunt == null)
+            throw new TraccarException("Es wurde kein Spiel gefunden.");
 
-        if(!manhuntInfo.getIsSpeedHuntRunning())
-            throw new TraccarException("Es gibt keinen aktiven Speedhunt.");
-
-        var speedHunt = manhuntInfo
-                .getSpeedHunts()
-                .stream()
-                .filter(x -> x.getId() == speedHuntId)
-                .findFirst()
-                .orElse(null);
-
-        if(speedHunt == null)
-            throw new TraccarException("Es wurde kein Speedhunt gefunden.");
-
-        var speedHuntRequests = speedHunt.getSpeedHuntRequests();
-        if(speedHuntRequests.size() >= user.getGroup().getSpeedHuntRequests())
-            throw new TraccarException("Es gibt keine verfügbare Standortanfrage mehr.");
-
-        var device = storage.getObject(Device.class, new Request(
-                new Columns.All(), new Condition.Equals("id", speedHunt.getDeviceId())));
-        if(device == null)
-            throw new TraccarException("Das ausgewählte Gerät konnte nicht gefunden werden.");
+        var dto = manhuntDatabaseStorage.getCreateSpeedHuntRequestDto(manhunt.getId(), speedHuntId);
+        CheckCreateSpeedHuntRequestDto(dto, user);
 
         var position = storage.getObject(Position.class, new Request(
-                new Columns.All(), new Condition.LatestPositions(speedHunt.getDeviceId())));
+                new Columns.All(), new Condition.LatestPositions(dto.getDeviceId())));
         if(position == null)
             throw new TraccarException("Es konnte keine Position gefunden werden.");
 
@@ -178,16 +160,37 @@ public class CurrentManhuntResource extends BaseResource {
         var time = new Date();
 
         var speedHuntRequest = new SpeedHuntRequest();
-        speedHuntRequest.setSpeedHuntsId(speedHunt.getId());
+        speedHuntRequest.setSpeedHuntsId(dto.getId());
         speedHuntRequest.setUserId(getUserId());
         speedHuntRequest.setTime(time);
         speedHuntRequest.setId(storage.addObject(speedHuntRequest, new Request(new Columns.Exclude("id"))));
 
         connectionManager.updateAllPosition(true, position);
 
+        var device = new Device();
+        device.setId(dto.getDeviceId());
+        device.setName(dto.getDeviceName());
         sendSpeedHuntRequestEvent(device, user.getGroup(), position);
 
         return Response.ok(speedHuntRequest).build();
+    }
+
+    private void CheckCreateSpeedHuntRequestDto(CreateSpeedHuntRequestDto dto, User user) throws TraccarException {
+        if(dto == null || dto.getId() == 0)
+            throw new TraccarException("Es wurde kein Speedhunt gefunden.");
+
+        if(dto.getIsCaught())
+            throw new TraccarException("Der Spieler wurde bereits gefangen.");
+
+        if(dto.getSpeedHuntRequests() >= user.getGroup().getSpeedHuntRequests())
+            throw new TraccarException("Es gibt keine verfügbare Standortanfrage mehr.");
+
+        if(dto.getDeviceId() == 0)
+            throw new TraccarException("Das ausgewählte Gerät konnte nicht gefunden werden.");
+
+        if(dto.getManhuntRole() != 2) {
+            throw new TraccarException("Das ausgewählte Gerät ist kein 'Gejagter'.");
+        }
     }
 
     @Path("createCatch")
