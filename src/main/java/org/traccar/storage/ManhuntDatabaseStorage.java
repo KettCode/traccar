@@ -49,7 +49,8 @@ public class ManhuntDatabaseStorage {
             var query = "SELECT tc_devices.id, tc_devices.name, " +
                     "   CASE " +
                     "       WHEN tc_catches.id IS NULL THEN 0 " +
-                    "       ELSE 1 END AS isCaught " +
+                    "       ELSE 1 " +
+                    "   END AS isCaught " +
                     "FROM tc_devices " +
                     "JOIN tc_groups ON tc_groups.id = tc_devices.groupId " +
                     "LEFT JOIN tc_catches ON tc_catches.manhuntsId = :manhuntId and tc_catches.deviceId = tc_devices.id " +
@@ -174,35 +175,6 @@ public class ManhuntDatabaseStorage {
             builder.setLong("deviceId", deviceId);
             var groups = builder.executeQuery(Group.class);
             return groups.isEmpty() ? null : groups.get(0);
-        } catch (SQLException e) {
-            throw new StorageException(e);
-        }
-    }
-
-    public List<Group> getGroups(long manhuntRole) throws StorageException {
-        try {
-            var query = "SELECT * " +
-                    "FROM tc_groups " +
-                    "WHERE tc_groups.manhuntRole = :manhuntRole ";
-
-            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
-            builder.setLong("manhuntRole", manhuntRole);
-            return builder.executeQuery(Group.class);
-        } catch (SQLException e) {
-            throw new StorageException(e);
-        }
-    }
-
-    public List<User> getUsers(long groupId) throws StorageException {
-        try {
-            var query = "SELECT * " +
-                    "FROM tc_users " +
-                    "JOIN tc_groups ON tc_groups.id = tc_users.groupId " +
-                    "WHERE tc_groups.id = :groupId ";
-
-            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
-            builder.setLong("groupId", groupId);
-            return builder.executeQuery(User.class);
         } catch (SQLException e) {
             throw new StorageException(e);
         }

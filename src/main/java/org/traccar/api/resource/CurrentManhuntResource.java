@@ -8,7 +8,6 @@ import org.traccar.api.BaseResource;
 import org.traccar.api.TraccarException;
 import org.traccar.manhunt.CreateSpeedHuntRequestDto;
 import org.traccar.manhunt.DeviceInfo;
-import org.traccar.manhunt.ManhuntManager;
 import org.traccar.model.*;
 import org.traccar.session.ConnectionManager;
 import org.traccar.storage.ManhuntDatabaseStorage;
@@ -32,9 +31,6 @@ public class CurrentManhuntResource extends BaseResource {
 
     @Inject
     private ConnectionManager connectionManager;
-
-    @Inject
-    private ManhuntManager manhuntManager;
 
     public CurrentManhuntResource(){
 
