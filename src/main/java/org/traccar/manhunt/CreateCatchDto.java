@@ -1,6 +1,6 @@
 package org.traccar.manhunt;
 
-public class CreateSpeedHuntRequestDto implements IContainsManhunt, IContainsDevice, IContainsSpeedHunt {
+public class CreateCatchDto implements IContainsManhunt, IContainsDevice{
     private long manhuntId;
 
     @Override
@@ -55,29 +55,5 @@ public class CreateSpeedHuntRequestDto implements IContainsManhunt, IContainsDev
     @Override
     public void setDeviceIsCaught(boolean isCaught) {
         this.deviceIsCaught = isCaught;
-    }
-
-    private long speedHuntId;
-
-    @Override
-    public long getSpeedHuntId() {
-        return speedHuntId;
-    }
-
-    @Override
-    public void setSpeedHuntId(long speedHuntId) {
-        this.speedHuntId = speedHuntId;
-    }
-
-    private long speedHuntRequests;
-
-    @Override
-    public long getSpeedHuntRequests() {
-        return speedHuntRequests;
-    }
-
-    @Override
-    public void setSpeedHuntRequests(long speedHuntRequests) {
-        this.speedHuntRequests = speedHuntRequests;
     }
 }

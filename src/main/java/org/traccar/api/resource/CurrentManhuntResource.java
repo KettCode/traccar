@@ -6,8 +6,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.traccar.api.BaseResource;
 import org.traccar.api.TraccarException;
-import org.traccar.manhunt.CreateSpeedHuntRequestDto;
-import org.traccar.manhunt.DeviceInfo;
+import org.traccar.manhunt.*;
 import org.traccar.model.*;
 import org.traccar.session.ConnectionManager;
 import org.traccar.storage.ManhuntDatabaseStorage;
@@ -75,6 +74,22 @@ public class CurrentManhuntResource extends BaseResource {
         return Response.ok(info).build();
     }
 
+    @Path("createCatch")
+    @POST
+    public Response createCatch(@QueryParam("deviceId") long deviceId) throws StorageException, TraccarException {
+        var user = permissionsService.getUser(getUserId(), true);
+        if(user.getGroup() == null || user.getGroup().getManhuntRole() != 1)
+            throw new TraccarException("Der Benutzer ist kein 'Jaeger'.");
+
+        var dto = manhuntDatabaseStorage.getCreateCatchDto(deviceId);
+        CheckCreateCatchDto(dto);
+
+        var catch1 = manhuntDatabaseStorage.createCatch(dto.getManhuntId(), user.getGroupId(), deviceId);
+        sendCatchEvent(dto.getDeviceId(), dto.getDeviceName(), user.getGroup());
+
+        return Response.ok(catch1).build();
+    }
+
     @Path("createSpeedHunt")
     @POST
     public Response createSpeedHunt(@QueryParam("deviceId") long deviceId) throws StorageException, TraccarException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
@@ -111,23 +126,12 @@ public class CurrentManhuntResource extends BaseResource {
 
         manhuntDatabaseStorage.saveManhuntPosition(position);
 
-        var time = new Date();
-
-        var speedHunt = new SpeedHunt();
-        speedHunt.setManhuntsId(manhuntInfo.getManhunt().getId());
-        speedHunt.setHunterGroupId(user.getGroup().getId());
-        speedHunt.setDeviceId(deviceId);
-        speedHunt.setId(storage.addObject(speedHunt, new Request(new Columns.Exclude("id"))));
-
-        var speedhuntRequest = new SpeedHuntRequest();
-        speedhuntRequest.setSpeedHuntsId(speedHunt.getId());
-        speedhuntRequest.setUserId(getUserId());
-        speedhuntRequest.setTime(time);
-        speedhuntRequest.setId(storage.addObject(speedhuntRequest, new Request(new Columns.Exclude("id"))));
+        var speedHunt = manhuntDatabaseStorage.createSpeedHunt(manhuntInfo.getManhunt().getId(), user.getGroup().getId(), deviceId);
+        manhuntDatabaseStorage.createSpeedHuntRequest(speedHunt.getId(), getUserId());
 
         connectionManager.updateAllPosition(true, position);
 
-        sendSpeedHuntEvent(device, user.getGroup(), position);
+        sendSpeedHuntEvent(device.getId(), device.getName(), user.getGroup(), position);
 
         return Response.ok(speedHunt).build();
     }
@@ -139,11 +143,7 @@ public class CurrentManhuntResource extends BaseResource {
         if(user.getGroup() == null || user.getGroup().getManhuntRole() != 1)
             throw new TraccarException("Der Benutzer ist kein 'Jaeger'.");
 
-        var manhunt = manhuntDatabaseStorage.getCurrent();
-        if(manhunt == null)
-            throw new TraccarException("Es wurde kein Spiel gefunden.");
-
-        var dto = manhuntDatabaseStorage.getCreateSpeedHuntRequestDto(manhunt.getId(), speedHuntId);
+        var dto = manhuntDatabaseStorage.getCreateSpeedHuntRequestDto(speedHuntId);
         CheckCreateSpeedHuntRequestDto(dto, user);
 
         var position = storage.getObject(Position.class, new Request(
@@ -152,117 +152,77 @@ public class CurrentManhuntResource extends BaseResource {
             throw new TraccarException("Es konnte keine Position gefunden werden.");
 
         manhuntDatabaseStorage.saveManhuntPosition(position);
-
-        var time = new Date();
-
-        var speedHuntRequest = new SpeedHuntRequest();
-        speedHuntRequest.setSpeedHuntsId(dto.getId());
-        speedHuntRequest.setUserId(getUserId());
-        speedHuntRequest.setTime(time);
-        speedHuntRequest.setId(storage.addObject(speedHuntRequest, new Request(new Columns.Exclude("id"))));
-
+        var speedHuntRequest = manhuntDatabaseStorage.createSpeedHuntRequest(dto.getSpeedHuntId(), getUserId());
         connectionManager.updateAllPosition(true, position);
-
-        var device = new Device();
-        device.setId(dto.getDeviceId());
-        device.setName(dto.getDeviceName());
-        sendSpeedHuntRequestEvent(device, user.getGroup(), position);
+        sendSpeedHuntRequestEvent(dto.getDeviceId(), dto.getDeviceName(), user.getGroup(), position);
 
         return Response.ok(speedHuntRequest).build();
     }
 
-    private void CheckCreateSpeedHuntRequestDto(CreateSpeedHuntRequestDto dto, User user) throws TraccarException {
-        if(dto == null || dto.getId() == 0)
-            throw new TraccarException("Es wurde kein Speedhunt gefunden.");
+    private void CheckManhunt(IContainsManhunt dto) throws TraccarException {
+        if(dto == null || dto.getManhuntId() == 0)
+            throw new TraccarException("Es wurde kein Spiel gefunden.");
+    }
 
-        if(dto.getIsCaught())
-            throw new TraccarException("Der Spieler wurde bereits gefangen.");
-
-        if(dto.getSpeedHuntRequests() >= user.getGroup().getSpeedHuntRequests())
-            throw new TraccarException("Es gibt keine verfügbare Standortanfrage mehr.");
-
+    private void CheckDeviceDto(IContainsDevice dto) throws TraccarException {
         if(dto.getDeviceId() == 0)
             throw new TraccarException("Das ausgewählte Gerät konnte nicht gefunden werden.");
 
-        if(dto.getManhuntRole() != 2) {
+        if(dto.getDeviceManhuntRole() != 2)
             throw new TraccarException("Das ausgewählte Gerät ist kein 'Gejagter'.");
-        }
+
+        if(dto.getDeviceIsCaught())
+            throw new TraccarException("Der Spieler wurde bereits verhaftet.");
     }
 
-    @Path("createCatch")
-    @POST
-    public Response createCatch(@QueryParam("deviceId") long deviceId) throws StorageException, TraccarException {
-        var manhunt = manhuntDatabaseStorage.getCurrent();
-        if(manhunt == null)
+    private void CheckCreateCatchDto(CreateCatchDto dto) throws TraccarException {
+        CheckManhunt(dto);
+        CheckDeviceDto(dto);
+    }
+
+    private void CheckCreateSpeedHuntRequestDto(CreateSpeedHuntRequestDto dto, User user) throws TraccarException {
+        CheckManhunt(dto);
+        CheckDeviceDto(dto);
+
+        if(dto.getSpeedHuntId() == 0)
             throw new TraccarException("Es wurde kein Speedhunt gefunden.");
 
-        var group = manhuntDatabaseStorage.getGroupByUserId(getUserId());
-        if(group == null || group.getManhuntRole() != 1)
-            throw new TraccarException("Der Benutzer ist kein 'Jaeger'.");
-
-        var device = storage.getObject(Device.class, new Request(
-                new Columns.All(), new Condition.Equals("id", deviceId)));
-        if(device == null)
-            throw new TraccarException("Das ausgewählte Gerät konnte nicht gefunden werden.");
-
-        var huntedGroup = manhuntDatabaseStorage.getGroupByDeviceId(deviceId);
-        if(huntedGroup == null || huntedGroup.getManhuntRole() != 2)
-            throw new TraccarException("Das ausgewählte Gerät ist kein 'Gejagter'.");
-
-        var currentCatch = storage.getObject(Catches.class, new Request(new Columns.All(),
-                new Condition.And(
-                        new Condition.Equals("manhuntsId", manhunt.getId()),
-                        new Condition.Equals("deviceId", deviceId)
-                )));
-        if(currentCatch != null)
-            throw new TraccarException("Der Spieler wurde bereits verhaftet.");
-
-        var time = new Date();
-
-        var catch1 = new Catches();
-        catch1.setManhuntsId(manhunt.getId());
-        catch1.setHunterGroupId(group.getId());
-        catch1.setDeviceId(deviceId);
-        catch1.setTime(time);
-        catch1.setId(storage.addObject(catch1, new Request(new Columns.Exclude("id"))));
-
-        sendCatchEvent(device, group);
-
-        return Response.ok(catch1).build();
+        if(dto.getSpeedHuntRequests() >= user.getGroup().getSpeedHuntRequests())
+            throw new TraccarException("Es gibt keine verfügbare Standortanfrage mehr.");
     }
 
-    private void sendSpeedHuntEvent(Device device, Group group, Position position) throws StorageException {
+    private void sendSpeedHuntEvent(long deviceId, String deviceName, Group group, Position position) throws StorageException {
         Event event = new Event();
-        event.setDeviceId(device.getId());
+        event.setDeviceId(deviceId);
         event.setType("speedHunt");
         event.setEventTime(new Date());
         event.setPositionId(position.getId());
-        event.set("message", "Speedhunt auf '" + device.getName() + "' gestartet");
+        event.set("message", "Speedhunt auf '" + deviceName + "' gestartet");
         event.set("name", "Speedhunt");
         event.set("hunterGroup", group.getName());
 
         connectionManager.sendEventToAllUsers(event);
     }
 
-    private void sendSpeedHuntRequestEvent(Device device, Group group, Position position) throws StorageException {
+    private void sendSpeedHuntRequestEvent(long deviceId, String deviceName, Group group, Position position) throws StorageException {
         Event event = new Event();
-        event.setDeviceId(device.getId());
+        event.setDeviceId(deviceId);
         event.setType("speedHuntRequest");
         event.setEventTime(new Date());
         event.setPositionId(position.getId());
-        event.set("message", "Standort von '" + device.getName() + "' angefragt");
+        event.set("message", "Standort von '" + deviceName + "' angefragt");
         event.set("name", "Standortanfrage");
         event.set("hunterGroup", group.getName());
 
         connectionManager.sendEventToAllUsers(event);
     }
 
-    private void sendCatchEvent(Device device, Group group) throws StorageException {
+    private void sendCatchEvent(long deviceId, String deviceName, Group group) throws StorageException {
         Event event = new Event();
-        event.setDeviceId(device.getId());
+        event.setDeviceId(deviceId);
         event.setType("catch");
         event.setEventTime(new Date());
-        event.set("message", "Der Spieler '" + device.getName() + "' wurde verhaftet");
+        event.set("message", "Der Spieler '" + deviceName + "' wurde verhaftet");
         event.set("name", "Verhaftung");
         event.set("hunterGroup", group.getName());
 
