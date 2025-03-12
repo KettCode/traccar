@@ -7,6 +7,7 @@ import jakarta.ws.rs.core.Response;
 import org.traccar.api.BaseResource;
 import org.traccar.api.TraccarException;
 import org.traccar.manhunt.*;
+import org.traccar.manhunt.ManhuntInfo;
 import org.traccar.model.*;
 import org.traccar.session.ConnectionManager;
 import org.traccar.storage.ManhuntDatabaseStorage;
@@ -52,26 +53,57 @@ public class CurrentManhuntResource extends BaseResource {
         return manhuntDatabaseStorage.getHuntedDevices(manhunt.getId(),false);
     }
 
-    @Path("getManhuntHunterInfo")
+    @Path("getManhuntInfo")
     @GET
-    public Response getManhuntHunterInfo() throws StorageException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        var info = manhuntDatabaseStorage.getManhuntHunterInfo(getUserId());
+    public Response getManhuntInfo() throws StorageException, TraccarException {
+        var manhunt = manhuntDatabaseStorage.getCurrent();
+        if(manhunt == null)
+            throw new TraccarException("Es wurde kein Spiel gefunden.");
 
-        var huntedDevices = manhuntDatabaseStorage.getHuntedDevices(info.getManhunt().getId(), true);
-        info.setHuntedDevices(huntedDevices);
+        var manhuntInfo = new ManhuntInfo();
+        manhuntInfo.setManhunt(manhunt);
 
-        return Response.ok(info).build();
+        var huntedDevices = manhuntDatabaseStorage.getHuntedDevices(manhunt.getId(), true);
+        manhuntInfo.setHuntedDevices(huntedDevices);
+
+        return Response.ok(manhuntInfo).build();
     }
 
-    @Path("getManhuntHuntedInfo")
+    @Path("getSpeedHuntInfo")
     @GET
-    public Response getManhuntHuntedInfo() throws StorageException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        var info = manhuntDatabaseStorage.getManhuntHuntedInfo(getUserId());
+    public Response getSpeedHuntInfo() throws StorageException, TraccarException {
+        var manhunt = manhuntDatabaseStorage.getCurrent();
+        if(manhunt == null)
+            throw new TraccarException("Es wurde kein Spiel gefunden.");
 
-        var huntedDevices = manhuntDatabaseStorage.getHuntedDevices(info.getManhunt().getId(), true);
-        info.setHuntedDevices(huntedDevices);
+        var speedHuntInfo = new SpeedHuntInfo();
+        speedHuntInfo.setManhunt(manhunt);
 
-        return Response.ok(info).build();
+        var speedHunts = manhuntDatabaseStorage.getSpeedHunts(manhunt.getId());
+        speedHuntInfo.setSpeedHunts(speedHunts);
+
+        var devices = storage.getObjects(Device.class, new Request(new Columns.All()));
+        speedHuntInfo.setDevices(devices);
+
+        var lastSpeedHunt = speedHuntInfo.getLastSpeedHunt();
+        if(lastSpeedHunt != null) {
+            var isCaught = storage.getObject(Catches.class, new Request(new Columns.All(),
+                    new Condition.And(
+                            new Condition.Equals("manhuntsId", manhunt.getId()),
+                            new Condition.Equals("deviceId", lastSpeedHunt.getDeviceId())
+                    ))) != null;
+            var hunterGroup = storage.getObject(Group.class, new Request(new Columns.All(),
+                    new Condition.Equals("id", lastSpeedHunt.getHunterGroupId())));
+            var requests = lastSpeedHunt.getSpeedHuntRequests().size();
+
+            var availableSpeedHuntRequests = hunterGroup.getSpeedHuntRequests() - requests;
+            var isSpeedHuntRunning = !isCaught && availableSpeedHuntRequests > 0;
+
+            speedHuntInfo.setAvailableSpeedHuntRequests(availableSpeedHuntRequests);
+            speedHuntInfo.setIsSpeedHuntRunning(isSpeedHuntRunning);
+        }
+
+        return Response.ok(speedHuntInfo).build();
     }
 
     @Path("createCatch")

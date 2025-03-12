@@ -4,17 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
 import org.traccar.config.Config;
 import org.traccar.helper.model.PositionUtil;
-import org.traccar.manhunt.CreateCatchDto;
-import org.traccar.manhunt.CreateSpeedHuntDto;
-import org.traccar.manhunt.CreateSpeedHuntRequestDto;
-import org.traccar.manhunt.DeviceInfo;
+import org.traccar.manhunt.*;
 import org.traccar.model.*;
 import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;
 import org.traccar.storage.query.Request;
 
 import javax.sql.DataSource;
-import java.lang.reflect.InvocationTargetException;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -271,6 +267,24 @@ public class ManhuntDatabaseStorage {
         }
     }
 
+    public List<SpeedHunt> getSpeedHunts(long manhuntId) throws StorageException {
+        var conditions = new LinkedList<Condition>();
+        conditions.add(new Condition.Equals("manhuntsId", manhuntId));
+        //if(group != null && group.getManhuntRole() == 1)
+        //    conditions.add(new Condition.Equals("hunterGroupId", group.getId()));
+
+        var speedHunts = storage.getObjects(SpeedHunt.class, new Request(new Columns.All(), Condition.merge(conditions)));
+        var speedHuntIds = speedHunts.stream().map(SpeedHunt::getId).toList();
+        var speedHuntRequests = getSpeedHuntRequests(speedHuntIds);
+        speedHunts.forEach(x -> {
+            var speedHuntRequestsInternal = speedHuntRequests.stream()
+                    .filter(y -> y.getSpeedHuntsId() == x.getId())
+                    .toList();
+            x.setSpeedHuntRequests(speedHuntRequestsInternal);
+        });
+        return speedHunts;
+    }
+
     public List<Position> getManhuntPositions(long userId) throws StorageException {
 
         var manhunt = getCurrent();
@@ -328,53 +342,5 @@ public class ManhuntDatabaseStorage {
         speedHuntRequest.setTime(new Date());
         speedHuntRequest.setId(storage.addObject(speedHuntRequest, new Request(new Columns.Exclude("id"))));
         return speedHuntRequest;
-    }
-
-    public ManhuntHunterInfo getManhuntHunterInfo(long userId) throws StorageException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        return getManhuntInfo(userId, ManhuntHunterInfo.class);
-    }
-
-    public ManhuntHuntedInfo getManhuntHuntedInfo(long userId) throws StorageException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        return getManhuntInfo(userId, ManhuntHuntedInfo.class);
-    }
-
-    public <T extends ManhuntInfo> T getManhuntInfo(long userId, Class<T> type) throws StorageException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        var manhunt = getCurrent();
-        if(manhunt == null)
-            return type.getDeclaredConstructor().newInstance();
-
-        var groups = storage.getObjects(Group.class, new Request(new Columns.All()));
-        var devices = storage.getObjects(Device.class, new Request(new Columns.All()));
-        var catches = storage.getObjects(Catches.class, new Request(new Columns.All(),
-                new Condition.Equals("manhuntsId", manhunt.getId())));
-        var group = getGroupByUserId(userId);
-        var speedHunts = getSpeedHunts(manhunt.getId(), group);
-
-        var manhuntInfo = type.getDeclaredConstructor().newInstance();
-        manhuntInfo.setManhunt(manhunt);
-        manhuntInfo.setSpeedHunts(speedHunts);
-        manhuntInfo.setGroup(group);
-        manhuntInfo.setCatches(catches);
-        manhuntInfo.setGroups(groups);
-        manhuntInfo.setDevices(devices);
-        return manhuntInfo;
-    }
-
-    private List<SpeedHunt> getSpeedHunts(long manhuntId, Group group) throws StorageException {
-        var conditions = new LinkedList<Condition>();
-        conditions.add(new Condition.Equals("manhuntsId", manhuntId));
-        if(group != null && group.getManhuntRole() == 1)
-            conditions.add(new Condition.Equals("hunterGroupId", group.getId()));
-
-        var speedHunts = storage.getObjects(SpeedHunt.class, new Request(new Columns.All(), Condition.merge(conditions)));
-        var speedHuntIds = speedHunts.stream().map(SpeedHunt::getId).toList();
-        var speedHuntRequests = getSpeedHuntRequests(speedHuntIds);
-        speedHunts.forEach(x -> {
-            var speedHuntRequestsInternal = speedHuntRequests.stream()
-                    .filter(y -> y.getSpeedHuntsId() == x.getId())
-                    .toList();
-            x.setSpeedHuntRequests(speedHuntRequestsInternal);
-        });
-        return speedHunts;
     }
 }
