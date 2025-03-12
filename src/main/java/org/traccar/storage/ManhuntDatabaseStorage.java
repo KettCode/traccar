@@ -136,38 +136,44 @@ public class ManhuntDatabaseStorage {
         }
     }
 
-    public CreateSpeedHuntDto getCreateSpeedHuntDto() throws StorageException {
+    public CreateSpeedHuntDto getCreateSpeedHuntDto(long deviceId) throws StorageException {
         try {
             var query = "SELECT " +
                     "mh.id as manhuntId, " +
-                    "sh.id as speedHuntId, " +
                     "d.id as deviceId, " +
                     "d.name as deviceName, " +
-                    "g.manhuntRole as manhuntRole, " +
+                    "g.manhuntRole as deviceManhuntRole, " +
                     "CASE " +
                     "   WHEN c.id IS NULL THEN 0 " +
                     "   ELSE 1 " +
-                    "END AS isCaught, " +
+                    "END AS deviceIsCaught, " +
+                    "last_sh.id as lastSpeedHuntId, " +
+                    "last_sh.deviceId as lastDeviceId, " +
+                    "CASE " +
+                    "   WHEN last_c.id IS NULL THEN 0 " +
+                    "   ELSE 1 " +
+                    "END AS lastDeviceIsCaught, " +
+                    "( " +
+                    "   SELECT COUNT(shr.id) " +
+                    "   FROM tc_speedHuntRequests shr " +
+                    "   WHERE shr.speedHuntsId = last_sh.id " +
+                    ") AS lastSpeedHuntRequests, " +
                     "( " +
                     "   SELECT COUNT(sh3.id) " +
                     "   FROM tc_speedHunts sh3 " +
                     "   WHERE sh3.manhuntsId = mh.id " +
-                    ") AS speedHunts, " +
-                    "( " +
-                    "   SELECT COUNT(shr.id) " +
-                    "   FROM tc_speedHuntRequests shr " +
-                    "   WHERE shr.speedHuntsId = sh.id " +
-                    ") AS speedHuntRequests " +
+                    ") AS speedHunts " +
                     "FROM tc_manhunts mh " +
-                    "LEFT JOIN tc_speedHunts sh on sh.id = " +
+                    "LEFT JOIN tc_devices d on d.id = :deviceId " +
+                    "LEFT JOIN tc_catches c on c.deviceId = d.id and c.manhuntsId = mh.id " +
+                    "LEFT JOIN tc_groups g on g.id = d.groupId " +
+                    "LEFT JOIN tc_speedHunts last_sh on last_sh.manhuntsId = mh.id and last_sh.id = " +
                     "   ( " +
                     "       SELECT MAX(sh2.id) " +
                     "       FROM tc_speedHunts sh2 " +
                     "       WHERE sh2.manhuntsId = mh.id " +
                     "   ) " +
-                    "LEFT JOIN tc_devices d on d.id = sh.deviceId " +
-                    "LEFT JOIN tc_catches c on c.deviceId = sh.deviceId and c.manhuntsId = mh.id " +
-                    "LEFT JOIN tc_groups g on g.id = d.groupId " +
+                    "LEFT JOIN tc_catches last_c on last_c.deviceId = last_sh.deviceId and last_c.manhuntsId = mh.id " +
                     "WHERE mh.id = " +
                     "( " +
                     "   SELECT mh2.id " +
@@ -176,6 +182,7 @@ public class ManhuntDatabaseStorage {
                     ") ";
 
             QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
+            builder.setLong("deviceId", deviceId);
             var dto = builder.executeQuery(CreateSpeedHuntDto.class);
             return dto.isEmpty() ? null : dto.get(0);
         } catch (SQLException e) {
@@ -187,7 +194,6 @@ public class ManhuntDatabaseStorage {
         try {
             var query = "SELECT " +
                     "mh.id as manhuntId, " +
-                    "sh.id as speedHuntId, " +
                     "d.id as deviceId, " +
                     "d.name as deviceName, " +
                     "g.manhuntRole as deviceManhuntRole, " +
@@ -195,6 +201,7 @@ public class ManhuntDatabaseStorage {
                     "   WHEN c.id IS NULL THEN 0 " +
                     "   ELSE 1 " +
                     "END AS deviceIsCaught, " +
+                    "sh.id as speedHuntId, " +
                     "( " +
                     "   SELECT COUNT(shr.id) " +
                     "   FROM tc_speedHuntRequests shr " +
@@ -247,22 +254,6 @@ public class ManhuntDatabaseStorage {
             builder.setLong("userId", userId);
             var groups = builder.executeQuery(Group.class);
             return groups.isEmpty() ? new Group() : groups.get(0);
-        } catch (SQLException e) {
-            throw new StorageException(e);
-        }
-    }
-
-    public Group getGroupByDeviceId(long deviceId) throws StorageException {
-        try {
-            var query = "SELECT * " +
-                    "FROM tc_groups " +
-                    "JOIN tc_devices ON tc_devices.groupId = tc_groups.id " +
-                    "WHERE tc_devices.id = :deviceId ";
-
-            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
-            builder.setLong("deviceId", deviceId);
-            var groups = builder.executeQuery(Group.class);
-            return groups.isEmpty() ? null : groups.get(0);
         } catch (SQLException e) {
             throw new StorageException(e);
         }

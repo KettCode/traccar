@@ -97,27 +97,8 @@ public class CurrentManhuntResource extends BaseResource {
         if(user.getGroup() == null || user.getGroup().getManhuntRole() != 1)
             throw new TraccarException("Der Benutzer ist kein 'Jaeger'.");
 
-        var manhuntInfo = manhuntDatabaseStorage.getManhuntHunterInfo(getUserId());
-        if(!manhuntInfo.getIsManhuntRunning())
-            throw new TraccarException("Es wurde kein laufendes Spiel gefunden.");
-
-        if(manhuntInfo.getIsSpeedHuntRunning())
-            throw new TraccarException("Es gibt bereits einen aktiven Speedhunt.");
-
-        if(manhuntInfo.getSpeedHunts().size() >= user.getGroup().getSpeedHunts())
-            throw new TraccarException("Es gibt keinen verfügbaren Speedhunt mehr.");
-
-        if(manhuntInfo.getLastSpeedHunt() != null && manhuntInfo.getLastSpeedHunt().getDeviceId() == deviceId)
-            throw new TraccarException("Zwei aufeinanderfolgende Speedhunts auf den selben Spieler sind nicht erlaubt.");
-
-        var device = storage.getObject(Device.class, new Request(
-                new Columns.All(), new Condition.Equals("id", deviceId)));
-        if(device == null)
-            throw new TraccarException("Das ausgewählte Gerät konnte nicht gefunden werden.");
-
-        var huntedGroup = manhuntDatabaseStorage.getGroupByDeviceId(deviceId);
-        if(huntedGroup == null || huntedGroup.getManhuntRole() != 2)
-            throw new TraccarException("Das ausgewählte Gerät ist kein 'Gejagter'.");
+        var dto = manhuntDatabaseStorage.getCreateSpeedHuntDto(deviceId);
+        CheckCreateSpeedHuntDto(dto, user, deviceId);
 
         var position = storage.getObject(Position.class, new Request(
                 new Columns.All(), new Condition.LatestPositions(deviceId)));
@@ -126,12 +107,10 @@ public class CurrentManhuntResource extends BaseResource {
 
         manhuntDatabaseStorage.saveManhuntPosition(position);
 
-        var speedHunt = manhuntDatabaseStorage.createSpeedHunt(manhuntInfo.getManhunt().getId(), user.getGroup().getId(), deviceId);
+        var speedHunt = manhuntDatabaseStorage.createSpeedHunt(dto.getManhuntId(), user.getGroup().getId(), deviceId);
         manhuntDatabaseStorage.createSpeedHuntRequest(speedHunt.getId(), getUserId());
-
         connectionManager.updateAllPosition(true, position);
-
-        sendSpeedHuntEvent(device.getId(), device.getName(), user.getGroup(), position);
+        sendSpeedHuntEvent(dto.getDeviceId(), dto.getDeviceName(), user.getGroup(), position);
 
         return Response.ok(speedHunt).build();
     }
@@ -178,6 +157,24 @@ public class CurrentManhuntResource extends BaseResource {
     private void CheckCreateCatchDto(CreateCatchDto dto) throws TraccarException {
         CheckManhunt(dto);
         CheckDeviceDto(dto);
+    }
+
+    private void CheckCreateSpeedHuntDto(CreateSpeedHuntDto dto, User user, long deviceId) throws TraccarException {
+        CheckManhunt(dto);
+        CheckDeviceDto(dto);
+
+        //CheckLast
+        if(dto.getLastSpeedHuntId() > 0
+                && (!dto.getLastDeviceIsCaught()
+                        && (dto.getLastSpeedHuntRequests() < user.getGroup().getSpeedHuntRequests())))
+            throw new TraccarException("Es gibt bereits einen aktiven Speedhunt.");
+
+        if(dto.getLastDeviceId() == deviceId)
+            throw new TraccarException("Zwei aufeinanderfolgende Speedhunts auf den selben Spieler sind nicht erlaubt.");
+
+        //Check
+        if(dto.getSpeedHunts() >= user.getGroup().getSpeedHunts())
+            throw new TraccarException("Es gibt keinen verfügbaren Speedhunt mehr.");
     }
 
     private void CheckCreateSpeedHuntRequestDto(CreateSpeedHuntRequestDto dto, User user) throws TraccarException {
