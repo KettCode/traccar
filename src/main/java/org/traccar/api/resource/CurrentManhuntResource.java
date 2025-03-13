@@ -226,6 +226,7 @@ public class CurrentManhuntResource extends BaseResource {
         event.set("message", "Speedhunt auf '" + device.getName() + "' gestartet");
         event.set("name", "Speedhunt");
         event.set("hunterGroup", group.getName());
+        event.set("deviceName", device.getName());
 
         connectionManager.sendEventToAllUsers(event);
     }
@@ -239,6 +240,7 @@ public class CurrentManhuntResource extends BaseResource {
         event.set("message", "Standort von '" + device.getName() + "' angefragt");
         event.set("name", "Standortanfrage");
         event.set("hunterGroup", group.getName());
+        event.set("deviceName", device.getName());
 
         connectionManager.sendEventToAllUsers(event);
     }
@@ -251,6 +253,7 @@ public class CurrentManhuntResource extends BaseResource {
         event.set("message", "Der Spieler '" + device.getName() + "' wurde verhaftet");
         event.set("name", "Verhaftung");
         event.set("hunterGroup", group.getName());
+        event.set("deviceName", device.getName());
 
         connectionManager.sendEventToAllUsers(event);
     }
