@@ -1,5 +1,6 @@
-package org.traccar.manhunt;
+package org.traccar.manhunt.info;
 
+import org.traccar.manhunt.dto.DeviceDto;
 import org.traccar.model.Manhunt;
 
 import java.time.Duration;
@@ -16,11 +17,11 @@ public class ManhuntInfo {
         this.manhunt = manhunt;
     }
 
-    private List<DeviceInfo> huntedDevices;
-    public List<DeviceInfo> getHuntedDevices() {
+    private List<DeviceDto> huntedDevices;
+    public List<DeviceDto> getHuntedDevices() {
         return huntedDevices;
     }
-    public void setHuntedDevices(List<DeviceInfo> huntedDevices) {
+    public void setHuntedDevices(List<DeviceDto> huntedDevices) {
         this.huntedDevices = huntedDevices;
     }
 

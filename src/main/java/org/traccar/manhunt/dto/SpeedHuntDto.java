@@ -1,4 +1,4 @@
-package org.traccar.manhunt;
+package org.traccar.manhunt.dto;
 
 import org.traccar.model.SpeedHunt;
 
@@ -13,9 +13,25 @@ public class SpeedHuntDto extends SpeedHunt {
         this.deviceName = deviceName;
     }
 
+    private long deviceGroupId;
+
+    public long getDeviceGroupId() {
+        return deviceGroupId;
+    }
+
+    public void setDeviceGroupId(long deviceGroupId) {
+        this.deviceGroupId = deviceGroupId;
+    }
+
+    private long deviceManhuntRole;
+
+    public long getDeviceManhuntRole() { return deviceManhuntRole; }
+
+    public void setDeviceManhuntRole(long deviceManhuntRole) { this.deviceManhuntRole = deviceManhuntRole; }
+
     private boolean deviceIsCaught;
 
-    public boolean getIsDeviceIsCaught() {
+    public boolean getDeviceIsCaught() {
         return deviceIsCaught;
     }
 
@@ -33,9 +49,19 @@ public class SpeedHuntDto extends SpeedHunt {
         this.maxRequests = maxRequests;
     }
 
+    private long numRequests;
+
+    public long getNumRequests() {
+        return numRequests;
+    }
+
+    public void setNumRequests(long numRequests) {
+        this.numRequests = numRequests;
+    }
+
     private boolean isSpeedHuntRunning;
     public boolean getIsSpeedHuntRunning() {
-        return !getIsDeviceIsCaught() && getAvailableSpeedHuntRequests() > 0;
+        return !getDeviceIsCaught() && getAvailableSpeedHuntRequests() > 0;
     }
 
     private long availableSpeedHuntRequests;

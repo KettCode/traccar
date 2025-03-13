@@ -1,4 +1,5 @@
-package org.traccar.manhunt;
+package org.traccar.manhunt.info;
+import org.traccar.manhunt.dto.SpeedHuntDto;
 import org.traccar.model.Manhunt;
 import org.traccar.model.SpeedHunt;
 
