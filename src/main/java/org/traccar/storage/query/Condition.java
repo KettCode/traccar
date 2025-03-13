@@ -208,4 +208,35 @@ public interface Condition {
         }
     }
 
+    class HunterPositions implements  Condition {
+        private final long deviceId;
+
+        public HunterPositions(long deviceId) {
+            this.deviceId = deviceId;
+        }
+
+        public HunterPositions(){
+            this(0);
+        }
+
+        public long getDeviceId() {
+            return deviceId;
+        }
+    }
+
+    class HuntedPositions implements  Condition {
+        private final long deviceId;
+
+        public HuntedPositions(long deviceId) {
+            this.deviceId = deviceId;
+        }
+
+        public HuntedPositions(){
+            this(0);
+        }
+
+        public long getDeviceId() {
+            return deviceId;
+        }
+    }
 }

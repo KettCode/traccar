@@ -30,4 +30,15 @@ public class Group extends GroupedModel {
         this.name = name;
     }
 
+    private long manhuntRole;
+    public long getManhuntRole() { return manhuntRole; }
+    public void setManhuntRole(long manhuntRole) { this.manhuntRole = manhuntRole; }
+
+    private long speedHunts;
+    public long getSpeedHunts() { return speedHunts; }
+    public void setSpeedHunts(long speedHunts) { this.speedHunts = speedHunts; }
+
+    private long speedHuntRequests;
+    public long getSpeedHuntRequests() { return speedHuntRequests; }
+    public void setSpeedHuntRequests(long speedHuntRequests) { this.speedHuntRequests = speedHuntRequests; }
 }

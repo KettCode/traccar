@@ -15,12 +15,10 @@
  */
 package org.traccar.api.resource;
 
+import jakarta.ws.rs.*;
 import org.traccar.api.SimpleObjectResource;
 import org.traccar.model.Group;
 
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
 @Path("groups")
@@ -31,5 +29,4 @@ public class GroupResource extends SimpleObjectResource<Group> {
     public GroupResource() {
         super(Group.class, "name");
     }
-
 }

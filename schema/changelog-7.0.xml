@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd"
+  logicalFilePath="changelog-7.0">
+
+<changeSet author="author" id="changelog-7.0" >
+    <addColumn tableName="tc_groups">
+      <column name="manhuntRole" type="int" />
+    </addColumn>
+    <addColumn tableName="tc_groups">
+      <column name="speedHunts" type="int" />
+    </addColumn>
+    <addColumn tableName="tc_groups">
+      <column name="speedHuntRequests" type="int" />
+    </addColumn>
+
+    <addColumn tableName="tc_users">
+      <column name="groupId" type="int" />
+    </addColumn>
+
+    <addColumn tableName="tc_devices">
+        <column name="manhuntPositionId" type="int" />
+    </addColumn>
+
+    <addColumn tableName="tc_positions">
+        <column name="isManhunt" type="BOOLEAN" />
+    </addColumn>
+
+    <createTable tableName="tc_manhunts">
+      <column name="id" type="int" autoIncrement="true">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="start" type="timestamp"/>
+      <column name="frequency" type="bigint"/>
+      <column name="attributes" type="VARCHAR(4096)">
+        <constraints nullable="false" />
+      </column>
+    </createTable>
+
+    <createTable tableName="tc_speedHunts">
+      <column name="id" type="int" autoIncrement="true">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="manhuntsId" type="int"/>
+      <column name="hunterGroupId" type="int"/>
+      <column name="deviceId" type="int"/>
+    </createTable>
+
+    <createTable tableName="tc_speedHuntRequests">
+      <column name="id" type="int" autoIncrement="true">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="speedHuntsId" type="int"/>
+      <column name="userId" type="int"/>
+      <column name="time" type="timestamp"/>
+    </createTable>
+
+    <createTable tableName="tc_catches">
+        <column name="id" type="int" autoIncrement="true">
+            <constraints primaryKey="true"/>
+        </column>
+        <column name="manhuntsId" type="int"/>
+        <column name="hunterGroupId" type="int"/>
+        <column name="deviceId" type="int"/>
+        <column name="time" type="timestamp"/>
+    </createTable>
+
+    <createTable tableName="tc_user_manhunt">
+      <column name="userid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="manhuntId" type="INT">
+        <constraints nullable="false" />
+      </column>
+    </createTable>
+
+    <createTable tableName="tc_user_speedHunt">
+      <column name="userid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="speedHuntId" type="INT">
+        <constraints nullable="false" />
+      </column>
+    </createTable>
+
+    <createTable tableName="tc_user_speedHuntRequest">
+      <column name="userid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="speedHuntRequestId" type="INT">
+        <constraints nullable="false" />
+      </column>
+    </createTable>
+
+    <createTable tableName="tc_user_catches">
+        <column name="userid" type="INT">
+            <constraints nullable="false" />
+        </column>
+        <column name="catchesId" type="INT">
+            <constraints nullable="false" />
+        </column>
+    </createTable>
+  </changeSet>
+
+</databaseChangeLog>

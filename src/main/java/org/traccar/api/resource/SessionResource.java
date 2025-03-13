@@ -86,7 +86,7 @@ public class SessionResource extends BaseResource {
 
         Long userId = (Long) request.getSession().getAttribute(SessionHelper.USER_ID_KEY);
         if (userId != null) {
-            User user = permissionsService.getUser(userId);
+            User user = permissionsService.getUser(userId, true);
             if (user != null) {
                 return user;
             }
@@ -101,6 +101,7 @@ public class SessionResource extends BaseResource {
         permissionsService.checkUser(getUserId(), userId);
         User user = storage.getObject(User.class, new Request(
                 new Columns.All(), new Condition.Equals("id", userId)));
+        permissionsService.addGroup(user);
         SessionHelper.userLogin(request, user, null);
         return user;
     }

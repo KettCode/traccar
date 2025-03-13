@@ -263,6 +263,20 @@ public class User extends ExtendedModel implements UserRestrictions, Disableable
         this.temporary = temporary;
     }
 
+    private long groupId;
+    public long getGroupId() {
+        return groupId;
+    }
+    public void setGroupId(long groupId) {
+        this.groupId = groupId;
+    }
+
+    private Group group;
+    @QueryIgnore
+    public Group getGroup() { return group; }
+    @QueryIgnore
+    public void setGroup(Group group) { this.group = group; }
+
     @QueryIgnore
     public String getPassword() {
         return null;
