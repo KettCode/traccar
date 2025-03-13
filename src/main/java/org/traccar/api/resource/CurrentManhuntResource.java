@@ -76,33 +76,19 @@ public class CurrentManhuntResource extends BaseResource {
         if(manhunt == null)
             throw new TraccarException("Es wurde kein Spiel gefunden.");
 
+        var dto = manhuntDatabaseStorage.getSpeedHuntDtos(manhunt.getId());
+
+        var speedHuntIds = dto.stream().map(SpeedHunt::getId).toList();
+        var speedHuntRequests = manhuntDatabaseStorage.getSpeedHuntRequests(speedHuntIds);
+        dto.forEach(x -> {
+            var speedHuntRequestsInternal = speedHuntRequests.stream()
+                    .filter(y -> y.getSpeedHuntsId() == x.getId())
+                    .toList();
+            x.setSpeedHuntRequests(speedHuntRequestsInternal);
+        });
         var speedHuntInfo = new SpeedHuntInfo();
         speedHuntInfo.setManhunt(manhunt);
-
-        var speedHunts = manhuntDatabaseStorage.getSpeedHunts(manhunt.getId());
-        speedHuntInfo.setSpeedHunts(speedHunts);
-
-        var devices = storage.getObjects(Device.class, new Request(new Columns.All()));
-        speedHuntInfo.setDevices(devices);
-
-        var lastSpeedHunt = speedHuntInfo.getLastSpeedHunt();
-        if(lastSpeedHunt != null) {
-            var isCaught = storage.getObject(Catches.class, new Request(new Columns.All(),
-                    new Condition.And(
-                            new Condition.Equals("manhuntsId", manhunt.getId()),
-                            new Condition.Equals("deviceId", lastSpeedHunt.getDeviceId())
-                    ))) != null;
-            var hunterGroup = storage.getObject(Group.class, new Request(new Columns.All(),
-                    new Condition.Equals("id", lastSpeedHunt.getHunterGroupId())));
-            var requests = lastSpeedHunt.getSpeedHuntRequests().size();
-
-            var availableSpeedHuntRequests = hunterGroup.getSpeedHuntRequests() - requests;
-            var isSpeedHuntRunning = !isCaught && availableSpeedHuntRequests > 0;
-
-            speedHuntInfo.setAvailableSpeedHuntRequests(availableSpeedHuntRequests);
-            speedHuntInfo.setIsSpeedHuntRunning(isSpeedHuntRunning);
-        }
-
+        speedHuntInfo.setSpeedHunts(dto);
         return Response.ok(speedHuntInfo).build();
     }
 

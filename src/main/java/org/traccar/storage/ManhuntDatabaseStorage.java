@@ -267,22 +267,27 @@ public class ManhuntDatabaseStorage {
         }
     }
 
-    public List<SpeedHunt> getSpeedHunts(long manhuntId) throws StorageException {
-        var conditions = new LinkedList<Condition>();
-        conditions.add(new Condition.Equals("manhuntsId", manhuntId));
-        //if(group != null && group.getManhuntRole() == 1)
-        //    conditions.add(new Condition.Equals("hunterGroupId", group.getId()));
+    public List<SpeedHuntDto> getSpeedHuntDtos(long manhuntId) throws StorageException {
+        try {
+            var query = "SELECT sh.*, " +
+                    "d.name as deviceName, " +
+                    "CASE " +
+                    "   WHEN c.id IS NULL THEN 0 " +
+                    "   ELSE 1 " +
+                    "END AS deviceIsCaught, " +
+                    "hunter_g.speedHuntRequests as maxRequests " +
+                    "FROM tc_speedHunts sh " +
+                    "LEFT JOIN tc_devices d on d.id = sh.deviceId " +
+                    "LEFT JOIN tc_catches c on c.deviceId = sh.deviceId and c.manhuntsId = :manhuntId " +
+                    "LEFT JOIN tc_groups hunter_g on hunter_g.id = sh.hunterGroupId " +
+                    "WHERE sh.manhuntsId = :manhuntId ";
 
-        var speedHunts = storage.getObjects(SpeedHunt.class, new Request(new Columns.All(), Condition.merge(conditions)));
-        var speedHuntIds = speedHunts.stream().map(SpeedHunt::getId).toList();
-        var speedHuntRequests = getSpeedHuntRequests(speedHuntIds);
-        speedHunts.forEach(x -> {
-            var speedHuntRequestsInternal = speedHuntRequests.stream()
-                    .filter(y -> y.getSpeedHuntsId() == x.getId())
-                    .toList();
-            x.setSpeedHuntRequests(speedHuntRequestsInternal);
-        });
-        return speedHunts;
+            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
+            builder.setLong("manhuntId", manhuntId);
+            return builder.executeQuery(SpeedHuntDto.class);
+        } catch (SQLException e) {
+            throw new StorageException(e);
+        }
     }
 
     public List<Position> getManhuntPositions(long userId) throws StorageException {

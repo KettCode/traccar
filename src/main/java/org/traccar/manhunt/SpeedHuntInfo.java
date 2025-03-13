@@ -1,6 +1,4 @@
 package org.traccar.manhunt;
-
-import org.traccar.model.Device;
 import org.traccar.model.Manhunt;
 import org.traccar.model.SpeedHunt;
 
@@ -16,16 +14,16 @@ public class SpeedHuntInfo {
         this.manhunt = manhunt;
     }
 
-    private List<SpeedHunt> speedHunts;
-    public List<SpeedHunt> getSpeedHunts() {
+    private List<SpeedHuntDto> speedHunts;
+    public List<SpeedHuntDto> getSpeedHunts() {
         return speedHunts;
     }
-    public void setSpeedHunts(List<SpeedHunt> speedHunts) {
+    public void setSpeedHunts(List<SpeedHuntDto> speedHunts) {
         this.speedHunts = speedHunts;
     }
 
-    private SpeedHunt lastSpeedHunt;
-    public SpeedHunt getLastSpeedHunt() {
+    private SpeedHuntDto lastSpeedHunt;
+    public SpeedHuntDto getLastSpeedHunt() {
         var speedHunts = getSpeedHunts();
         if(speedHunts.isEmpty())
             return null;
@@ -33,18 +31,4 @@ public class SpeedHuntInfo {
         speedHunts.sort(Comparator.comparing(SpeedHunt::getId));
         return speedHunts.get(speedHunts.size() - 1);
     }
-
-    private boolean isSpeedHuntRunning;
-    public boolean getIsSpeedHuntRunning() { return isSpeedHuntRunning; }
-    public void setIsSpeedHuntRunning(boolean isRunning) {
-        this.isSpeedHuntRunning = isRunning;
-    }
-
-    private long availableSpeedHuntRequests;
-    public long getAvailableSpeedHuntRequests() { return availableSpeedHuntRequests; }
-    public void setAvailableSpeedHuntRequests(long availableSpeedHuntRequests) { this.availableSpeedHuntRequests = availableSpeedHuntRequests; }
-
-    private List<Device> devices;
-    public List<Device> getDevices() { return devices; }
-    public void setDevices(List<Device> devices) { this.devices = devices; }
 }
