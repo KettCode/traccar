@@ -149,7 +149,7 @@ public class CurrentManhuntResource extends BaseResource {
         var speedHunt = manhuntDatabaseStorage.createSpeedHunt(manhunt.getId(), user.getGroup().getId(), deviceId);
         manhuntDatabaseStorage.createSpeedHuntRequest(speedHunt.getId(), getUserId());
         connectionManager.updateAllPosition(true, position);
-        sendSpeedHuntNotification(deviceDto, user.getGroup(), position);
+        sendSpeedHuntNotification(numSpeedHunts + 1, user.getGroup().getSpeedHunts());
 
         return Response.ok(speedHunt).build();
     }
@@ -179,7 +179,7 @@ public class CurrentManhuntResource extends BaseResource {
         manhuntDatabaseStorage.saveManhuntPosition(position);
         var speedHuntRequest = manhuntDatabaseStorage.createSpeedHuntRequest(lastSpeedHuntDto.getId(), getUserId());
         connectionManager.updateAllPosition(true, position);
-        sendSpeedHuntRequestNotification(deviceDto, user.getGroup(), position);
+        sendSpeedHuntRequestNotification(lastSpeedHuntDto.getNumRequests() + 1, user.getGroup().getSpeedHuntRequests());
 
         return Response.ok(speedHuntRequest).build();
     }
@@ -217,13 +217,13 @@ public class CurrentManhuntResource extends BaseResource {
             throw new TraccarException("Es gibt keine verfügbare Standortanfrage mehr.");
     }
 
-    private void sendSpeedHuntNotification(Device device, Group group, Position position) throws StorageException {
-        var notificationMessage = new NotificationMessage("Speedhunt", "Speedhunt auf '" + device.getName() + "' gestartet");
+    private void sendSpeedHuntNotification(long numSpeedHunt, long maxSpeedHunts) throws StorageException {
+        var notificationMessage = new NotificationMessage("Speedhunt", "Speedhunt " + numSpeedHunt + "/" + maxSpeedHunts + " gestartet!");
         connectionManager.sendNotificationToAllUsers(notificationMessage);
     }
 
-    private void sendSpeedHuntRequestNotification(Device device, Group group, Position position) throws StorageException {
-        var notificationMessage = new NotificationMessage("Standortanfrage", "Standort von '" + device.getName() + "' angefragt");
+    private void sendSpeedHuntRequestNotification(long numRequests, long maxRequests) throws StorageException {
+        var notificationMessage = new NotificationMessage("Standortanfrage", "Standort " + numRequests + "/" + maxRequests + " angefragt!");
         connectionManager.sendNotificationToAllUsers(notificationMessage);
     }
 
