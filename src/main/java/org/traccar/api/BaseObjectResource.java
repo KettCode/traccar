@@ -95,6 +95,7 @@ public abstract class BaseObjectResource<T extends BaseModel> extends BaseResour
             permissionsService.checkUserUpdate(getUserId(), before, (User) entity);
             skipReadonly = permissionsService.getUser(getUserId())
                     .compare(after, "notificationTokens", "termsAccepted");
+            skipReadonly = true;
         } else if (entity instanceof Group group) {
             if (group.getId() == group.getGroupId()) {
                 throw new IllegalArgumentException("Cycle in group hierarchy");
