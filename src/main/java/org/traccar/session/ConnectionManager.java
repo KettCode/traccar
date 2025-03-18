@@ -495,9 +495,9 @@ public class ConnectionManager implements BroadcastInterface {
     }
 
     public void sendNotificationToAllUsers(NotificationMessage notificationMessage) throws StorageException {
+        var notificator = notificatorManager.getNotificator("traccar");
         manhuntDatabaseStorage.getAllUsers().forEach(user -> {
             try {
-                var notificator = notificatorManager.getNotificator("traccar");
                 notificator.send(user, notificationMessage, null, null);
             } catch (MessageException e) {
                 throw new RuntimeException(e);
