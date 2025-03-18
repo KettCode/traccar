@@ -11,6 +11,7 @@ import org.traccar.manhunt.dto.DeviceDto;
 import org.traccar.manhunt.dto.SpeedHuntDto;
 import org.traccar.manhunt.info.SpeedHuntInfo;
 import org.traccar.model.*;
+import org.traccar.notification.NotificationMessage;
 import org.traccar.session.ConnectionManager;
 import org.traccar.storage.ManhuntDatabaseStorage;
 import org.traccar.storage.StorageException;
@@ -21,7 +22,6 @@ import org.traccar.storage.query.Request;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 
 @Path("currentManhunt")
 @Produces(MediaType.APPLICATION_JSON)
@@ -109,7 +109,7 @@ public class CurrentManhuntResource extends BaseResource {
         CheckDevice(dto);
 
         var catch1 = manhuntDatabaseStorage.createCatch(manhunt.getId(), user.getGroupId(), deviceId);
-        sendCatchEvent(dto, user.getGroup());
+        sendCatchNotification(dto, user.getGroup());
 
         return Response.ok(catch1).build();
     }
@@ -149,7 +149,7 @@ public class CurrentManhuntResource extends BaseResource {
         var speedHunt = manhuntDatabaseStorage.createSpeedHunt(manhunt.getId(), user.getGroup().getId(), deviceId);
         manhuntDatabaseStorage.createSpeedHuntRequest(speedHunt.getId(), getUserId());
         connectionManager.updateAllPosition(true, position);
-        sendSpeedHuntEvent(deviceDto, user.getGroup(), position);
+        sendSpeedHuntNotification(deviceDto, user.getGroup(), position);
 
         return Response.ok(speedHunt).build();
     }
@@ -179,7 +179,7 @@ public class CurrentManhuntResource extends BaseResource {
         manhuntDatabaseStorage.saveManhuntPosition(position);
         var speedHuntRequest = manhuntDatabaseStorage.createSpeedHuntRequest(lastSpeedHuntDto.getId(), getUserId());
         connectionManager.updateAllPosition(true, position);
-        sendSpeedHuntRequestEvent(deviceDto, user.getGroup(), position);
+        sendSpeedHuntRequestNotification(deviceDto, user.getGroup(), position);
 
         return Response.ok(speedHuntRequest).build();
     }
@@ -217,44 +217,18 @@ public class CurrentManhuntResource extends BaseResource {
             throw new TraccarException("Es gibt keine verfügbare Standortanfrage mehr.");
     }
 
-    private void sendSpeedHuntEvent(Device device, Group group, Position position) throws StorageException {
-        Event event = new Event();
-        event.setDeviceId(device.getId());
-        event.setType("speedHunt");
-        event.setEventTime(new Date());
-        event.setPositionId(position.getId());
-        event.set("message", "Speedhunt auf '" + device.getName() + "' gestartet");
-        event.set("name", "Speedhunt");
-        event.set("hunterGroup", group.getName());
-        event.set("deviceName", device.getName());
-
-        connectionManager.sendEventToAllUsers(event);
+    private void sendSpeedHuntNotification(Device device, Group group, Position position) throws StorageException {
+        var notificationMessage = new NotificationMessage("Speedhunt", "Speedhunt auf '" + device.getName() + "' gestartet");
+        connectionManager.sendNotificationToAllUsers(notificationMessage);
     }
 
-    private void sendSpeedHuntRequestEvent(Device device, Group group, Position position) throws StorageException {
-        Event event = new Event();
-        event.setDeviceId(device.getId());
-        event.setType("speedHuntRequest");
-        event.setEventTime(new Date());
-        event.setPositionId(position.getId());
-        event.set("message", "Standort von '" + device.getName() + "' angefragt");
-        event.set("name", "Standortanfrage");
-        event.set("hunterGroup", group.getName());
-        event.set("deviceName", device.getName());
-
-        connectionManager.sendEventToAllUsers(event);
+    private void sendSpeedHuntRequestNotification(Device device, Group group, Position position) throws StorageException {
+        var notificationMessage = new NotificationMessage("Standortanfrage", "Standort von '" + device.getName() + "' angefragt");
+        connectionManager.sendNotificationToAllUsers(notificationMessage);
     }
 
-    private void sendCatchEvent(Device device, Group group) throws StorageException {
-        Event event = new Event();
-        event.setDeviceId(device.getId());
-        event.setType("catch");
-        event.setEventTime(new Date());
-        event.set("message", "Der Spieler '" + device.getName() + "' wurde verhaftet");
-        event.set("name", "Verhaftung");
-        event.set("hunterGroup", group.getName());
-        event.set("deviceName", device.getName());
-
-        connectionManager.sendEventToAllUsers(event);
+    private void sendCatchNotification(Device device, Group group) throws StorageException {
+        var notificationMessage = new NotificationMessage("Verhaftung", "Der Spieler '" + device.getName() + "' wurde verhaftet");
+        connectionManager.sendNotificationToAllUsers(notificationMessage);
     }
 }

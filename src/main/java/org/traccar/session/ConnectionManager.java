@@ -28,6 +28,9 @@ import org.traccar.config.Keys;
 import org.traccar.database.DeviceLookupService;
 import org.traccar.database.NotificationManager;
 import org.traccar.model.*;
+import org.traccar.notification.MessageException;
+import org.traccar.notification.NotificationMessage;
+import org.traccar.notification.NotificatorManager;
 import org.traccar.session.cache.CacheManager;
 import org.traccar.storage.ManhuntDatabaseStorage;
 import org.traccar.storage.Storage;
@@ -47,6 +50,9 @@ import java.util.stream.Collectors;
 
 @Singleton
 public class ConnectionManager implements BroadcastInterface {
+
+    @Inject
+    private NotificatorManager notificatorManager;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionManager.class);
 
@@ -470,7 +476,7 @@ public class ConnectionManager implements BroadcastInterface {
                     updateAllPosition(true, position);
                 }
 
-                sendLocationUpdateEvent();
+                sendLocationUpdateNotification();
             } catch (StorageException e) {
                 throw new RuntimeException(e);
             }
@@ -483,20 +489,20 @@ public class ConnectionManager implements BroadcastInterface {
         }
     }
 
-    public void sendEventToAllUsers(Event event) throws StorageException {
-        manhuntDatabaseStorage.getAllUsers().forEach(user -> {
-            updateEvent(true, user.getId(), event);
-        });
+    private void sendLocationUpdateNotification() throws StorageException {
+        var notificationMessage = new NotificationMessage("Standort update", "Die Standorte der Gejagten wurden aktualisiert");
+        sendNotificationToAllUsers(notificationMessage);
     }
 
-    private void sendLocationUpdateEvent() throws StorageException {
-        Event event = new Event();
-        event.setType("locationUpdate");
-        event.setEventTime(new Date());
-        event.set("message", "Die Standorte der Gejagten wurden aktualisiert");
-        event.set("name", "Standort update");
-
-        sendEventToAllUsers(event);
+    public void sendNotificationToAllUsers(NotificationMessage notificationMessage) throws StorageException {
+        manhuntDatabaseStorage.getAllUsers().forEach(user -> {
+            var notificator = notificatorManager.getNotificator("traccar");
+            try {
+                notificator.send(user, notificationMessage, null, null);
+            } catch (MessageException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
 }
