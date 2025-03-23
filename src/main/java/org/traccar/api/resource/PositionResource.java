@@ -84,9 +84,8 @@ public class PositionResource extends BaseResource {
                 permissionsService.checkRestriction(getUserId(), UserRestrictions::getDisableReports);
                 return PositionUtil.getPositions(storage, deviceId, from, to);
             } else {
-                return manhuntDatabaseStorage.getManhuntPositions(getUserId());
-                //return storage.getObjects(Position.class, new Request(
-                //        new Columns.All(), new Condition.LatestPositions(deviceId)));
+                return storage.getObjects(Position.class, new Request(
+                        new Columns.All(), new Condition.LatestPositions(deviceId)));
             }
         } else {
             return manhuntDatabaseStorage.getManhuntPositions(getUserId());
