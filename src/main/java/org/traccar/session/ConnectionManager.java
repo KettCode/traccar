@@ -399,15 +399,18 @@ public class ConnectionManager implements BroadcastInterface {
             listeners.put(userId, set);
 
             var devices = storage.getObjects(Device.class, new Request(
-                    new Columns.Include("id"), new Condition.Permission(User.class, userId, Device.class)));
+                    new Columns.All(), new Condition.Permission(User.class, userId, Device.class)));
             userDevices.put(userId, devices.stream().map(BaseModel::getId).collect(Collectors.toSet()));
             devices.forEach(device -> deviceUsers.computeIfAbsent(device.getId(), id -> new HashSet<>()).add(userId));
 
             var user = storage.getObject(User.class,
                     new Request(new Columns.All(), new Condition.Equals("id", userId)));
             if(user.getManhuntRole() == 1) {
-                var huntedDevices = manhuntDatabaseStorage.getHuntedDevices(devices);
-                userHuntedDevices.put(userId, huntedDevices.stream().map(BaseModel::getId).collect(Collectors.toSet()));
+                var huntedDeviceIds = devices
+                        .stream().filter(x -> x.getManhuntRole() == 2)
+                        .map(BaseModel::getId)
+                        .collect(Collectors.toSet());
+                userHuntedDevices.put(userId, huntedDeviceIds);
             }
         }
         set.add(listener);

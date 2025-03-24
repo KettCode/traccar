@@ -43,22 +43,6 @@ public class ManhuntDatabaseStorage {
         }
     }
 
-    public List<Device> getHuntedDevices(List<Device> devices) throws StorageException {
-        try {
-            var ids = devices.stream().map(Device::getId).toArray();
-            var query = "SELECT * " +
-                    "FROM tc_devices " +
-                    "WHERE tc_devices.id = ANY(:deviceIds) and tc_devices.manhuntRole = 2 ";
-
-            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
-            builder.setArray("deviceIds", ids, true);
-            return builder.executeQuery(Device.class);
-
-        } catch (SQLException e) {
-            throw new StorageException(e);
-        }
-    }
-
     public List<SpeedHuntRequest> getSpeedHuntRequests(List<Long> speedHuntIds) throws StorageException {
         try {
             var query = "SELECT * " +
