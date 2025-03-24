@@ -23,6 +23,7 @@ import org.traccar.config.Config;
 import org.traccar.config.Keys;
 import org.traccar.helper.SessionHelper;
 import org.traccar.session.ConnectionManager;
+import org.traccar.storage.ManhuntDatabaseStorage;
 import org.traccar.storage.Storage;
 
 import jakarta.inject.Inject;
@@ -43,16 +44,18 @@ public class AsyncSocketServlet extends JettyWebSocketServlet {
     private final ConnectionManager connectionManager;
     private final Storage storage;
     private final LoginService loginService;
+    private final ManhuntDatabaseStorage manhuntDatabaseStorage;
 
     @Inject
     public AsyncSocketServlet(
             Config config, ObjectMapper objectMapper, ConnectionManager connectionManager, Storage storage,
-            LoginService loginService) {
+            LoginService loginService, ManhuntDatabaseStorage manhuntDatabaseStorage) {
         this.config = config;
         this.objectMapper = objectMapper;
         this.connectionManager = connectionManager;
         this.storage = storage;
         this.loginService = loginService;
+        this.manhuntDatabaseStorage = manhuntDatabaseStorage;
     }
 
     @Override
@@ -72,7 +75,7 @@ public class AsyncSocketServlet extends JettyWebSocketServlet {
                 userId = (Long) ((HttpSession) req.getSession()).getAttribute(SessionHelper.USER_ID_KEY);
             }
             if (userId != null) {
-                return new AsyncSocket(objectMapper, connectionManager, storage, userId);
+                return new AsyncSocket(objectMapper, connectionManager, storage, userId, manhuntDatabaseStorage);
             }
             return null;
         });

@@ -27,13 +27,12 @@ import org.traccar.config.Config;
 import org.traccar.config.Keys;
 import org.traccar.database.DeviceLookupService;
 import org.traccar.database.NotificationManager;
-import org.traccar.model.BaseModel;
-import org.traccar.model.Device;
-import org.traccar.model.Event;
-import org.traccar.model.LogRecord;
-import org.traccar.model.Position;
-import org.traccar.model.User;
+import org.traccar.model.*;
+import org.traccar.notification.MessageException;
+import org.traccar.notification.NotificationMessage;
+import org.traccar.notification.NotificatorManager;
 import org.traccar.session.cache.CacheManager;
+import org.traccar.storage.ManhuntDatabaseStorage;
 import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
 import org.traccar.storage.query.Columns;
@@ -44,21 +43,16 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 @Singleton
 public class ConnectionManager implements BroadcastInterface {
+
+    @Inject
+    private NotificatorManager notificatorManager;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionManager.class);
 
@@ -76,18 +70,23 @@ public class ConnectionManager implements BroadcastInterface {
     private final Timer timer;
     private final BroadcastService broadcastService;
     private final DeviceLookupService deviceLookupService;
+    private final ManhuntDatabaseStorage manhuntDatabaseStorage;
 
     private final Map<Long, Set<UpdateListener>> listeners = new HashMap<>();
     private final Map<Long, Set<Long>> userDevices = new HashMap<>();
     private final Map<Long, Set<Long>> deviceUsers = new HashMap<>();
+    private final Map<Long, Set<Long>> userHuntedDevices = new HashMap<>();
 
     private final Map<Long, Timeout> timeouts = new ConcurrentHashMap<>();
+
+    private ScheduledFuture<?> manhuntScheduler;
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(10);
 
     @Inject
     public ConnectionManager(
             Config config, CacheManager cacheManager, Storage storage,
             NotificationManager notificationManager, Timer timer, BroadcastService broadcastService,
-            DeviceLookupService deviceLookupService) {
+            DeviceLookupService deviceLookupService, ManhuntDatabaseStorage manhuntDatabaseStorage) {
         this.config = config;
         this.cacheManager = cacheManager;
         this.storage = storage;
@@ -95,9 +94,11 @@ public class ConnectionManager implements BroadcastInterface {
         this.timer = timer;
         this.broadcastService = broadcastService;
         this.deviceLookupService = deviceLookupService;
+        this.manhuntDatabaseStorage = manhuntDatabaseStorage;
         deviceTimeout = config.getLong(Keys.STATUS_TIMEOUT);
         showUnknownDevices = config.getBoolean(Keys.WEB_SHOW_UNKNOWN_DEVICES);
         broadcastService.registerListener(this);
+        initSchedules();
     }
 
     public DeviceSession getDeviceSession(long deviceId) {
@@ -309,6 +310,26 @@ public class ConnectionManager implements BroadcastInterface {
         if (local) {
             broadcastService.updatePosition(true, position);
         }
+
+        for (long userId : deviceUsers.getOrDefault(position.getDeviceId(), Collections.emptySet())) {
+            if (listeners.containsKey(userId)) {
+                if(userHuntedDevices.containsKey(userId)){
+                    var huntedDeviceIds = userHuntedDevices.get(userId);
+                    if(huntedDeviceIds.contains(position.getDeviceId()))
+                        continue;
+                }
+                for (UpdateListener listener : listeners.get(userId)) {
+                    listener.onUpdatePosition(position);
+                }
+            }
+        }
+    }
+
+    public synchronized void updateAllPosition(boolean local, Position position) {
+        if (local) {
+            broadcastService.updatePosition(true, position);
+        }
+
         for (long userId : deviceUsers.getOrDefault(position.getDeviceId(), Collections.emptySet())) {
             if (listeners.containsKey(userId)) {
                 for (UpdateListener listener : listeners.get(userId)) {
@@ -381,6 +402,13 @@ public class ConnectionManager implements BroadcastInterface {
                     new Columns.Include("id"), new Condition.Permission(User.class, userId, Device.class)));
             userDevices.put(userId, devices.stream().map(BaseModel::getId).collect(Collectors.toSet()));
             devices.forEach(device -> deviceUsers.computeIfAbsent(device.getId(), id -> new HashSet<>()).add(userId));
+
+            var user = storage.getObject(User.class,
+                    new Request(new Columns.All(), new Condition.Equals("id", userId)));
+            if(user.getManhuntRole() == 1) {
+                var huntedDevices = manhuntDatabaseStorage.getHuntedDevices(devices);
+                userHuntedDevices.put(userId, huntedDevices.stream().map(BaseModel::getId).collect(Collectors.toSet()));
+            }
         }
         set.add(listener);
     }
@@ -395,7 +423,89 @@ public class ConnectionManager implements BroadcastInterface {
                 userIds.remove(userId);
                 return userIds.isEmpty() ? null : userIds;
             }));
+
+            userHuntedDevices.remove(userId);
         }
+    }
+
+    public void initSchedules() {
+        try {
+            scheduleUpdates();
+        } catch (StorageException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void scheduleUpdates() throws StorageException {
+        cancelScheduler();
+
+        var manhunt = manhuntDatabaseStorage.getCurrent();
+        if(manhunt == null)
+            return;
+
+        var frequency = manhunt.getFrequency();
+        if(frequency <= 0)
+            frequency = 3600;
+        var start = manhunt.getStart();
+
+        var now = new Date();
+        var initialDelay = 0L;
+        if(now.before(start)){
+            initialDelay = Duration.between(now.toInstant(), start.toInstant()).getSeconds();
+        }  else {
+            var durationBetween = Duration.between(start.toInstant(), now.toInstant()).getSeconds();
+            var remainder = durationBetween % frequency;
+            initialDelay = remainder == 0 ? 0 : (frequency - remainder);
+        }
+
+        manhuntScheduler = scheduler.scheduleAtFixedRate(() -> {
+            try {
+                var deviceIds = storage
+                        .getObjects(Device.class,
+                                new Request(new Columns.All(), new Condition.Equals("manhuntRole", 2)))
+                        .stream().map(Device::getId)
+                        .toList();
+
+                var positions = storage.getObjects(Position.class, new Request(
+                                new Columns.All(), new Condition.LatestPositions()))
+                        .stream().filter(x -> deviceIds.contains(x.getDeviceId()))
+                        .toList();
+
+                for(var position : positions) {
+                    manhuntDatabaseStorage.saveManhuntPosition(position);
+                }
+
+                for(var position : positions) {
+                    updateAllPosition(true, position);
+                }
+
+                sendLocationUpdateNotification();
+            } catch (StorageException e) {
+                throw new RuntimeException(e);
+            }
+        }, initialDelay, frequency, TimeUnit.SECONDS);
+    }
+
+    private void cancelScheduler() {
+        if(manhuntScheduler != null && !manhuntScheduler.isCancelled()) {
+            manhuntScheduler.cancel(false);
+        }
+    }
+
+    private void sendLocationUpdateNotification() throws StorageException {
+        var notificationMessage = new NotificationMessage("Standort update", "Die Standorte der Gejagten wurden aktualisiert");
+        sendNotificationToAllUsers(notificationMessage);
+    }
+
+    public void sendNotificationToAllUsers(NotificationMessage notificationMessage) throws StorageException {
+        var notificator = notificatorManager.getNotificator("traccar");
+        manhuntDatabaseStorage.getAllUsers().forEach(user -> {
+            try {
+                notificator.send(user, notificationMessage, null, null);
+            } catch (MessageException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
 }
