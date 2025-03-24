@@ -39,13 +39,16 @@ public class SpeedHuntDto extends SpeedHunt {
         this.numRequests = numRequests;
     }
 
-//    private boolean isSpeedHuntRunning;
-//    public boolean getIsSpeedHuntRunning() {
-//        return !getDeviceIsCaught() && getAvailableSpeedHuntRequests() > 0;
-//    }
-//
-//    private long availableSpeedHuntRequests;
-//    public long getAvailableSpeedHuntRequests() {
-//        return getMaxRequests() - getSpeedHuntRequests().size();
-//    }
+    private boolean isSpeedHuntRunning;
+    public boolean getIsSpeedHuntRunning() {
+        return !getDeviceIsCaught() && getAvailableSpeedHuntRequests() > 0;
+    }
+
+    private long availableSpeedHuntRequests;
+    public long getAvailableSpeedHuntRequests() {
+        return availableSpeedHuntRequests;
+    }
+    public void setAvailableSpeedHuntRequests(long availableSpeedHuntRequests) {
+        this.availableSpeedHuntRequests = availableSpeedHuntRequests;
+    }
 }

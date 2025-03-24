@@ -87,7 +87,10 @@ public class CurrentManhuntResource extends BaseResource {
                     .filter(y -> y.getSpeedHuntsId() == x.getId())
                     .toList();
             x.setSpeedHuntRequests(speedHuntRequestsInternal);
+            var availableRequests = manhunt.getLocationRequests() - speedHuntRequestsInternal.size();
+            x.setAvailableSpeedHuntRequests(availableRequests);
         });
+
         var speedHuntInfo = new SpeedHuntInfo();
         speedHuntInfo.setManhunt(manhunt);
         speedHuntInfo.setSpeedHunts(dto);

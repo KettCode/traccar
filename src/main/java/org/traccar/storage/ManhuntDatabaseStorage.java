@@ -116,7 +116,7 @@ public class ManhuntDatabaseStorage {
                     "END AS isCaught " +
                     "FROM tc_devices d " +
                     "LEFT JOIN tc_catches c ON c.manhuntsId = :manhuntId and c.deviceId = d.id " +
-                    "WHERE g.manhuntRole = 2 ";
+                    "WHERE d.manhuntRole = 2 ";
 
             if(withCaught)
                 query += "or c.id IS NOT NULL ";
@@ -175,7 +175,7 @@ public class ManhuntDatabaseStorage {
                     "CASE " +
                     "   WHEN c.id IS NULL THEN 0 " +
                     "   ELSE 1 " +
-                    "END AS deviceIsCaught, " +
+                    "END AS deviceIsCaught " +
                     "FROM tc_speedHunts sh " +
                     "LEFT JOIN tc_devices d on d.id = sh.deviceId " +
                     "LEFT JOIN tc_catches c on c.deviceId = sh.deviceId and c.manhuntsId = :manhuntId " +
