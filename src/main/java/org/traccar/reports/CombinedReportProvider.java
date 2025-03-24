@@ -57,7 +57,7 @@ public class CombinedReportProvider {
         for (Device device: DeviceUtil.getAccessibleDevices(storage, userId, deviceIds, groupIds)) {
             CombinedReportItem item = new CombinedReportItem();
             item.setDeviceId(device.getId());
-            var positions = PositionUtil.getPositions(storage, device.getId(), from, to);
+            var positions = PositionUtil.getPositions(storage, userId, device, from, to);
             item.setRoute(positions.stream()
                     .map(p -> new double[] {p.getLongitude(), p.getLatitude()})
                     .toList());

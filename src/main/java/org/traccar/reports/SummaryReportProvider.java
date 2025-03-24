@@ -65,7 +65,7 @@ public class SummaryReportProvider {
     }
 
     private Collection<SummaryReportItem> calculateDeviceResult(
-            Device device, Date from, Date to, boolean fast) throws StorageException {
+            long userId, Device device, Date from, Date to, boolean fast) throws StorageException {
 
         SummaryReportItem result = new SummaryReportItem();
         result.setDeviceId(device.getId());
@@ -77,7 +77,7 @@ public class SummaryReportProvider {
             first = PositionUtil.getEdgePosition(storage, device.getId(), from, to, false);
             last = PositionUtil.getEdgePosition(storage, device.getId(), from, to, true);
         } else {
-            var positions = PositionUtil.getPositions(storage, device.getId(), from, to);
+            var positions = PositionUtil.getPositions(storage, userId, device, from, to);
             for (Position position : positions) {
                 if (first == null) {
                     first = position;
@@ -122,7 +122,7 @@ public class SummaryReportProvider {
         return List.of();
     }
 
-    private Collection<SummaryReportItem> calculateDeviceResults(
+    private Collection<SummaryReportItem> calculateDeviceResults(long userId,
             Device device, ZonedDateTime from, ZonedDateTime to, boolean daily) throws StorageException {
 
         boolean fast = Duration.between(from, to).toSeconds() > config.getLong(Keys.REPORT_FAST_THRESHOLD);
@@ -131,12 +131,12 @@ public class SummaryReportProvider {
             while (from.truncatedTo(ChronoUnit.DAYS).isBefore(to.truncatedTo(ChronoUnit.DAYS))) {
                 ZonedDateTime fromDay = from.truncatedTo(ChronoUnit.DAYS);
                 ZonedDateTime nextDay = fromDay.plusDays(1);
-                results.addAll(calculateDeviceResult(
+                results.addAll(calculateDeviceResult(userId,
                         device, Date.from(from.toInstant()), Date.from(nextDay.toInstant()), fast));
                 from = nextDay;
             }
         }
-        results.addAll(calculateDeviceResult(device, Date.from(from.toInstant()), Date.from(to.toInstant()), fast));
+        results.addAll(calculateDeviceResult(userId, device, Date.from(from.toInstant()), Date.from(to.toInstant()), fast));
         return results;
     }
 
@@ -149,7 +149,7 @@ public class SummaryReportProvider {
 
         ArrayList<SummaryReportItem> result = new ArrayList<>();
         for (Device device: DeviceUtil.getAccessibleDevices(storage, userId, deviceIds, groupIds)) {
-            var deviceResults = calculateDeviceResults(
+            var deviceResults = calculateDeviceResults(userId,
                     device, from.toInstant().atZone(tz), to.toInstant().atZone(tz), daily);
             for (SummaryReportItem summaryReport : deviceResults) {
                 if (summaryReport.getStartTime() != null && summaryReport.getEndTime() != null) {

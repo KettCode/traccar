@@ -66,7 +66,7 @@ public class RouteReportProvider {
 
         ArrayList<Position> result = new ArrayList<>();
         for (Device device: DeviceUtil.getAccessibleDevices(storage, userId, deviceIds, groupIds)) {
-            result.addAll(PositionUtil.getPositions(storage, device.getId(), from, to));
+            result.addAll(PositionUtil.getPositions(storage, userId, device, from, to));
         }
         return result;
     }
@@ -85,7 +85,7 @@ public class RouteReportProvider {
         ArrayList<DeviceReportSection> devicesRoutes = new ArrayList<>();
         ArrayList<String> sheetNames = new ArrayList<>();
         for (Device device: DeviceUtil.getAccessibleDevices(storage, userId, deviceIds, groupIds)) {
-            var positions = PositionUtil.getPositions(storage, device.getId(), from, to);
+            var positions = PositionUtil.getPositions(storage, userId, device, from, to);
             DeviceReportSection deviceRoutes = new DeviceReportSection();
             deviceRoutes.setDeviceName(device.getName());
             sheetNames.add(WorkbookUtil.createSafeSheetName(getUniqueSheetName(deviceRoutes.getDeviceName())));

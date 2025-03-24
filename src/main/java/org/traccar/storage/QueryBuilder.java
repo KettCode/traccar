@@ -163,6 +163,24 @@ public final class QueryBuilder {
         });
     }
 
+    public QueryBuilder setArray(String name, Object[] value, boolean nullIfZero) throws SQLException {
+        for (int i : indexes(name)) {
+            try {
+                if (value.length == 0 && nullIfZero) {
+                    statement.setNull(i, Types.ARRAY);
+                } else {
+                    var arr = connection.createArrayOf("VARCHAR", value);
+                    statement.setArray(i, arr);
+                }
+            } catch (SQLException error) {
+                statement.close();
+                connection.close();
+                throw error;
+            }
+        }
+        return this;
+    }
+
     public QueryBuilder setValue(int index, Object value) throws SQLException {
         if (value instanceof Boolean booleanValue) {
             setBoolean(index, booleanValue);

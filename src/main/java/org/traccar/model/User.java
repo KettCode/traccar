@@ -263,6 +263,19 @@ public class User extends ExtendedModel implements UserRestrictions, Disableable
         this.temporary = temporary;
     }
 
+    private long manhuntRole;
+    public long getManhuntRole() { return manhuntRole; }
+    public void setManhuntRole(long manhuntRole) { this.manhuntRole = manhuntRole; }
+
+    private boolean triggerManhuntActions;
+    @Override
+    public boolean getTriggerManhuntActions() {
+        return triggerManhuntActions;
+    }
+    public void setTriggerManhuntActions(boolean triggerManhuntActions) {
+        this.triggerManhuntActions = triggerManhuntActions;
+    }
+
     @QueryIgnore
     public String getPassword() {
         return null;

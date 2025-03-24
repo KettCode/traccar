@@ -84,11 +84,13 @@ public class PositionResource extends BaseResource {
                 Geofence geofence = geofenceId == 0 ? null : storage.getObject(Geofence.class, new Request(
                         new Columns.All(), new Condition.Equals("id", geofenceId)));
 
-                return PositionUtil.getPositionsStream(storage, deviceId, from, to)
-                        .filter(position -> geofence == null || geofence.containsPosition(position));
+                //return PositionUtil.getPositionsStream(storage, deviceId, from, to)
+                //        .filter(position -> geofence == null || geofence.containsPosition(position));
+		return PositionUtil.getPositions(storage, getUserId(), deviceId, from, to);
             } else {
-                return storage.getObjectsStream(Position.class, new Request(
-                        new Columns.All(), new Condition.LatestPositions(deviceId)));
+                //return storage.getObjectsStream(Position.class, new Request(
+                //        new Columns.All(), new Condition.LatestPositions(deviceId)));
+		return PositionUtil.getLatestPositions(storage, getUserId(), deviceId);
             }
         } else {
             return PositionUtil.getLatestPositions(storage, getUserId()).stream();
@@ -136,7 +138,7 @@ public class PositionResource extends BaseResource {
         permissionsService.checkPermission(Device.class, getUserId(), deviceId);
         StreamingOutput stream = output -> {
             try {
-                kmlExportProvider.generate(output, deviceId, from, to);
+                kmlExportProvider.generate(output, getUserId(), deviceId, from, to);
             } catch (StorageException e) {
                 throw new WebApplicationException(e);
             }
@@ -172,7 +174,7 @@ public class PositionResource extends BaseResource {
         permissionsService.checkPermission(Device.class, getUserId(), deviceId);
         StreamingOutput stream = output -> {
             try {
-                gpxExportProvider.generate(output, deviceId, from, to);
+                gpxExportProvider.generate(output, getUserId(), deviceId, from, to);
             } catch (StorageException e) {
                 throw new WebApplicationException(e);
             }

@@ -40,11 +40,11 @@ public class KmlExportProvider {
     }
 
     public void generate(
-            OutputStream outputStream, long deviceId, Date from, Date to) throws StorageException {
+            OutputStream outputStream, long userId, long deviceId, Date from, Date to) throws StorageException {
 
         var device = storage.getObject(Device.class, new Request(
                 new Columns.All(), new Condition.Equals("id", deviceId)));
-        var positions = PositionUtil.getPositions(storage, deviceId, from, to);
+        var positions = PositionUtil.getPositions(storage, userId, device, from, to);
 
         var dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 

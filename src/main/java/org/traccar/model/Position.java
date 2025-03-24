@@ -339,6 +339,10 @@ public class Position extends Message {
         }
     }
 
+    private boolean isManhunt;
+    public boolean getIsManhunt() { return isManhunt; }
+    public void setIsManhunt(boolean isManhunt) { this.isManhunt = isManhunt; }
+
     @JsonIgnore
     @QueryIgnore
     @Override

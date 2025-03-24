@@ -54,7 +54,7 @@ public class CsvExportProvider {
 
         var server = permissionsService.getServer();
         var user = permissionsService.getUser(userId);
-        var positions = PositionUtil.getPositions(storage, deviceId, from, to);
+        var positions = PositionUtil.getPositions(storage, userId, deviceId, from, to);
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         dateFormat.setTimeZone(UserUtil.getTimezone(server, user));

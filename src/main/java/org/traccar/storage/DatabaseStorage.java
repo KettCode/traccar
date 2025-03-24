@@ -291,8 +291,27 @@ public class DatabaseStorage extends Storage {
                 result.append("id IN (");
                 result.append("SELECT positionId FROM ");
                 result.append(getStorageName(Device.class));
+
+                List<String> conditions = new ArrayList<>();
                 if (condition.getDeviceId() > 0) {
-                    result.append(" WHERE id = ?");
+                    conditions.add("id = ?");
+                }
+                if (condition.getManhuntRole() == 1) {
+                    conditions.add("manhuntRole <> 2");
+                }
+                if (!conditions.isEmpty()) {
+                    result.append(" WHERE ");
+                    result.append(String.join(" AND ", conditions));
+                }
+
+                if(condition.getManhuntRole() > 0) {
+                    result.append(" UNION ");
+                    result.append("SELECT manhuntPositionId as positionId FROM ");
+                    result.append(getStorageName(Device.class));
+                    result.append(" WHERE manhuntRole = 2 ");
+                    if (condition.getDeviceId() > 0) {
+                        result.append(" AND id = :deviceId");
+                    }
                 }
                 result.append(")");
 

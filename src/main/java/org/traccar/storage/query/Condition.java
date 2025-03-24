@@ -176,18 +176,28 @@ public interface Condition {
 
     class LatestPositions implements Condition {
         private final long deviceId;
+        private final long manhuntRole;
 
         public LatestPositions(long deviceId) {
             this.deviceId = deviceId;
+            this.manhuntRole = 0;
+        }
+
+        public LatestPositions(long deviceId, long manhuntRole) {
+            this.deviceId = deviceId;
+            this.manhuntRole = manhuntRole;
         }
 
         public LatestPositions() {
-            this(0);
+            this(0, 0);
         }
 
         public long getDeviceId() {
             return deviceId;
         }
-    }
 
+        public long getManhuntRole() {
+            return manhuntRole;
+        }
+    }
 }
