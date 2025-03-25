@@ -208,14 +208,14 @@ public interface Condition {
         }
     }
 
-    class HunterPositions implements  Condition {
+    class LatestPositionsForHunter implements  Condition {
         private final long deviceId;
 
-        public HunterPositions(long deviceId) {
+        public LatestPositionsForHunter(long deviceId) {
             this.deviceId = deviceId;
         }
 
-        public HunterPositions(){
+        public LatestPositionsForHunter(){
             this(0);
         }
 
@@ -224,14 +224,14 @@ public interface Condition {
         }
     }
 
-    class HuntedPositions implements  Condition {
+    class LatestPositionsForHunted implements  Condition {
         private final long deviceId;
 
-        public HuntedPositions(long deviceId) {
+        public LatestPositionsForHunted(long deviceId) {
             this.deviceId = deviceId;
         }
 
-        public HuntedPositions(){
+        public LatestPositionsForHunted(){
             this(0);
         }
 

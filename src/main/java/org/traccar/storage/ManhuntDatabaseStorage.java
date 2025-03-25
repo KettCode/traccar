@@ -2,7 +2,6 @@ package org.traccar.storage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
-import org.traccar.api.security.PermissionsService;
 import org.traccar.config.Config;
 import org.traccar.helper.model.PositionUtil;
 import org.traccar.manhunt.dto.DeviceDto;
@@ -173,36 +172,36 @@ public class ManhuntDatabaseStorage {
         }
     }
 
-    public List<Position> getManhuntPositions(long userId) throws StorageException {
+    public List<Position> getLatestPositions(long userId) throws StorageException {
         var manhunt = getCurrent();
         var user = storage.getObject(User.class,
                 new Request(new Columns.All(), new Condition.Equals("id", userId)));
 
         if (manhunt != null && user.getManhuntRole() == 1) {
-            return PositionUtil.getHunterPositions(storage, userId);
+            return PositionUtil.getLatestPositionsForHunter(storage, userId);
         } else if (manhunt != null && user.getManhuntRole() == 2) {
-            return PositionUtil.getHuntedPositions(storage, userId);
+            return PositionUtil.getLatestPositionsForHunted(storage, userId);
         } else
             return PositionUtil.getLatestPositions(storage, userId);
     }
 
-    public List<Position> getManhuntPositions(long userId, long deviceId) throws StorageException {
+    public List<Position> getLatestPositions(long userId, long deviceId) throws StorageException {
         var manhunt = getCurrent();
         var user = storage.getObject(User.class,
                 new Request(new Columns.All(), new Condition.Equals("id", userId)));
 
         if (manhunt != null && user.getManhuntRole() == 1) {
             return storage.getObjects(Position.class, new Request(
-                    new Columns.All(), new Condition.HunterPositions(deviceId)));
+                    new Columns.All(), new Condition.LatestPositionsForHunter(deviceId)));
         } else if (manhunt != null && user.getManhuntRole() == 2) {
             return storage.getObjects(Position.class, new Request(
-                    new Columns.All(), new Condition.HuntedPositions(deviceId)));
+                    new Columns.All(), new Condition.LatestPositionsForHunted(deviceId)));
         } else
             return storage.getObjects(Position.class, new Request(
                     new Columns.All(), new Condition.LatestPositions(deviceId)));
     }
 
-    public List<Position> getManhuntPositions(long userId, long deviceId, Date from, Date to) throws StorageException {
+    public List<Position> getPositions(long userId, long deviceId, Date from, Date to) throws StorageException {
         var manhunt = getCurrent();
         var user = storage.getObject(User.class,
                 new Request(new Columns.All(), new Condition.Equals("id", userId)));
@@ -210,7 +209,7 @@ public class ManhuntDatabaseStorage {
                 new Request(new Columns.All(), new Condition.Equals("id", deviceId)));
 
         if (manhunt != null && user.getManhuntRole() == 1 && device.getManhuntRole() == 2) {
-            return PositionUtil.getHunterPositions(storage, deviceId, from, to);
+            return PositionUtil.getPositionsForHunter(storage, deviceId, from, to);
         } else
             return PositionUtil.getPositions(storage, deviceId, from, to);
     }

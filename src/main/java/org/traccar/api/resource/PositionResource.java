@@ -16,7 +16,6 @@
 package org.traccar.api.resource;
 
 import org.traccar.api.BaseResource;
-import org.traccar.helper.model.PositionUtil;
 import org.traccar.model.Device;
 import org.traccar.model.Position;
 import org.traccar.model.UserRestrictions;
@@ -83,14 +82,14 @@ public class PositionResource extends BaseResource {
             if (from != null && to != null) {
                 permissionsService.checkRestriction(getUserId(), UserRestrictions::getDisableReports);
                 //return PositionUtil.getPositions(storage, deviceId, from, to);
-                return manhuntDatabaseStorage.getManhuntPositions(getUserId(), deviceId, from, to);
+                return manhuntDatabaseStorage.getPositions(getUserId(), deviceId, from, to);
             } else {
-                return manhuntDatabaseStorage.getManhuntPositions(getUserId(), deviceId);
+                return manhuntDatabaseStorage.getLatestPositions(getUserId(), deviceId);
                 //return storage.getObjects(Position.class, new Request(
                 //        new Columns.All(), new Condition.LatestPositions(deviceId)));
             }
         } else {
-            return manhuntDatabaseStorage.getManhuntPositions(getUserId());
+            return manhuntDatabaseStorage.getLatestPositions(getUserId());
             //return PositionUtil.getLatestPositions(storage, getUserId());
         }
     }

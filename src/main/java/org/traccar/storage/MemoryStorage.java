@@ -105,11 +105,11 @@ public class MemoryStorage extends Storage {
 
             return false;
 
-        } else if (genericCondition instanceof Condition.HunterPositions) {
+        } else if (genericCondition instanceof Condition.LatestPositionsForHunter) {
 
             return false;
 
-        } else if (genericCondition instanceof Condition.HuntedPositions) {
+        } else if (genericCondition instanceof Condition.LatestPositionsForHunted) {
 
             return false;
 

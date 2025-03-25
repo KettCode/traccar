@@ -226,11 +226,11 @@ public class DatabaseStorage extends Storage {
             if (condition.getDeviceId() > 0) {
                 results.put("deviceId", condition.getDeviceId());
             }
-        } else if (genericCondition instanceof Condition.HunterPositions condition) {
+        } else if (genericCondition instanceof Condition.LatestPositionsForHunter condition) {
             if (condition.getDeviceId() > 0) {
                 results.put("deviceId", condition.getDeviceId());
             }
-        } else if (genericCondition instanceof Condition.HuntedPositions condition) {
+        } else if (genericCondition instanceof Condition.LatestPositionsForHunted condition) {
             if (condition.getDeviceId() > 0) {
                 results.put("deviceId", condition.getDeviceId());
             }
@@ -292,7 +292,7 @@ public class DatabaseStorage extends Storage {
                 }
                 result.append(")");
 
-            } else if (genericCondition instanceof Condition.HunterPositions condition) {
+            } else if (genericCondition instanceof Condition.LatestPositionsForHunter condition) {
                 result.append("id IN (");
                 result.append("SELECT " +
                     "CASE " +
@@ -304,7 +304,7 @@ public class DatabaseStorage extends Storage {
                     result.append(" WHERE tc_devices.id = :deviceId");
                 }
                 result.append(")");
-            } else if (genericCondition instanceof Condition.HuntedPositions condition) {
+            } else if (genericCondition instanceof Condition.LatestPositionsForHunted condition) {
                 result.append("id IN (");
                 result.append("SELECT positionId FROM ");
                 result.append(getStorageName(Device.class));

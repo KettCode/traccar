@@ -61,7 +61,7 @@ public final class PositionUtil {
                 new Order("fixTime")));
     }
 
-    public static List<Position> getHunterPositions(
+    public static List<Position> getPositionsForHunter(
             Storage storage, long deviceId, Date from, Date to) throws StorageException {
         var positions = getPositions(storage, deviceId, from, to);
         return positions.stream().filter(Position::getIsManhunt).toList();
@@ -80,27 +80,27 @@ public final class PositionUtil {
                 .collect(Collectors.toList());
     }
 
-    public static List<Position> getHunterPositions(Storage storage, long userId) throws StorageException {
+    public static List<Position> getLatestPositionsForHunter(Storage storage, long userId) throws StorageException {
         var devices = storage.getObjects(Device.class, new Request(
                 new Columns.Include("id"),
                 new Condition.Permission(User.class, userId, Device.class)));
         var deviceIds = devices.stream().map(BaseModel::getId).collect(Collectors.toUnmodifiableSet());
 
         var positions = storage.getObjects(Position.class, new Request(
-                new Columns.All(), new Condition.HunterPositions()));
+                new Columns.All(), new Condition.LatestPositionsForHunter()));
         return positions.stream()
                 .filter(position -> deviceIds.contains(position.getDeviceId()))
                 .collect(Collectors.toList());
     }
 
-    public static List<Position> getHuntedPositions(Storage storage, long userId) throws StorageException {
+    public static List<Position> getLatestPositionsForHunted(Storage storage, long userId) throws StorageException {
         var devices = storage.getObjects(Device.class, new Request(
                 new Columns.Include("id"),
                 new Condition.Permission(User.class, userId, Device.class)));
         var deviceIds = devices.stream().map(BaseModel::getId).collect(Collectors.toUnmodifiableSet());
 
         var positions = storage.getObjects(Position.class, new Request(
-                new Columns.All(), new Condition.HuntedPositions(), new Order("id")));
+                new Columns.All(), new Condition.LatestPositionsForHunted(), new Order("id")));
         return positions.stream()
                 .filter(position -> deviceIds.contains(position.getDeviceId()))
                 .collect(Collectors.toList());

@@ -21,7 +21,6 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.traccar.helper.model.PositionUtil;
 import org.traccar.model.Device;
 import org.traccar.model.Event;
 import org.traccar.model.LogRecord;
@@ -67,7 +66,7 @@ public class AsyncSocket extends WebSocketAdapter implements ConnectionManager.U
 
         try {
             Map<String, Collection<?>> data = new HashMap<>();
-            data.put(KEY_POSITIONS, manhuntDatabaseStorage.getManhuntPositions(userId));
+            data.put(KEY_POSITIONS, manhuntDatabaseStorage.getLatestPositions(userId));
             //data.put(KEY_POSITIONS, PositionUtil.getLatestPositions(storage, userId));
             sendData(data);
             connectionManager.addListener(userId, this);
