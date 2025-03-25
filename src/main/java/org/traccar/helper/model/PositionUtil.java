@@ -61,6 +61,12 @@ public final class PositionUtil {
                 new Order("fixTime")));
     }
 
+    public static List<Position> getHunterPositions(
+            Storage storage, long deviceId, Date from, Date to) throws StorageException {
+        var positions = getPositions(storage, deviceId, from, to);
+        return positions.stream().filter(Position::getIsManhunt).toList();
+    }
+
     public static List<Position> getLatestPositions(Storage storage, long userId) throws StorageException {
         var devices = storage.getObjects(Device.class, new Request(
                 new Columns.Include("id"),

@@ -174,7 +174,6 @@ public class ManhuntDatabaseStorage {
     }
 
     public List<Position> getManhuntPositions(long userId) throws StorageException {
-
         var manhunt = getCurrent();
         var user = storage.getObject(User.class,
                 new Request(new Columns.All(), new Condition.Equals("id", userId)));
@@ -185,6 +184,35 @@ public class ManhuntDatabaseStorage {
             return PositionUtil.getHuntedPositions(storage, userId);
         } else
             return PositionUtil.getLatestPositions(storage, userId);
+    }
+
+    public List<Position> getManhuntPositions(long userId, long deviceId) throws StorageException {
+        var manhunt = getCurrent();
+        var user = storage.getObject(User.class,
+                new Request(new Columns.All(), new Condition.Equals("id", userId)));
+
+        if (manhunt != null && user.getManhuntRole() == 1) {
+            return storage.getObjects(Position.class, new Request(
+                    new Columns.All(), new Condition.HunterPositions(deviceId)));
+        } else if (manhunt != null && user.getManhuntRole() == 2) {
+            return storage.getObjects(Position.class, new Request(
+                    new Columns.All(), new Condition.HuntedPositions(deviceId)));
+        } else
+            return storage.getObjects(Position.class, new Request(
+                    new Columns.All(), new Condition.LatestPositions(deviceId)));
+    }
+
+    public List<Position> getManhuntPositions(long userId, long deviceId, Date from, Date to) throws StorageException {
+        var manhunt = getCurrent();
+        var user = storage.getObject(User.class,
+                new Request(new Columns.All(), new Condition.Equals("id", userId)));
+        var device = storage.getObject(Device.class,
+                new Request(new Columns.All(), new Condition.Equals("id", deviceId)));
+
+        if (manhunt != null && user.getManhuntRole() == 1 && device.getManhuntRole() == 2) {
+            return PositionUtil.getHunterPositions(storage, deviceId, from, to);
+        } else
+            return PositionUtil.getPositions(storage, deviceId, from, to);
     }
 
     public void saveManhuntPosition(Position position) throws StorageException {
