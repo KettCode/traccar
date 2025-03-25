@@ -92,7 +92,6 @@ public class PositionResource extends BaseResource {
         } else {
             return manhuntDatabaseStorage.getManhuntPositions(getUserId());
             //return PositionUtil.getLatestPositions(storage, getUserId());
-            //return PositionUtil.getLatestPositions()
         }
     }
 
