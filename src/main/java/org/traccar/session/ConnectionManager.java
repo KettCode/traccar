@@ -43,7 +43,6 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -447,19 +446,7 @@ public class ConnectionManager implements BroadcastInterface {
             return;
 
         var frequency = manhunt.getFrequency();
-        if(frequency <= 0)
-            frequency = 3600;
-        var start = manhunt.getStart();
-
-        var now = new Date();
-        var initialDelay = 0L;
-        if(now.before(start)){
-            initialDelay = Duration.between(now.toInstant(), start.toInstant()).getSeconds();
-        }  else {
-            var durationBetween = Duration.between(start.toInstant(), now.toInstant()).getSeconds();
-            var remainder = durationBetween % frequency;
-            initialDelay = remainder == 0 ? 0 : (frequency - remainder);
-        }
+        var initialDelay = manhunt.getNextLocationReportSeconds();
 
         manhuntScheduler = scheduler.scheduleAtFixedRate(() -> {
             try {

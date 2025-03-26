@@ -29,19 +29,6 @@ public class ManhuntInfo {
     public Date getNextPosition() {
         var manhunt = getManhunt();
 
-        if(manhunt == null)
-            return null;
-
-        var frequency = manhunt.getFrequency();
-        if(frequency <= 0)
-            frequency = 3600;
-        var start = manhunt.getStart();
-
-        var now = new Date();
-
-        long durationSinceStart = Duration.between(start.toInstant(), now.toInstant()).getSeconds();
-        long nextEventSeconds = durationSinceStart + (frequency - (durationSinceStart % frequency));
-
-        return Date.from(Instant.ofEpochSecond(start.toInstant().getEpochSecond() + nextEventSeconds));
+        return manhunt.getNextLocationReport();
     }
 }
