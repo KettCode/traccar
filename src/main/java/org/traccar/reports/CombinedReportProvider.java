@@ -21,6 +21,7 @@ import org.traccar.model.Device;
 import org.traccar.model.Event;
 import org.traccar.reports.common.ReportUtils;
 import org.traccar.reports.model.CombinedReportItem;
+import org.traccar.service.PositionService;
 import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
 import org.traccar.storage.query.Columns;
@@ -36,6 +37,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class CombinedReportProvider {
+
+    @Inject
+    private PositionService positionService;
 
     private static final Set<String> EXCLUDE_TYPES = Set.of(Event.TYPE_DEVICE_MOVING);
 
@@ -57,7 +61,7 @@ public class CombinedReportProvider {
         for (Device device: DeviceUtil.getAccessibleDevices(storage, userId, deviceIds, groupIds)) {
             CombinedReportItem item = new CombinedReportItem();
             item.setDeviceId(device.getId());
-            var positions = PositionUtil.getPositions(storage, device.getId(), from, to);
+            var positions = positionService.getPositions(userId, device, from, to);
             item.setRoute(positions.stream()
                     .map(p -> new double[] {p.getLongitude(), p.getLatitude()})
                     .collect(Collectors.toList()));

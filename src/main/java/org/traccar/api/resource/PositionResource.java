@@ -115,7 +115,7 @@ public class PositionResource extends BaseResource {
         permissionsService.checkPermission(Device.class, getUserId(), deviceId);
         StreamingOutput stream = output -> {
             try {
-                kmlExportProvider.generate(output, deviceId, from, to);
+                kmlExportProvider.generate(output, getUserId(), deviceId, from, to);
             } catch (StorageException e) {
                 throw new WebApplicationException(e);
             }
@@ -133,7 +133,7 @@ public class PositionResource extends BaseResource {
         permissionsService.checkPermission(Device.class, getUserId(), deviceId);
         StreamingOutput stream = output -> {
             try {
-                csvExportProvider.generate(output, deviceId, from, to);
+                csvExportProvider.generate(output, getUserId(), deviceId, from, to);
             } catch (StorageException e) {
                 throw new WebApplicationException(e);
             }
@@ -151,7 +151,7 @@ public class PositionResource extends BaseResource {
         permissionsService.checkPermission(Device.class, getUserId(), deviceId);
         StreamingOutput stream = output -> {
             try {
-                gpxExportProvider.generate(output, deviceId, from, to);
+                gpxExportProvider.generate(output, getUserId(), deviceId, from, to);
             } catch (StorageException e) {
                 throw new WebApplicationException(e);
             }

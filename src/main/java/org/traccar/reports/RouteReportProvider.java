@@ -26,6 +26,7 @@ import org.traccar.model.Group;
 import org.traccar.model.Position;
 import org.traccar.reports.common.ReportUtils;
 import org.traccar.reports.model.DeviceReportSection;
+import org.traccar.service.PositionService;
 import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
 import org.traccar.storage.query.Columns;
@@ -47,6 +48,9 @@ import java.util.HashMap;
 
 public class RouteReportProvider {
 
+    @Inject
+    private PositionService positionService;
+
     private final Config config;
     private final ReportUtils reportUtils;
     private final Storage storage;
@@ -66,7 +70,7 @@ public class RouteReportProvider {
 
         ArrayList<Position> result = new ArrayList<>();
         for (Device device: DeviceUtil.getAccessibleDevices(storage, userId, deviceIds, groupIds)) {
-            result.addAll(PositionUtil.getPositions(storage, device.getId(), from, to));
+            result.addAll(positionService.getPositions(userId, device, from, to));
         }
         return result;
     }
@@ -85,7 +89,7 @@ public class RouteReportProvider {
         ArrayList<DeviceReportSection> devicesRoutes = new ArrayList<>();
         ArrayList<String> sheetNames = new ArrayList<>();
         for (Device device: DeviceUtil.getAccessibleDevices(storage, userId, deviceIds, groupIds)) {
-            var positions = PositionUtil.getPositions(storage, device.getId(), from, to);
+            var positions = positionService.getPositions(userId, device, from, to);
             DeviceReportSection deviceRoutes = new DeviceReportSection();
             deviceRoutes.setDeviceName(device.getName());
             sheetNames.add(WorkbookUtil.createSafeSheetName(getUniqueSheetName(deviceRoutes.getDeviceName())));

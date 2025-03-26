@@ -18,6 +18,7 @@ package org.traccar.reports;
 import org.traccar.helper.DateUtil;
 import org.traccar.helper.model.PositionUtil;
 import org.traccar.model.Position;
+import org.traccar.service.PositionService;
 import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
 
@@ -32,6 +33,9 @@ import java.util.stream.Collectors;
 
 public class CsvExportProvider {
 
+    @Inject
+    private PositionService positionService;
+
     private final Storage storage;
 
     @Inject
@@ -40,9 +44,9 @@ public class CsvExportProvider {
     }
 
     public void generate(
-            OutputStream outputStream, long deviceId, Date from, Date to) throws StorageException {
+            OutputStream outputStream, long userId, long deviceId, Date from, Date to) throws StorageException {
 
-        var positions = PositionUtil.getPositions(storage, deviceId, from, to);
+        var positions = positionService.getPositions(userId, deviceId, from, to);
 
         var attributes = positions.stream()
                 .flatMap((position -> position.getAttributes().keySet().stream()))

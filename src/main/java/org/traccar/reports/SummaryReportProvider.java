@@ -30,6 +30,7 @@ import org.traccar.model.Position;
 import org.traccar.reports.common.ReportUtils;
 import org.traccar.reports.common.TripsConfig;
 import org.traccar.reports.model.SummaryReportItem;
+import org.traccar.service.PositionService;
 import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
 import org.traccar.storage.query.Columns;
@@ -54,6 +55,9 @@ import java.util.List;
 
 public class SummaryReportProvider {
 
+    @Inject
+    private PositionService positionService;
+
     private final Config config;
     private final ReportUtils reportUtils;
     private final PermissionsService permissionsService;
@@ -77,7 +81,7 @@ public class SummaryReportProvider {
                 new Order("fixTime", end, 1)));
     }
 
-    private Collection<SummaryReportItem> calculateDeviceResult(
+    private Collection<SummaryReportItem> calculateDeviceResult(long userId,
             Device device, Date from, Date to, boolean fast) throws StorageException {
 
         SummaryReportItem result = new SummaryReportItem();
@@ -90,7 +94,7 @@ public class SummaryReportProvider {
             first = getEdgePosition(device.getId(), from, to, false);
             last = getEdgePosition(device.getId(), from, to, true);
         } else {
-            var positions = PositionUtil.getPositions(storage, device.getId(), from, to);
+            var positions = positionService.getPositions(userId, device, from, to);
             for (Position position : positions) {
                 if (first == null) {
                     first = position;
@@ -135,7 +139,7 @@ public class SummaryReportProvider {
         return List.of();
     }
 
-    private Collection<SummaryReportItem> calculateDeviceResults(
+    private Collection<SummaryReportItem> calculateDeviceResults(long userId,
             Device device, ZonedDateTime from, ZonedDateTime to, boolean daily) throws StorageException {
 
         boolean fast = Duration.between(from, to).toSeconds() > config.getLong(Keys.REPORT_FAST_THRESHOLD);
@@ -144,12 +148,12 @@ public class SummaryReportProvider {
             while (from.truncatedTo(ChronoUnit.DAYS).isBefore(to.truncatedTo(ChronoUnit.DAYS))) {
                 ZonedDateTime fromDay = from.truncatedTo(ChronoUnit.DAYS);
                 ZonedDateTime nextDay = fromDay.plusDays(1);
-                results.addAll(calculateDeviceResult(
+                results.addAll(calculateDeviceResult(userId,
                         device, Date.from(from.toInstant()), Date.from(nextDay.toInstant()), fast));
                 from = nextDay;
             }
         }
-        results.addAll(calculateDeviceResult(device, Date.from(from.toInstant()), Date.from(to.toInstant()), fast));
+        results.addAll(calculateDeviceResult(userId, device, Date.from(from.toInstant()), Date.from(to.toInstant()), fast));
         return results;
     }
 
@@ -162,7 +166,7 @@ public class SummaryReportProvider {
 
         ArrayList<SummaryReportItem> result = new ArrayList<>();
         for (Device device: DeviceUtil.getAccessibleDevices(storage, userId, deviceIds, groupIds)) {
-            var deviceResults = calculateDeviceResults(
+            var deviceResults = calculateDeviceResults(userId,
                     device, from.toInstant().atZone(tz), to.toInstant().atZone(tz), daily);
             for (SummaryReportItem summaryReport : deviceResults) {
                 if (summaryReport.getStartTime() != null && summaryReport.getEndTime() != null) {

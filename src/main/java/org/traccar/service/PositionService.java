@@ -70,4 +70,17 @@ public class PositionService {
 
         return positions;
     }
+
+    public List<Position> getPositions(long userId, Device device, Date from, Date to) throws StorageException {
+        var manhunt = manhuntDatabaseStorage.getCurrent();
+        var user = storage.getObject(User.class,
+                new Request(new Columns.All(), new Condition.Equals("id", userId)));
+
+        var positions = PositionUtil.getPositions(storage, device.getId(), from, to);
+        if (manhunt != null && user.getManhuntRole() == 1 && device.getManhuntRole() == 2) {
+            return positions.stream().filter(Position::getIsManhunt).toList();
+        }
+
+        return positions;
+    }
 }
