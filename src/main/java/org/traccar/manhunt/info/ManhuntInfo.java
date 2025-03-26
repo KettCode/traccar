@@ -24,11 +24,4 @@ public class ManhuntInfo {
     public void setHuntedDevices(List<DeviceDto> huntedDevices) {
         this.huntedDevices = huntedDevices;
     }
-
-    private Date nextPosition;
-    public Date getNextPosition() {
-        var manhunt = getManhunt();
-
-        return manhunt.getNextLocationReport();
-    }
 }
