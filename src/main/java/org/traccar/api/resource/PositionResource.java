@@ -22,6 +22,7 @@ import org.traccar.model.UserRestrictions;
 import org.traccar.reports.CsvExportProvider;
 import org.traccar.reports.GpxExportProvider;
 import org.traccar.reports.KmlExportProvider;
+import org.traccar.service.PositionService;
 import org.traccar.storage.ManhuntDatabaseStorage;
 import org.traccar.storage.StorageException;
 import org.traccar.storage.query.Columns;
@@ -61,7 +62,7 @@ public class PositionResource extends BaseResource {
     private GpxExportProvider gpxExportProvider;
 
     @Inject
-    private ManhuntDatabaseStorage manhuntDatabaseStorage;
+    private PositionService positionService;
 
     @GET
     public Collection<Position> getJson(
@@ -81,16 +82,12 @@ public class PositionResource extends BaseResource {
             permissionsService.checkPermission(Device.class, getUserId(), deviceId);
             if (from != null && to != null) {
                 permissionsService.checkRestriction(getUserId(), UserRestrictions::getDisableReports);
-                //return PositionUtil.getPositions(storage, deviceId, from, to);
-                return manhuntDatabaseStorage.getPositions(getUserId(), deviceId, from, to);
+                return positionService.getPositions(getUserId(), deviceId, from, to);
             } else {
-                return manhuntDatabaseStorage.getLatestPositions(getUserId(), deviceId);
-                //return storage.getObjects(Position.class, new Request(
-                //        new Columns.All(), new Condition.LatestPositions(deviceId)));
+                return positionService.getLatestPositions(getUserId(), deviceId);
             }
         } else {
-            return manhuntDatabaseStorage.getLatestPositions(getUserId());
-            //return PositionUtil.getLatestPositions(storage, getUserId());
+            return positionService.getLatestPositions(getUserId());
         }
     }
 

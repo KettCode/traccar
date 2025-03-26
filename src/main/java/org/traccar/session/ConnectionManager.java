@@ -483,8 +483,8 @@ public class ConnectionManager implements BroadcastInterface {
                 }
 
                 sendLocationUpdateNotification();
-            } catch (StorageException e) {
-                throw new RuntimeException(e);
+            } catch (Exception e) {
+                LOGGER.error(e.getMessage());
             }
         }, initialDelay, frequency, TimeUnit.SECONDS);
     }
@@ -501,9 +501,9 @@ public class ConnectionManager implements BroadcastInterface {
     }
 
     public void sendNotificationToAllUsers(NotificationMessage notificationMessage) throws StorageException {
-        var notificator = notificatorManager.getNotificator("traccar");
         manhuntDatabaseStorage.getAllUsers().forEach(user -> {
             try {
+                var notificator = notificatorManager.getNotificator("traccar");
                 notificator.send(user, notificationMessage, null, null);
             } catch (MessageException e) {
                 throw new RuntimeException(e);
