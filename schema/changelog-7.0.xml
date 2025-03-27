@@ -9,6 +9,7 @@
 <changeSet author="author" id="changelog-7.0" >
     <addColumn tableName="tc_users">
       <column name="manhuntRole" type="int" />
+      <column name="triggerManhuntActions" type="BOOLEAN" defaultValueBoolean="false" />
     </addColumn>
 
     <addColumn tableName="tc_devices">
