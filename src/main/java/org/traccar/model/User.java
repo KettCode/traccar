@@ -268,6 +268,7 @@ public class User extends ExtendedModel implements UserRestrictions, Disableable
     public void setManhuntRole(long manhuntRole) { this.manhuntRole = manhuntRole; }
 
     private boolean triggerManhuntActions;
+    @Override
     public boolean getTriggerManhuntActions() {
         return triggerManhuntActions;
     }

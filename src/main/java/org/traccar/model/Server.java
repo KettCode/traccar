@@ -199,6 +199,15 @@ public class Server extends ExtendedModel implements UserRestrictions {
         this.announcement = announcement;
     }
 
+    private boolean triggerManhuntActions;
+    @Override
+    public boolean getTriggerManhuntActions() {
+        return triggerManhuntActions;
+    }
+    public void setTriggerManhuntActions(boolean triggerManhuntActions) {
+        this.triggerManhuntActions = triggerManhuntActions;
+    }
+
     @QueryIgnore
     public String getVersion() {
         return getClass().getPackage().getImplementationVersion();

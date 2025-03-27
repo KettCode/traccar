@@ -12,6 +12,10 @@
       <column name="triggerManhuntActions" type="BOOLEAN" defaultValueBoolean="false" />
     </addColumn>
 
+    <addColumn tableName="tc_servers">
+        <column name="triggerManhuntActions" type="BOOLEAN" defaultValueBoolean="false" />
+    </addColumn>
+
     <addColumn tableName="tc_devices">
         <column name="manhuntPositionId" type="int" />
         <column name="manhuntRole" type="int" />

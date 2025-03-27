@@ -21,4 +21,5 @@ public interface UserRestrictions {
     boolean getLimitCommands();
     boolean getDisableReports();
     boolean getFixedEmail();
+    boolean getTriggerManhuntActions();
 }

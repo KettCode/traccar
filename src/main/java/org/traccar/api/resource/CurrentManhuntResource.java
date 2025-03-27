@@ -38,13 +38,6 @@ public class CurrentManhuntResource extends BaseResource {
 
     }
 
-    @Path("get")
-    @GET
-    public Response get() throws  StorageException {
-        var manhunt = manhuntDatabaseStorage.getCurrent();
-        return Response.ok(manhunt).build();
-    }
-    
     @Path("getHuntedDevices")
     @GET
     public Collection<DeviceDto> getHuntedDevices() throws StorageException {
@@ -100,9 +93,7 @@ public class CurrentManhuntResource extends BaseResource {
     @Path("createCatch")
     @POST
     public Response createCatch(@QueryParam("deviceId") long deviceId) throws StorageException, TraccarException {
-        var user = permissionsService.getUser(getUserId());
-        if(user.getManhuntRole() != 1)
-            throw new TraccarException("Der Benutzer ist kein 'Jaeger'.");
+        permissionsService.checkRestriction(getUserId(), (userRestrictions) -> !userRestrictions.getTriggerManhuntActions());
 
         var manhunt = manhuntDatabaseStorage.getCurrent();
         if(manhunt == null)
@@ -120,9 +111,7 @@ public class CurrentManhuntResource extends BaseResource {
     @Path("createSpeedHunt")
     @POST
     public Response createSpeedHunt(@QueryParam("deviceId") long deviceId) throws StorageException, TraccarException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        var user = permissionsService.getUser(getUserId());
-        if(user.getManhuntRole() != 1)
-            throw new TraccarException("Der Benutzer ist kein 'Jaeger'.");
+        permissionsService.checkRestriction(getUserId(), (userRestrictions) -> !userRestrictions.getTriggerManhuntActions());
 
         var manhunt = manhuntDatabaseStorage.getCurrent();
         if(manhunt == null)
@@ -160,16 +149,14 @@ public class CurrentManhuntResource extends BaseResource {
     @Path("createSpeedHuntRequest")
     @POST
     public Response createSpeedHuntRequest(@QueryParam("speedHuntId") long speedHuntId) throws StorageException, TraccarException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        var user = permissionsService.getUser(getUserId());
-        if(user.getManhuntRole() != 1)
-            throw new TraccarException("Der Benutzer ist kein 'Jaeger'.");
+        permissionsService.checkRestriction(getUserId(), (userRestrictions) -> !userRestrictions.getTriggerManhuntActions());
 
         var manhunt = manhuntDatabaseStorage.getCurrent();
         if(manhunt == null)
             throw new TraccarException("Es wurde kein Spiel gefunden.");
 
         var lastSpeedHuntDto = manhuntDatabaseStorage.getLastSpeedHunt(manhunt.getId());
-        CheckSpeedHunt(lastSpeedHuntDto, speedHuntId, user, manhunt);
+        CheckSpeedHuntForLocation(lastSpeedHuntDto, speedHuntId, manhunt);
 
         var deviceDto = manhuntDatabaseStorage.getDevice(manhunt.getId(), lastSpeedHuntDto.getDeviceId());
         CheckDevice(deviceDto);
@@ -209,7 +196,7 @@ public class CurrentManhuntResource extends BaseResource {
             throw new TraccarException("Zwei aufeinanderfolgende Speedhunts auf den selben Spieler sind nicht erlaubt.");
     }
 
-    private void CheckSpeedHunt(SpeedHuntDto dto, long speedHuntId, User user, Manhunt manhunt) throws TraccarException {
+    private void CheckSpeedHuntForLocation(SpeedHuntDto dto, long speedHuntId, Manhunt manhunt) throws TraccarException {
         if(dto == null || dto.getId() == 0)
             throw new TraccarException("Es wurde kein Speedhunt gefunden.");
 
