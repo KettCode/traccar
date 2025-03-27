@@ -61,42 +61,45 @@ public final class PositionUtil {
                 new Order("fixTime")));
     }
 
+    public static List<Position> getPositions(Storage storage, long userId, long deviceId, Date from, Date to) throws StorageException {
+        var device = storage.getObject(Device.class,
+                new Request(new Columns.All(), new Condition.Equals("id", deviceId)));
+        return getPositions(storage, userId, device, from, to);
+    }
+
+    public static List<Position> getPositions(Storage storage, long userId, Device device, Date from, Date to) throws StorageException {
+        var positions = PositionUtil.getPositions(storage, device.getId(), from, to);
+
+        var user = storage.getObject(User.class,
+                new Request(new Columns.All(), new Condition.Equals("id", userId)));
+        if (user.getManhuntRole() == 1 && device.getManhuntRole() == 2) {
+            return positions.stream().filter(Position::getIsManhunt).toList();
+        }
+
+        return positions;
+    }
+
     public static List<Position> getLatestPositions(Storage storage, long userId) throws StorageException {
+        var user = storage.getObject(User.class,
+                new Request(new Columns.All(), new Condition.Equals("id", userId)));
+
         var devices = storage.getObjects(Device.class, new Request(
                 new Columns.Include("id"),
                 new Condition.Permission(User.class, userId, Device.class)));
         var deviceIds = devices.stream().map(BaseModel::getId).collect(Collectors.toUnmodifiableSet());
 
         var positions = storage.getObjects(Position.class, new Request(
-                new Columns.All(), new Condition.LatestPositions()));
+                new Columns.All(), new Condition.LatestPositions(0, user.getManhuntRole())));
         return positions.stream()
                 .filter(position -> deviceIds.contains(position.getDeviceId()))
                 .collect(Collectors.toList());
     }
 
-    public static List<Position> getLatestPositionsForHunter(Storage storage, long userId) throws StorageException {
-        var devices = storage.getObjects(Device.class, new Request(
-                new Columns.Include("id"),
-                new Condition.Permission(User.class, userId, Device.class)));
-        var deviceIds = devices.stream().map(BaseModel::getId).collect(Collectors.toUnmodifiableSet());
+    public static List<Position> getLatestPositions(Storage storage, long userId, long deviceId) throws StorageException {
+        var user = storage.getObject(User.class,
+                new Request(new Columns.All(), new Condition.Equals("id", userId)));
 
-        var positions = storage.getObjects(Position.class, new Request(
-                new Columns.All(), new Condition.LatestPositionsForHunter()));
-        return positions.stream()
-                .filter(position -> deviceIds.contains(position.getDeviceId()))
-                .collect(Collectors.toList());
-    }
-
-    public static List<Position> getLatestPositionsForHunted(Storage storage, long userId) throws StorageException {
-        var devices = storage.getObjects(Device.class, new Request(
-                new Columns.Include("id"),
-                new Condition.Permission(User.class, userId, Device.class)));
-        var deviceIds = devices.stream().map(BaseModel::getId).collect(Collectors.toUnmodifiableSet());
-
-        var positions = storage.getObjects(Position.class, new Request(
-                new Columns.All(), new Condition.LatestPositionsForHunted(), new Order("id")));
-        return positions.stream()
-                .filter(position -> deviceIds.contains(position.getDeviceId()))
-                .collect(Collectors.toList());
+        return storage.getObjects(Position.class, new Request(
+                new Columns.All(), new Condition.LatestPositions(deviceId, user.getManhuntRole())));
     }
 }

@@ -30,10 +30,7 @@ import org.traccar.storage.query.Request;
 import jakarta.inject.Inject;
 import javax.sql.DataSource;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -226,14 +223,6 @@ public class DatabaseStorage extends Storage {
             if (condition.getDeviceId() > 0) {
                 results.put("deviceId", condition.getDeviceId());
             }
-        } else if (genericCondition instanceof Condition.LatestPositionsForHunter condition) {
-            if (condition.getDeviceId() > 0) {
-                results.put("deviceId", condition.getDeviceId());
-            }
-        } else if (genericCondition instanceof Condition.LatestPositionsForHunted condition) {
-            if (condition.getDeviceId() > 0) {
-                results.put("deviceId", condition.getDeviceId());
-            }
         }
         return results;
     }
@@ -287,37 +276,29 @@ public class DatabaseStorage extends Storage {
                 result.append("id IN (");
                 result.append("SELECT positionId FROM ");
                 result.append(getStorageName(Device.class));
+
+                List<String> conditions = new ArrayList<>();
                 if (condition.getDeviceId() > 0) {
-                    result.append(" WHERE id = :deviceId");
+                    conditions.add("id = :deviceId");
+                }
+                if (condition.getManhuntRole() == 1) {
+                    conditions.add("manhuntRole <> 2");
+                }
+                if (!conditions.isEmpty()) {
+                    result.append(" WHERE ");
+                    result.append(String.join(" AND ", conditions));
+                }
+
+                if(condition.getManhuntRole() > 0) {
+                    result.append(" UNION ");
+                    result.append("SELECT manhuntPositionId as positionId FROM ");
+                    result.append(getStorageName(Device.class));
+                    if (condition.getDeviceId() > 0) {
+                        result.append(" WHERE id = :deviceId");
+                    }
                 }
                 result.append(")");
 
-            } else if (genericCondition instanceof Condition.LatestPositionsForHunter condition) {
-                result.append("id IN (");
-                result.append("SELECT " +
-                    "CASE " +
-                    "   WHEN (tc_devices.manhuntRole IS NOT NULL AND tc_devices.manhuntRole = 2) THEN tc_devices.manhuntPositionId " +
-                    "   ELSE tc_devices.positionId  " +
-                    "END as positionId  " +
-                    "FROM tc_devices ");
-                if (condition.getDeviceId() > 0) {
-                    result.append(" WHERE tc_devices.id = :deviceId");
-                }
-                result.append(")");
-            } else if (genericCondition instanceof Condition.LatestPositionsForHunted condition) {
-                result.append("id IN (");
-                result.append("SELECT positionId FROM ");
-                result.append(getStorageName(Device.class));
-                if (condition.getDeviceId() > 0) {
-                    result.append(" WHERE id = :deviceId");
-                }
-                result.append(" UNION ");
-                result.append("SELECT manhuntPositionId as positionId FROM ");
-                result.append(getStorageName(Device.class));
-                if (condition.getDeviceId() > 0) {
-                    result.append(" WHERE id = :deviceId");
-                }
-                result.append(")");
             }
         }
         return result.toString();

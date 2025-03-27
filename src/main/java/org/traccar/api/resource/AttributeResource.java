@@ -33,7 +33,6 @@ import org.traccar.model.Attribute;
 import org.traccar.model.Device;
 import org.traccar.model.Position;
 import org.traccar.handler.ComputedAttributesHandler;
-import org.traccar.service.PositionService;
 import org.traccar.session.cache.CacheManager;
 import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;

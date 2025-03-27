@@ -21,13 +21,12 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.traccar.helper.model.PositionUtil;
 import org.traccar.model.Device;
 import org.traccar.model.Event;
 import org.traccar.model.LogRecord;
 import org.traccar.model.Position;
-import org.traccar.service.PositionService;
 import org.traccar.session.ConnectionManager;
-import org.traccar.storage.ManhuntDatabaseStorage;
 import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
 
@@ -49,16 +48,14 @@ public class AsyncSocket extends WebSocketAdapter implements ConnectionManager.U
     private final ConnectionManager connectionManager;
     private final Storage storage;
     private final long userId;
-    private final PositionService positionService;
 
     private boolean includeLogs;
 
-    public AsyncSocket(ObjectMapper objectMapper, ConnectionManager connectionManager, Storage storage, long userId, PositionService positionService) {
+    public AsyncSocket(ObjectMapper objectMapper, ConnectionManager connectionManager, Storage storage, long userId) {
         this.objectMapper = objectMapper;
         this.connectionManager = connectionManager;
         this.storage = storage;
         this.userId = userId;
-        this.positionService = positionService;
     }
 
     @Override
@@ -67,7 +64,7 @@ public class AsyncSocket extends WebSocketAdapter implements ConnectionManager.U
 
         try {
             Map<String, Collection<?>> data = new HashMap<>();
-            data.put(KEY_POSITIONS, positionService.getLatestPositions(userId));
+            data.put(KEY_POSITIONS, PositionUtil.getLatestPositions(storage, userId));
             sendData(data);
             connectionManager.addListener(userId, this);
         } catch (StorageException e) {

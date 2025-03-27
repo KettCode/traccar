@@ -30,7 +30,6 @@ import org.traccar.model.Position;
 import org.traccar.reports.common.ReportUtils;
 import org.traccar.reports.common.TripsConfig;
 import org.traccar.reports.model.SummaryReportItem;
-import org.traccar.service.PositionService;
 import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
 import org.traccar.storage.query.Columns;
@@ -54,9 +53,6 @@ import java.util.Date;
 import java.util.List;
 
 public class SummaryReportProvider {
-
-    @Inject
-    private PositionService positionService;
 
     private final Config config;
     private final ReportUtils reportUtils;
@@ -94,7 +90,7 @@ public class SummaryReportProvider {
             first = getEdgePosition(device.getId(), from, to, false);
             last = getEdgePosition(device.getId(), from, to, true);
         } else {
-            var positions = positionService.getPositions(userId, device, from, to);
+            var positions = PositionUtil.getPositions(storage, userId, device, from, to);
             for (Position position : positions) {
                 if (first == null) {
                     first = position;

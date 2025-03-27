@@ -18,7 +18,6 @@ package org.traccar.reports;
 import org.traccar.helper.DateUtil;
 import org.traccar.helper.model.PositionUtil;
 import org.traccar.model.Device;
-import org.traccar.service.PositionService;
 import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
 import org.traccar.storage.query.Columns;
@@ -32,9 +31,6 @@ import java.util.Date;
 
 public class GpxExportProvider {
 
-    @Inject
-    private PositionService positionService;
-
     private final Storage storage;
 
     @Inject
@@ -47,7 +43,7 @@ public class GpxExportProvider {
 
         var device = storage.getObject(Device.class, new Request(
                 new Columns.All(), new Condition.Equals("id", deviceId)));
-        var positions = positionService.getPositions(userId, device, from, to);
+        var positions = PositionUtil.getPositions(storage, userId, device, from, to);
 
         try (PrintWriter writer = new PrintWriter(outputStream)) {
             writer.print("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");

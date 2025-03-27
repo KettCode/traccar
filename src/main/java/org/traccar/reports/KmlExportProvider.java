@@ -17,7 +17,6 @@ package org.traccar.reports;
 
 import org.traccar.helper.model.PositionUtil;
 import org.traccar.model.Device;
-import org.traccar.service.PositionService;
 import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
 import org.traccar.storage.query.Columns;
@@ -33,9 +32,6 @@ import java.util.stream.Collectors;
 
 public class KmlExportProvider {
 
-    @Inject
-    private PositionService positionService;
-
     private final Storage storage;
 
     @Inject
@@ -48,7 +44,7 @@ public class KmlExportProvider {
 
         var device = storage.getObject(Device.class, new Request(
                 new Columns.All(), new Condition.Equals("id", deviceId)));
-        var positions = positionService.getPositions(userId, device, from, to);
+        var positions = PositionUtil.getPositions(storage, userId, device, from, to);
 
         var dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
