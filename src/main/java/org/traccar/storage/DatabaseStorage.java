@@ -293,8 +293,9 @@ public class DatabaseStorage extends Storage {
                     result.append(" UNION ");
                     result.append("SELECT manhuntPositionId as positionId FROM ");
                     result.append(getStorageName(Device.class));
+                    result.append(" WHERE manhuntRole = 2 ");
                     if (condition.getDeviceId() > 0) {
-                        result.append(" WHERE id = :deviceId");
+                        result.append(" AND id = :deviceId");
                     }
                 }
                 result.append(")");
