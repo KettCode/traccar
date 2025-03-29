@@ -3,6 +3,7 @@ package org.traccar.model;
 import org.traccar.storage.QueryIgnore;
 import org.traccar.storage.StorageName;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -30,15 +31,5 @@ public class SpeedHunt extends BaseModel {
     }
     public void setDeviceId(long deviceId) {
         this.deviceId = deviceId;
-    }
-
-    private List<SpeedHuntRequest> speedHuntRequests;
-    @QueryIgnore
-    public List<SpeedHuntRequest> getSpeedHuntRequests() {
-        return speedHuntRequests;
-    }
-    @QueryIgnore
-    public void setSpeedHuntRequests(List<SpeedHuntRequest> speedHuntRequests) {
-        this.speedHuntRequests = speedHuntRequests;
     }
 }

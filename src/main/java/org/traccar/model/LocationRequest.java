@@ -5,8 +5,8 @@ import org.traccar.storage.StorageName;
 
 import java.util.Date;
 
-@StorageName("tc_speedHuntRequests")
-public class SpeedHuntRequest extends BaseModel {
+@StorageName("tc_locationRequests")
+public class LocationRequest extends BaseModel {
     private long speedHuntsId;
     public long getSpeedHuntsId() { return speedHuntsId; }
     public void setSpeedHuntsId(long speedHuntsId) { this.speedHuntsId = speedHuntsId; }

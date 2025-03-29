@@ -3,9 +3,8 @@ package org.traccar.storage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
 import org.traccar.config.Config;
-import org.traccar.helper.model.PositionUtil;
 import org.traccar.manhunt.dto.DeviceDto;
-import org.traccar.manhunt.dto.SpeedHuntDto;
+import org.traccar.manhunt.dto.LastSpeedHuntDto;
 import org.traccar.model.*;
 import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;
@@ -42,16 +41,16 @@ public class ManhuntDatabaseStorage {
         }
     }
 
-    public List<SpeedHuntRequest> getSpeedHuntRequests(List<Long> speedHuntIds) throws StorageException {
+    public List<LocationRequest> getSpeedHuntRequests(List<Long> speedHuntIds) throws StorageException {
         try {
             var query = "SELECT * " +
-                    "FROM tc_speedHuntRequests " +
+                    "FROM tc_locationRequests " +
                     "WHERE speedHuntsId = ANY(:speedHuntIds) " +
                     "ORDER BY speedHuntsId, time";
 
             QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
             builder.setArray("speedHuntIds", speedHuntIds.toArray(), true);
-            return builder.executeQuery(SpeedHuntRequest.class);
+            return builder.executeQuery(LocationRequest.class);
         } catch (SQLException e) {
             throw new StorageException(e);
         }
@@ -90,6 +89,26 @@ public class ManhuntDatabaseStorage {
         }
     }
 
+    public List<DeviceDto> getDevices(long manhuntId) throws StorageException {
+        try {
+            var query = "SELECT d.*, " +
+                    "CASE " +
+                    "   WHEN c.id IS NULL THEN 0 " +
+                    "   ELSE 1 " +
+                    "END AS isCaught " +
+                    "FROM tc_devices d " +
+                    "LEFT JOIN tc_catches c ON c.manhuntsId = :manhuntId and c.deviceId = d.id " +
+                    "ORDER BY d.name";
+
+            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
+            builder.setLong("manhuntId", manhuntId);
+            return builder.executeQuery(DeviceDto.class);
+
+        } catch (SQLException e) {
+            throw new StorageException(e);
+        }
+    }
+
     public List<DeviceDto> getHuntedDevices(long manhuntId, boolean withCaught) throws StorageException {
         try {
             var query = "SELECT d.*, " +
@@ -117,7 +136,7 @@ public class ManhuntDatabaseStorage {
         }
     }
 
-    public SpeedHuntDto getLastSpeedHunt(long manhuntId) throws StorageException {
+    public LastSpeedHuntDto getLastSpeedHunt(long manhuntId) throws StorageException {
         try {
             var query = "SELECT sh.*, " +
                     "d.name as deviceName, " +
@@ -128,7 +147,7 @@ public class ManhuntDatabaseStorage {
                     "END AS deviceIsCaught, " +
                     "( " +
                     "   SELECT COUNT(shr.id) " +
-                    "   FROM tc_speedHuntRequests shr " +
+                    "   FROM tc_locationRequests shr " +
                     "   WHERE shr.speedHuntsId = sh.id " +
                     ") AS numRequests " +
                     "FROM tc_speedHunts sh " +
@@ -144,14 +163,14 @@ public class ManhuntDatabaseStorage {
 
             QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
             builder.setLong("manhuntId", manhuntId);
-            var dto = builder.executeQuery(SpeedHuntDto.class);
+            var dto = builder.executeQuery(LastSpeedHuntDto.class);
             return dto.isEmpty() ? null : dto.get(0);
         } catch (SQLException e) {
             throw new StorageException(e);
         }
     }
 
-    public List<SpeedHuntDto> getSpeedHunts(long manhuntId) throws StorageException {
+    public List<LastSpeedHuntDto> getSpeedHunts(long manhuntId) throws StorageException {
         try {
             var query = "SELECT sh.*, " +
                     "d.name as deviceName, " +
@@ -166,7 +185,7 @@ public class ManhuntDatabaseStorage {
 
             QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
             builder.setLong("manhuntId", manhuntId);
-            return builder.executeQuery(SpeedHuntDto.class);
+            return builder.executeQuery(LastSpeedHuntDto.class);
         } catch (SQLException e) {
             throw new StorageException(e);
         }
@@ -206,12 +225,12 @@ public class ManhuntDatabaseStorage {
         return speedHunt;
     }
 
-    public SpeedHuntRequest createSpeedHuntRequest(long speedHuntId, long userId) throws StorageException {
-        var speedHuntRequest = new SpeedHuntRequest();
-        speedHuntRequest.setSpeedHuntsId(speedHuntId);
-        speedHuntRequest.setUserId(userId);
-        speedHuntRequest.setTime(new Date());
-        speedHuntRequest.setId(storage.addObject(speedHuntRequest, new Request(new Columns.Exclude("id"))));
-        return speedHuntRequest;
+    public LocationRequest createLocationRequest(long speedHuntId, long userId) throws StorageException {
+        var locationRequest = new LocationRequest();
+        locationRequest.setSpeedHuntsId(speedHuntId);
+        locationRequest.setUserId(userId);
+        locationRequest.setTime(new Date());
+        locationRequest.setId(storage.addObject(locationRequest, new Request(new Columns.Exclude("id"))));
+        return locationRequest;
     }
 }

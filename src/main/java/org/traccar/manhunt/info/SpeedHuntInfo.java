@@ -1,5 +1,5 @@
 package org.traccar.manhunt.info;
-import org.traccar.manhunt.dto.SpeedHuntDto;
+import org.traccar.manhunt.dto.LastSpeedHuntDto;
 import org.traccar.model.Manhunt;
 import org.traccar.model.SpeedHunt;
 
@@ -15,16 +15,16 @@ public class SpeedHuntInfo {
         this.manhunt = manhunt;
     }
 
-    private List<SpeedHuntDto> speedHunts;
-    public List<SpeedHuntDto> getSpeedHunts() {
+    private List<LastSpeedHuntDto> speedHunts;
+    public List<LastSpeedHuntDto> getSpeedHunts() {
         return speedHunts;
     }
-    public void setSpeedHunts(List<SpeedHuntDto> speedHunts) {
+    public void setSpeedHunts(List<LastSpeedHuntDto> speedHunts) {
         this.speedHunts = speedHunts;
     }
 
-    private SpeedHuntDto lastSpeedHunt;
-    public SpeedHuntDto getLastSpeedHunt() {
+    private LastSpeedHuntDto lastSpeedHunt;
+    public LastSpeedHuntDto getLastSpeedHunt() {
         var speedHunts = getSpeedHunts();
         if(speedHunts.isEmpty())
             return null;

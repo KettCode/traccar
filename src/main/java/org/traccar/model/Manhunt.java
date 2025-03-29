@@ -8,7 +8,7 @@ import java.time.Instant;
 import java.util.Date;
 
 @StorageName("tc_manhunts")
-public class Manhunt extends ExtendedModel {
+public class Manhunt extends BaseModel {
     private Date start;
     public Date getStart() {
         return start;

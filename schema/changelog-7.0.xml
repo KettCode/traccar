@@ -33,9 +33,6 @@
       <column name="frequency" type="bigint"/>
       <column name="speedHunts" type="int" />
       <column name="locationRequests" type="int" />
-      <column name="attributes" type="VARCHAR(4096)">
-        <constraints nullable="false" />
-      </column>
     </createTable>
 
     <createTable tableName="tc_speedHunts">
@@ -47,7 +44,7 @@
       <column name="deviceId" type="int"/>
     </createTable>
 
-    <createTable tableName="tc_speedHuntRequests">
+    <createTable tableName="tc_locationRequests">
       <column name="id" type="int" autoIncrement="true">
         <constraints primaryKey="true"/>
       </column>
@@ -84,7 +81,7 @@
       </column>
     </createTable>
 
-    <createTable tableName="tc_user_speedHuntRequest">
+    <createTable tableName="tc_user_locationRequest">
       <column name="userid" type="INT">
         <constraints nullable="false" />
       </column>
