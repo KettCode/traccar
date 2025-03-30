@@ -32,4 +32,14 @@ public class SpeedHunt extends BaseModel {
     public void setDeviceId(long deviceId) {
         this.deviceId = deviceId;
     }
+
+    private List<LocationRequest> locationRequests = new ArrayList<>();
+    @QueryIgnore
+    public List<LocationRequest> getLocationRequests() {
+        return locationRequests;
+    }
+    @QueryIgnore
+    public void setLocationRequests(List<LocationRequest> locationRequests) {
+        this.locationRequests = locationRequests;
+    }
 }

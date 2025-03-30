@@ -441,7 +441,7 @@ public class ConnectionManager implements BroadcastInterface {
     private void scheduleUpdates() throws StorageException {
         cancelScheduler();
 
-        var manhunt = manhuntDatabaseStorage.getCurrent();
+        var manhunt = manhuntDatabaseStorage.getCurrent(false);
         if(manhunt == null)
             return;
 

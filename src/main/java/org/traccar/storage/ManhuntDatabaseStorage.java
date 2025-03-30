@@ -2,17 +2,23 @@ package org.traccar.storage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Response;
 import org.traccar.config.Config;
 import org.traccar.manhunt.dto.DeviceDto;
 import org.traccar.manhunt.dto.LastSpeedHuntDto;
 import org.traccar.model.*;
 import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;
+import org.traccar.storage.query.Order;
 import org.traccar.storage.query.Request;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ManhuntDatabaseStorage {
 
@@ -30,15 +36,42 @@ public class ManhuntDatabaseStorage {
         this.objectMapper = objectMapper;
     }
 
-    public Manhunt getCurrent() throws StorageException {
-        try {
-            var query = "SELECT * FROM tc_manhunts ORDER BY start DESC LIMIT 1";
-            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
-            var manhunts = builder.executeQuery(Manhunt.class);
-            return manhunts.isEmpty() ? null : manhunts.get(0);
-        } catch (SQLException e) {
-            throw new StorageException(e);
+    public Manhunt getCurrent(boolean withSpeedHunts) throws StorageException {
+        var manhunt = storage.getObject(Manhunt.class, new Request(
+                new Columns.All(),
+                new Order("start", true, 1)
+        ));
+
+        if(withSpeedHunts && manhunt != null) {
+            var speedHunts = getSpeedHunts(manhunt.getId(), true);
+            manhunt.setSpeedHunts(speedHunts);
         }
+
+        return manhunt;
+    }
+
+    public List<SpeedHunt> getSpeedHunts(@QueryParam("manhuntId") long manhuntId, @QueryParam("withLocationRequests") boolean withLocationRequests) throws StorageException {
+        var speedHunts = storage.getObjects(SpeedHunt.class, new Request(
+                new Columns.All(),
+                new Condition.Equals("manhuntsId", manhuntId)));
+
+        if(speedHunts == null)
+            return new ArrayList<>();
+
+        if(withLocationRequests) {
+            var speedHuntIds = speedHunts.stream().map(SpeedHunt::getId).toList();
+            var locationRequests = getSpeedHuntRequests(speedHuntIds);
+
+            var locationRequestMap = locationRequests.stream()
+                    .collect(Collectors.groupingBy(LocationRequest::getSpeedHuntsId));
+
+            speedHunts.forEach(speedHunt -> {
+                var locationRequestsForHunt = locationRequestMap.getOrDefault(speedHunt.getId(), Collections.emptyList());
+                speedHunt.setLocationRequests(locationRequestsForHunt);
+            });
+        }
+
+        return speedHunts;
     }
 
     public List<LocationRequest> getSpeedHuntRequests(List<Long> speedHuntIds) throws StorageException {
@@ -109,33 +142,6 @@ public class ManhuntDatabaseStorage {
         }
     }
 
-    public List<DeviceDto> getHuntedDevices(long manhuntId, boolean withCaught) throws StorageException {
-        try {
-            var query = "SELECT d.*, " +
-                    "CASE " +
-                    "   WHEN c.id IS NULL THEN 0 " +
-                    "   ELSE 1 " +
-                    "END AS isCaught " +
-                    "FROM tc_devices d " +
-                    "LEFT JOIN tc_catches c ON c.manhuntsId = :manhuntId and c.deviceId = d.id " +
-                    "WHERE d.manhuntRole = 2 ";
-
-            if(withCaught)
-                query += "or c.id IS NOT NULL ";
-            else
-                query += "and c.id IS NULL ";
-
-            query += "ORDER BY d.name ";
-
-            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
-            builder.setLong("manhuntId", manhuntId);
-            return builder.executeQuery(DeviceDto.class);
-
-        } catch (SQLException e) {
-            throw new StorageException(e);
-        }
-    }
-
     public LastSpeedHuntDto getLastSpeedHunt(long manhuntId) throws StorageException {
         try {
             var query = "SELECT sh.*, " +
@@ -161,27 +167,6 @@ public class ManhuntDatabaseStorage {
             builder.setLong("manhuntId", manhuntId);
             var dto = builder.executeQuery(LastSpeedHuntDto.class);
             return dto.isEmpty() ? null : dto.get(0);
-        } catch (SQLException e) {
-            throw new StorageException(e);
-        }
-    }
-
-    public List<LastSpeedHuntDto> getSpeedHunts(long manhuntId) throws StorageException {
-        try {
-            var query = "SELECT sh.*, " +
-                    "d.name as deviceName, " +
-                    "CASE " +
-                    "   WHEN c.id IS NULL THEN 0 " +
-                    "   ELSE 1 " +
-                    "END AS deviceIsCaught " +
-                    "FROM tc_speedHunts sh " +
-                    "LEFT JOIN tc_devices d on d.id = sh.deviceId " +
-                    "LEFT JOIN tc_catches c on c.deviceId = sh.deviceId and c.manhuntsId = :manhuntId " +
-                    "WHERE sh.manhuntsId = :manhuntId ";
-
-            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
-            builder.setLong("manhuntId", manhuntId);
-            return builder.executeQuery(LastSpeedHuntDto.class);
         } catch (SQLException e) {
             throw new StorageException(e);
         }

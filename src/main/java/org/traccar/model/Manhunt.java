@@ -5,7 +5,9 @@ import org.traccar.storage.StorageName;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @StorageName("tc_manhunts")
 public class Manhunt extends BaseModel {
@@ -25,13 +27,23 @@ public class Manhunt extends BaseModel {
         this.frequency = frequency;
     }
 
-    private long speedHunts;
-    public long getSpeedHunts() { return speedHunts; }
-    public void setSpeedHunts(long speedHunts) { this.speedHunts = speedHunts; }
+    private long speedHuntLimit;
+    public long getSpeedHuntLimit() { return speedHuntLimit; }
+    public void setSpeedHuntLimit(long speedHuntLimit) { this.speedHuntLimit = speedHuntLimit; }
 
-    private long locationRequests;
-    public long getLocationRequests() { return locationRequests; }
-    public void setLocationRequests(long locationRequests) { this.locationRequests = locationRequests; }
+    private long locationRequestLimit;
+    public long getLocationRequestLimit() { return locationRequestLimit; }
+    public void setLocationRequestLimit(long locationRequestLimit) { this.locationRequestLimit = locationRequestLimit; }
+
+    private List<SpeedHunt> speedHunts = new ArrayList<>();
+    @QueryIgnore
+    public List<SpeedHunt> getSpeedHunts() {
+        return speedHunts;
+    }
+    @QueryIgnore
+    public void setSpeedHunts(List<SpeedHunt> speedHunts) {
+        this.speedHunts = speedHunts;
+    }
 
     private Date nextLocationReport;
     @QueryIgnore

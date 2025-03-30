@@ -31,8 +31,8 @@
       </column>
       <column name="start" type="timestamp"/>
       <column name="frequency" type="bigint"/>
-      <column name="speedHunts" type="int" />
-      <column name="locationRequests" type="int" />
+      <column name="speedHuntLimit" type="int" />
+      <column name="locationRequestLimit" type="int" />
     </createTable>
 
     <createTable tableName="tc_speedHunts">
