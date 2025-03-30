@@ -18,10 +18,7 @@ import org.traccar.storage.query.Condition;
 import org.traccar.storage.query.Request;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.stream.Collectors;
 
 @Path("currentManhunt")
 @Produces(MediaType.APPLICATION_JSON)
@@ -40,8 +37,8 @@ public class CurrentManhuntResource extends BaseResource {
 
     @Path("get")
     @GET
-    public Response get(@QueryParam("withSpeedHunts") boolean withSpeedHunts) throws StorageException, TraccarException {
-        var manhunt = manhuntDatabaseStorage.getCurrent(withSpeedHunts);
+    public Response get(@QueryParam("loadCascade") boolean loadCascade) throws StorageException, TraccarException {
+        var manhunt = manhuntDatabaseStorage.getCurrent(loadCascade);
         if(manhunt == null)
             throw new TraccarException("Es wurde kein Spiel gefunden.");
 
@@ -50,35 +47,16 @@ public class CurrentManhuntResource extends BaseResource {
 
     @Path("getDevices")
     @GET
-    public Collection<DeviceDto> getDevices(@QueryParam("manhuntId") long manhuntId, @QueryParam("manhuntRole") long manhuntRole) throws StorageException {
+    public Collection<DeviceDto> getDevices(@QueryParam("manhuntId") long manhuntId,
+                                            @QueryParam("huntedOnly") boolean huntedOnly) throws StorageException {
         var devices = manhuntDatabaseStorage.getDevices(manhuntId);
 
-        if(manhuntRole > 0)
+        if(huntedOnly)
             devices = devices
-                    .stream().filter(x -> x.getManhuntRole() == manhuntRole)
+                    .stream().filter(x -> x.getManhuntRole() == 2 && !x.getIsCaught())
                     .toList();
 
         return devices;
-    }
-
-    @Path("getHuntedDevices")
-    @GET
-    public Collection<DeviceDto> getHuntedDevices() throws StorageException {
-        var manhunt = manhuntDatabaseStorage.getCurrent(false);
-        if(manhunt == null)
-            return new ArrayList<>();
-
-        var devices = manhuntDatabaseStorage.getDevices(manhunt.getId());
-        return devices
-                .stream().filter(x -> x.getManhuntRole() == 2 && !x.getIsCaught())
-                .toList();
-    }
-
-    @Path("getLastSpeedHunt")
-    @GET
-    public Response getLastSpeedHunt(@QueryParam("manhuntId") long manhuntId) throws StorageException {
-        var lastSpeedHunt = manhuntDatabaseStorage.getLastSpeedHunt(manhuntId);
-        return Response.ok(lastSpeedHunt).build();
     }
 
     @Path("createCatch")
@@ -100,23 +78,23 @@ public class CurrentManhuntResource extends BaseResource {
     public Response createSpeedHunt(@QueryParam("manhuntId") long manhuntId, @QueryParam("deviceId") long deviceId) throws StorageException, TraccarException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         permissionsService.checkRestriction(getUserId(), (userRestrictions) -> !userRestrictions.getTriggerManhuntActions());
 
-        var manhunt = storage.getObject(Manhunt.class, new Request(
-                new Columns.All(),
-                new Condition.Equals("id", manhuntId)
-        ));
-
-        var lastSpeedHuntDto = manhuntDatabaseStorage.getLastSpeedHunt(manhunt.getId());
-        CheckSpeedHunt(lastSpeedHuntDto, deviceId, manhunt);
+        var manhunt = manhuntDatabaseStorage.getCurrent(true);
 
         var deviceDto = manhuntDatabaseStorage.getDevice(manhunt.getId(), deviceId);
         CheckDevice(deviceDto);
 
-        var numSpeedHunts = storage.getObjects(SpeedHunt.class, new Request(
-                new Columns.All(),
-                new Condition.Equals("manhuntsId", manhunt.getId())))
-                .size();
+        var speedHunts = manhunt.getSpeedHunts();
+        if(!speedHunts.isEmpty()) {
+            var lastSpeedHunt = manhunt.getSpeedHunts().get(manhunt.getSpeedHunts().size() - 1);
 
-        if(numSpeedHunts >= manhunt.getSpeedHuntLimit())
+            if(!deviceDto.getIsCaught() && (lastSpeedHunt.getLocationRequests().size() < manhunt.getLocationRequestLimit()))
+                throw new TraccarException("Es gibt bereits einen aktiven Speedhunt.");
+
+            if(lastSpeedHunt.getDeviceId() == deviceId)
+                throw new TraccarException("Zwei aufeinanderfolgende Speedhunts auf den selben Spieler sind nicht erlaubt.");
+        }
+
+        if(manhunt.getSpeedHunts().size() >= manhunt.getSpeedHuntLimit())
             throw new TraccarException("Es gibt keinen verfügbaren Speedhunt mehr.");
 
         var position = storage.getObject(Position.class, new Request(
@@ -129,7 +107,7 @@ public class CurrentManhuntResource extends BaseResource {
         var speedHunt = manhuntDatabaseStorage.createSpeedHunt(manhunt.getId(), getUserId(), deviceId);
         manhuntDatabaseStorage.createLocationRequest(speedHunt.getId(), getUserId());
         connectionManager.updateAllPosition(true, position);
-        sendSpeedHuntNotification(numSpeedHunts + 1, manhunt.getSpeedHuntLimit());
+        sendSpeedHuntNotification(manhunt.getSpeedHunts().size() + 1, manhunt.getSpeedHuntLimit());
 
         return Response.ok(speedHunt).build();
     }
@@ -139,26 +117,32 @@ public class CurrentManhuntResource extends BaseResource {
     public Response createLocationRequest(@QueryParam("manhuntId") long manhuntId, @QueryParam("speedHuntId") long speedHuntId) throws StorageException, TraccarException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         permissionsService.checkRestriction(getUserId(), (userRestrictions) -> !userRestrictions.getTriggerManhuntActions());
 
-        var manhunt = storage.getObject(Manhunt.class, new Request(
-                new Columns.All(),
-                new Condition.Equals("id", manhuntId)
-        ));
+        var manhunt = manhuntDatabaseStorage.getCurrent(true);
+        var speedHunts = manhunt.getSpeedHunts();
 
-        var lastSpeedHuntDto = manhuntDatabaseStorage.getLastSpeedHunt(manhunt.getId());
-        CheckSpeedHuntForLocation(lastSpeedHuntDto, speedHuntId, manhunt);
+        if (speedHunts.isEmpty())
+            throw new TraccarException("Es wurde kein Speedhunt gefunden.");
 
-        var deviceDto = manhuntDatabaseStorage.getDevice(manhunt.getId(), lastSpeedHuntDto.getDeviceId());
+        var lastSpeedHunt = manhunt.getSpeedHunts().get(manhunt.getSpeedHunts().size() - 1);
+
+        if(lastSpeedHunt.getId() != speedHuntId)
+            throw new TraccarException("Der Speedhunt ist veraltet.");
+
+        if(lastSpeedHunt.getLocationRequests().size() >= manhunt.getLocationRequestLimit())
+            throw new TraccarException("Es gibt keine verfügbare Standortanfrage mehr.");
+
+        var deviceDto = manhuntDatabaseStorage.getDevice(manhunt.getId(), lastSpeedHunt.getDeviceId());
         CheckDevice(deviceDto);
 
         var position = storage.getObject(Position.class, new Request(
-                new Columns.All(), new Condition.LatestPositions(lastSpeedHuntDto.getDeviceId())));
+                new Columns.All(), new Condition.LatestPositions(lastSpeedHunt.getDeviceId())));
         if(position == null)
             throw new TraccarException("Es konnte keine Position gefunden werden.");
 
         manhuntDatabaseStorage.saveManhuntPosition(position);
-        var speedHuntRequest = manhuntDatabaseStorage.createLocationRequest(lastSpeedHuntDto.getId(), getUserId());
+        var speedHuntRequest = manhuntDatabaseStorage.createLocationRequest(lastSpeedHunt.getId(), getUserId());
         connectionManager.updateAllPosition(true, position);
-        sendSpeedHuntRequestNotification(lastSpeedHuntDto.getNumRequests() + 1, manhunt.getLocationRequestLimit());
+        sendSpeedHuntRequestNotification(lastSpeedHunt.getLocationRequests().size() + 1, manhunt.getLocationRequestLimit());
 
         return Response.ok(speedHuntRequest).build();
     }
@@ -172,28 +156,6 @@ public class CurrentManhuntResource extends BaseResource {
 
         if(dto.getIsCaught())
             throw new TraccarException("Das Gerät wurde bereits verhaftet.");
-    }
-
-    private void CheckSpeedHunt(LastSpeedHuntDto dto, long deviceId, Manhunt manhunt) throws TraccarException {
-        if(dto == null)
-            return;
-
-        if(!dto.getDeviceIsCaught() && (dto.getNumRequests() < manhunt.getLocationRequestLimit()))
-            throw new TraccarException("Es gibt bereits einen aktiven Speedhunt.");
-
-        if(dto.getDeviceId() == deviceId)
-            throw new TraccarException("Zwei aufeinanderfolgende Speedhunts auf den selben Spieler sind nicht erlaubt.");
-    }
-
-    private void CheckSpeedHuntForLocation(LastSpeedHuntDto dto, long speedHuntId, Manhunt manhunt) throws TraccarException {
-        if(dto == null || dto.getId() == 0)
-            throw new TraccarException("Es wurde kein Speedhunt gefunden.");
-
-        if(dto.getId() != speedHuntId)
-            throw new TraccarException("Der Speedhunt ist veraltet.");
-
-        if(dto.getNumRequests() >= manhunt.getLocationRequestLimit())
-            throw new TraccarException("Es gibt keine verfügbare Standortanfrage mehr.");
     }
 
     private void sendSpeedHuntNotification(long numSpeedHunt, long maxSpeedHunts) throws StorageException {

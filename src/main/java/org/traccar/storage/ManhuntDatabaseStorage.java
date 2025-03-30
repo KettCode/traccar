@@ -36,13 +36,13 @@ public class ManhuntDatabaseStorage {
         this.objectMapper = objectMapper;
     }
 
-    public Manhunt getCurrent(boolean withSpeedHunts) throws StorageException {
+    public Manhunt getCurrent(boolean loadCascade) throws StorageException {
         var manhunt = storage.getObject(Manhunt.class, new Request(
                 new Columns.All(),
                 new Order("start", true, 1)
         ));
 
-        if(withSpeedHunts && manhunt != null) {
+        if(loadCascade && manhunt != null) {
             var speedHunts = getSpeedHunts(manhunt.getId(), true);
             manhunt.setSpeedHunts(speedHunts);
         }
@@ -53,7 +53,9 @@ public class ManhuntDatabaseStorage {
     public List<SpeedHunt> getSpeedHunts(@QueryParam("manhuntId") long manhuntId, @QueryParam("withLocationRequests") boolean withLocationRequests) throws StorageException {
         var speedHunts = storage.getObjects(SpeedHunt.class, new Request(
                 new Columns.All(),
-                new Condition.Equals("manhuntsId", manhuntId)));
+                new Condition.Equals("manhuntsId", manhuntId),
+                new Order("id")
+        ));
 
         if(speedHunts == null)
             return new ArrayList<>();
@@ -137,36 +139,6 @@ public class ManhuntDatabaseStorage {
             builder.setLong("manhuntId", manhuntId);
             return builder.executeQuery(DeviceDto.class);
 
-        } catch (SQLException e) {
-            throw new StorageException(e);
-        }
-    }
-
-    public LastSpeedHuntDto getLastSpeedHunt(long manhuntId) throws StorageException {
-        try {
-            var query = "SELECT sh.*, " +
-                    "d.name as deviceName, " +
-                    "d.manhuntRole as deviceManhuntRole, " +
-                    "CASE " +
-                    "   WHEN c.id IS NULL THEN 0 " +
-                    "   ELSE 1 " +
-                    "END AS deviceIsCaught, " +
-                    "( " +
-                    "   SELECT COUNT(shr.id) " +
-                    "   FROM tc_locationRequests shr " +
-                    "   WHERE shr.speedHuntsId = sh.id " +
-                    ") AS numRequests " +
-                    "FROM tc_speedHunts sh " +
-                    "LEFT JOIN tc_devices d on d.id = sh.deviceId " +
-                    "LEFT JOIN tc_catches c on c.deviceId = sh.deviceId and c.manhuntsId = sh.manhuntsId " +
-                    "WHERE sh.manhuntsId = :manhuntId " +
-                    "ORDER BY sh.id DESC " +
-                    "LIMIT 1";
-
-            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
-            builder.setLong("manhuntId", manhuntId);
-            var dto = builder.executeQuery(LastSpeedHuntDto.class);
-            return dto.isEmpty() ? null : dto.get(0);
         } catch (SQLException e) {
             throw new StorageException(e);
         }
