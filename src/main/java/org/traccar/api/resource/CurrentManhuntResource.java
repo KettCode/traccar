@@ -77,6 +77,13 @@ public class CurrentManhuntResource extends BaseResource {
                 .toList();
     }
 
+    @Path("getLastSpeedHunt")
+    @GET
+    public Response getLastSpeedHunt(@QueryParam("manhuntId") long manhuntId) throws StorageException {
+        var lastSpeedHunt = manhuntDatabaseStorage.getLastSpeedHunt(manhuntId);
+        return Response.ok(lastSpeedHunt).build();
+    }
+
     @Path("getManhunt")
     @GET
     public Response getManhunt() throws StorageException, TraccarException {
@@ -147,12 +154,13 @@ public class CurrentManhuntResource extends BaseResource {
 
     @Path("createSpeedHunt")
     @POST
-    public Response createSpeedHunt(@QueryParam("deviceId") long deviceId) throws StorageException, TraccarException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+    public Response createSpeedHunt(@QueryParam("manhuntId") long manhuntId, @QueryParam("deviceId") long deviceId) throws StorageException, TraccarException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         permissionsService.checkRestriction(getUserId(), (userRestrictions) -> !userRestrictions.getTriggerManhuntActions());
 
-        var manhunt = manhuntDatabaseStorage.getCurrent();
-        if(manhunt == null)
-            throw new TraccarException("Es wurde kein Spiel gefunden.");
+        var manhunt = storage.getObject(Manhunt.class, new Request(
+                new Columns.All(),
+                new Condition.Equals("id", manhuntId)
+        ));
 
         var lastSpeedHuntDto = manhuntDatabaseStorage.getLastSpeedHunt(manhunt.getId());
         CheckSpeedHunt(lastSpeedHuntDto, deviceId, manhunt);
@@ -183,14 +191,15 @@ public class CurrentManhuntResource extends BaseResource {
         return Response.ok(speedHunt).build();
     }
 
-    @Path("createSpeedHuntRequest")
+    @Path("createLocationRequest")
     @POST
-    public Response createSpeedHuntRequest(@QueryParam("speedHuntId") long speedHuntId) throws StorageException, TraccarException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+    public Response createLocationRequest(@QueryParam("manhuntId") long manhuntId, @QueryParam("speedHuntId") long speedHuntId) throws StorageException, TraccarException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         permissionsService.checkRestriction(getUserId(), (userRestrictions) -> !userRestrictions.getTriggerManhuntActions());
 
-        var manhunt = manhuntDatabaseStorage.getCurrent();
-        if(manhunt == null)
-            throw new TraccarException("Es wurde kein Spiel gefunden.");
+        var manhunt = storage.getObject(Manhunt.class, new Request(
+                new Columns.All(),
+                new Condition.Equals("id", manhuntId)
+        ));
 
         var lastSpeedHuntDto = manhuntDatabaseStorage.getLastSpeedHunt(manhunt.getId());
         CheckSpeedHuntForLocation(lastSpeedHuntDto, speedHuntId, manhunt);

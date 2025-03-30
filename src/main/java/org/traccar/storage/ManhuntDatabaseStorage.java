@@ -154,12 +154,8 @@ public class ManhuntDatabaseStorage {
                     "LEFT JOIN tc_devices d on d.id = sh.deviceId " +
                     "LEFT JOIN tc_catches c on c.deviceId = sh.deviceId and c.manhuntsId = sh.manhuntsId " +
                     "WHERE sh.manhuntsId = :manhuntId " +
-                    "and sh.id = " +
-                    "( " +
-                    "   SELECT MAX(sh2.id) " +
-                    "   FROM tc_speedHunts sh2 " +
-                    "   WHERE sh2.manhuntsId = sh.manhuntsId " +
-                    ") ";
+                    "ORDER BY sh.id DESC " +
+                    "LIMIT 1";
 
             QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
             builder.setLong("manhuntId", manhuntId);
