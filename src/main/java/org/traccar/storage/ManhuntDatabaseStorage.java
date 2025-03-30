@@ -2,13 +2,9 @@ package org.traccar.storage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.core.Response;
 import org.traccar.config.Config;
 import org.traccar.manhunt.dto.DeviceDto;
-import org.traccar.manhunt.dto.LastSpeedHuntDto;
 import org.traccar.model.*;
 import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;

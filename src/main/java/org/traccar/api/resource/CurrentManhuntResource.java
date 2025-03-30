@@ -7,7 +7,6 @@ import jakarta.ws.rs.core.Response;
 import org.traccar.api.BaseResource;
 import org.traccar.api.TraccarException;
 import org.traccar.manhunt.dto.DeviceDto;
-import org.traccar.manhunt.dto.LastSpeedHuntDto;
 import org.traccar.model.*;
 import org.traccar.notification.NotificationMessage;
 import org.traccar.session.ConnectionManager;
