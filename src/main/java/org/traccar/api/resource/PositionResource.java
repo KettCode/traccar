@@ -86,11 +86,11 @@ public class PositionResource extends BaseResource {
 
                 //return PositionUtil.getPositionsStream(storage, deviceId, from, to)
                 //        .filter(position -> geofence == null || geofence.containsPosition(position));
-		return PositionUtil.getPositions(storage, getUserId(), deviceId, from, to);
+		        return PositionUtil.getPositions(storage, getUserId(), deviceId, from, to).stream();
             } else {
                 //return storage.getObjectsStream(Position.class, new Request(
                 //        new Columns.All(), new Condition.LatestPositions(deviceId)));
-		return PositionUtil.getLatestPositions(storage, getUserId(), deviceId);
+		        return PositionUtil.getLatestPositions(storage, getUserId(), deviceId).stream();
             }
         } else {
             return PositionUtil.getLatestPositions(storage, getUserId()).stream();

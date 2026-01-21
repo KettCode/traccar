@@ -235,6 +235,8 @@ public class DatabaseStorage extends Storage {
         } else if (genericCondition instanceof Condition.LatestPositions condition) {
             if (condition.getDeviceId() > 0) {
                 results.add(condition.getDeviceId());
+                if(condition.getManhuntRole() > 0)
+                    results.add(condition.getDeviceId());
             }
         }
         return results;
@@ -310,7 +312,7 @@ public class DatabaseStorage extends Storage {
                     result.append(getStorageName(Device.class));
                     result.append(" WHERE manhuntRole = 2 ");
                     if (condition.getDeviceId() > 0) {
-                        result.append(" AND id = :deviceId");
+                        result.append(" AND id = ?");
                     }
                 }
                 result.append(")");

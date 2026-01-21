@@ -72,15 +72,31 @@ public class ManhuntDatabaseStorage {
         return speedHunts;
     }
 
-    public List<LocationRequest> getSpeedHuntRequests(List<Long> speedHuntIds) throws StorageException {
+    public List<LocationRequest> getSpeedHuntRequests(List<Long> speedHuntIds)
+            throws StorageException {
+
+        if (speedHuntIds == null || speedHuntIds.isEmpty()) {
+            return List.of();
+        }
+
         try {
-            var query = "SELECT * " +
+            String placeholders = speedHuntIds.stream()
+                    .map(id -> "?")
+                    .collect(Collectors.joining(","));
+
+            String query = "SELECT * " +
                     "FROM tc_locationRequests " +
-                    "WHERE speedHuntsId = ANY(:speedHuntIds) " +
+                    "WHERE speedHuntsId IN (" + placeholders + ") " +
                     "ORDER BY speedHuntsId, time";
 
-            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
-            builder.setArray("speedHuntIds", speedHuntIds.toArray(), true);
+            QueryBuilder builder = QueryBuilder.create(
+                    config, dataSource, objectMapper, query);
+
+            int index = 0;
+            for (Long id : speedHuntIds) {
+                builder.setLong(index++, id);
+            }
+
             return builder.executeQuery(LocationRequest.class);
         } catch (SQLException e) {
             throw new StorageException(e);
@@ -107,12 +123,12 @@ public class ManhuntDatabaseStorage {
                     "   ELSE 1 " +
                     "END AS isCaught " +
                     "FROM tc_devices d " +
-                    "LEFT JOIN tc_catches c on c.deviceId = d.id and c.manhuntsId = :manhuntId " +
-                    "WHERE d.id = :deviceId ";
+                    "LEFT JOIN tc_catches c on c.deviceId = d.id and c.manhuntsId = ? " +
+                    "WHERE d.id = ? ";
 
             QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
-            builder.setLong("manhuntId", manhuntId);
-            builder.setLong("deviceId", deviceId);
+            builder.setLong(0, manhuntId);
+            builder.setLong(1, deviceId);
             var dto = builder.executeQuery(DeviceDto.class);
             return dto.isEmpty() ? null : dto.get(0);
         } catch (SQLException e) {
@@ -128,11 +144,11 @@ public class ManhuntDatabaseStorage {
                     "   ELSE 1 " +
                     "END AS isCaught " +
                     "FROM tc_devices d " +
-                    "LEFT JOIN tc_catches c ON c.manhuntsId = :manhuntId and c.deviceId = d.id " +
+                    "LEFT JOIN tc_catches c ON c.manhuntsId = ? and c.deviceId = d.id " +
                     "ORDER BY d.name";
 
             QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
-            builder.setLong("manhuntId", manhuntId);
+            builder.setLong(0, manhuntId);
             return builder.executeQuery(DeviceDto.class);
 
         } catch (SQLException e) {

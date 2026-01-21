@@ -158,17 +158,20 @@ public class CurrentManhuntResource extends BaseResource {
     }
 
     private void sendSpeedHuntNotification(long numSpeedHunt, long maxSpeedHunts) throws StorageException {
-        var notificationMessage = new NotificationMessage("Speedhunt", "Speedhunt " + numSpeedHunt + "/" + maxSpeedHunts + " gestartet!");
+        var notificationMessage = new NotificationMessage("Speedhunt", "Speedhunt " + numSpeedHunt + "/" + maxSpeedHunts + " gestartet!",
+                "", true);
         connectionManager.sendNotificationToAllUsers(notificationMessage);
     }
 
     private void sendSpeedHuntRequestNotification(long numRequests, long maxRequests) throws StorageException {
-        var notificationMessage = new NotificationMessage("Standortanfrage", "Standort " + numRequests + "/" + maxRequests + " angefragt!");
+        var notificationMessage = new NotificationMessage("Standortanfrage", "Standort " + numRequests + "/" + maxRequests + " angefragt!",
+                "", true);
         connectionManager.sendNotificationToAllUsers(notificationMessage);
     }
 
     private void sendCatchNotification(Device device) throws StorageException {
-        var notificationMessage = new NotificationMessage("Verhaftung", "Der Spieler '" + device.getName() + "' wurde verhaftet");
+        var notificationMessage = new NotificationMessage("Verhaftung", "Der Spieler '" + device.getName() + "' wurde verhaftet",
+                "", true);
         connectionManager.sendNotificationToAllUsers(notificationMessage);
     }
 }

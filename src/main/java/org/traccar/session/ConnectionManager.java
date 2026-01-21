@@ -483,7 +483,8 @@ public class ConnectionManager implements BroadcastInterface {
     }
 
     private void sendLocationUpdateNotification() throws StorageException {
-        var notificationMessage = new NotificationMessage("Standort update", "Die Standorte der Gejagten wurden aktualisiert");
+        var notificationMessage = new NotificationMessage("Standort update", "Die Standorte der Gejagten wurden aktualisiert",
+                "", true);
         sendNotificationToAllUsers(notificationMessage);
     }
 
