@@ -108,6 +108,12 @@ public class Device extends GroupedModel implements Disableable, Schedulable {
     public long getManhuntRole() { return manhuntRole; }
     public void setManhuntRole(long manhuntRole) { this.manhuntRole = manhuntRole; }
 
+    private boolean skipNextManhuntLocation;
+    public boolean getSkipNextManhuntLocation() { return skipNextManhuntLocation; }
+    public void setSkipNextManhuntLocation(boolean skipNextManhuntLocation) {
+        this.skipNextManhuntLocation = skipNextManhuntLocation;
+    }
+
     private String phone;
 
     public String getPhone() {

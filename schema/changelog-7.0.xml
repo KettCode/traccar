@@ -19,6 +19,7 @@
     <addColumn tableName="tc_devices">
         <column name="manhuntPositionId" type="int" />
         <column name="manhuntRole" type="int" />
+        <column name="skipNextManhuntLocation" type="BOOLEAN" defaultValueBoolean="false" />
     </addColumn>
 
     <addColumn tableName="tc_positions">
@@ -63,6 +64,48 @@
         <column name="time" type="timestamp"/>
     </createTable>
 
+    <createTable tableName="tc_joker_types">
+        <column name="id" type="INT" autoIncrement="true">
+            <constraints primaryKey="true" nullable="false"/>
+        </column>
+        <column name="code" type="NVARCHAR(50)">
+            <constraints nullable="false" unique="true"/>
+        </column>
+    </createTable>
+
+    <insert tableName="tc_joker_types">
+        <column name="id" valueNumeric="1"/>
+        <column name="code" value="HUNTER_QUERY"/>
+    </insert>
+    <insert tableName="tc_joker_types">
+        <column name="id" valueNumeric="2"/>
+        <column name="code" value="SKIP_LOCATION"/>
+    </insert>
+    <insert tableName="tc_joker_types">
+        <column name="id" valueNumeric="3"/>
+        <column name="code" value="REVEAL_SPEEDHUNT"/>
+    </insert>
+
+    <createTable tableName="tc_jokers">
+        <column name="id" type="INT" autoIncrement="true">
+            <constraints primaryKey="true" nullable="false"/>
+        </column>
+        <column name="manhuntsId" type="INT">
+            <constraints nullable="false"/>
+        </column>
+        <column name="userId" type="INT">
+            <constraints nullable="false"/>
+        </column>
+        <column name="jokerTypeId" type="INT">
+            <constraints nullable="false"/>
+        </column>
+        <column name="status" type="INT">
+            <constraints nullable="false"/>
+        </column>
+        <column name="unlockedAt" type="timestamp"/>
+        <column name="usedAt" type="timestamp"/>
+    </createTable>
+
     <createTable tableName="tc_user_manhunt">
       <column name="userid" type="INT">
         <constraints nullable="false" />
@@ -95,6 +138,15 @@
             <constraints nullable="false" />
         </column>
         <column name="catchesId" type="INT">
+            <constraints nullable="false" />
+        </column>
+    </createTable>
+
+    <createTable tableName="tc_user_joker">
+        <column name="userid" type="INT">
+            <constraints nullable="false" />
+        </column>
+        <column name="jokerId" type="INT">
             <constraints nullable="false" />
         </column>
     </createTable>
