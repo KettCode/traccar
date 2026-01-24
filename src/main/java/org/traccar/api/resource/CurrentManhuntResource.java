@@ -58,6 +58,20 @@ public class CurrentManhuntResource extends BaseResource {
         return devices;
     }
 
+    @Path("getJoker")
+    @GET
+    public Collection<Joker> getJoker(@QueryParam("manhuntId") long manhuntId,
+                                      @QueryParam("all") boolean all) throws StorageException {
+        var joker = manhuntDatabaseStorage.getJoker(manhuntId);
+
+        if(all) {
+            permissionsService.checkRestriction(getUserId(), (userRestrictions) -> !userRestrictions.getTriggerManhuntActions());;
+            return joker;
+        }
+
+        return joker.stream().filter(j -> j.getUserId() == getUserId()).toList();
+    }
+
     @Path("createCatch")
     @POST
     public Response createCatch(@QueryParam("manhuntId") long manhuntId, @QueryParam("deviceId") long deviceId) throws StorageException, TraccarException {

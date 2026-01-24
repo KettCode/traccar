@@ -26,7 +26,7 @@ public class JokerResource extends ExtendedObjectResource<Joker> {
 
         var hunterQuery = new KeyValue();
         hunterQuery.setId(1);
-        hunterQuery.setName("Hunterstandorte erfragen");
+        hunterQuery.setName("Jägerstandorte erfragen");
 
         var skipLocation = new KeyValue();
         skipLocation.setId(2);

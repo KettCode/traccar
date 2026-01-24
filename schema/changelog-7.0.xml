@@ -20,6 +20,7 @@
         <column name="manhuntPositionId" type="int" />
         <column name="manhuntRole" type="int" />
         <column name="skipNextManhuntLocation" type="BOOLEAN" defaultValueBoolean="false" />
+        <column name="manhuntUserId" type="int"/>
     </addColumn>
 
     <addColumn tableName="tc_positions">

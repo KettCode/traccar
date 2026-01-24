@@ -38,7 +38,7 @@ public class ManhuntDatabaseStorage {
                 new Order("start", true, 1)
         ));
 
-        if(loadCascade && manhunt != null) {
+        if (loadCascade && manhunt != null) {
             var speedHunts = getSpeedHunts(manhunt.getId(), true);
             manhunt.setSpeedHunts(speedHunts);
         }
@@ -53,10 +53,10 @@ public class ManhuntDatabaseStorage {
                 new Order("id")
         ));
 
-        if(speedHunts == null)
+        if (speedHunts == null)
             return new ArrayList<>();
 
-        if(withLocationRequests) {
+        if (withLocationRequests) {
             var speedHuntIds = speedHunts.stream().map(SpeedHunt::getId).toList();
             var locationRequests = getSpeedHuntRequests(speedHuntIds);
 
@@ -150,6 +150,28 @@ public class ManhuntDatabaseStorage {
             QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
             builder.setLong(0, manhuntId);
             return builder.executeQuery(DeviceDto.class);
+
+        } catch (SQLException e) {
+            throw new StorageException(e);
+        }
+    }
+
+    public List<Joker> getJoker(long manhuntId) throws StorageException {
+        try {
+            var query = "SELECT u.id AS userId, jt.id AS jokerTypeId, COALESCE(j.status, 0) AS status, j.* " +
+                    "FROM tc_users u " +
+                    "CROSS JOIN tc_joker_types jt " +
+                    "LEFT JOIN tc_jokers j " +
+                    "   ON j.userId = u.id " +
+                    "  AND j.jokerTypeId = jt.id " +
+                    "  AND j.manhuntsId = ? " +
+                    "WHERE u.manhuntRole = 2 " +
+                    "ORDER BY u.id, jt.id";
+
+            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query);
+            builder.setLong(0, manhuntId);
+
+            return builder.executeQuery(Joker.class);
 
         } catch (SQLException e) {
             throw new StorageException(e);
