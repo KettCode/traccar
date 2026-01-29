@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.QueryParam;
 import org.traccar.config.Config;
+import org.traccar.manhunt.JokerStatus;
 import org.traccar.manhunt.dto.DeviceDto;
 import org.traccar.model.*;
 import org.traccar.storage.query.Columns;
@@ -156,7 +157,7 @@ public class ManhuntDatabaseStorage {
         }
     }
 
-    public List<Joker> getJoker(long manhuntId) throws StorageException {
+    public List<Joker> getJokers(long manhuntId) throws StorageException {
         try {
             var query = "SELECT u.id AS userId, jt.id AS jokerTypeId, COALESCE(j.status, 0) AS status, j.* " +
                     "FROM tc_users u " +
@@ -219,5 +220,44 @@ public class ManhuntDatabaseStorage {
         locationRequest.setTime(new Date());
         locationRequest.setId(storage.addObject(locationRequest, new Request(new Columns.Exclude("id"))));
         return locationRequest;
+    }
+
+    public Joker createJoker(long manhuntId, long userId, int jokerTypeId) throws StorageException {
+        var joker = new Joker();
+        joker.setManhuntsId(manhuntId);
+        joker.setUserId(userId);
+        joker.setJokerTypeId(jokerTypeId);
+        joker.setStatus(JokerStatus.AVAILABLE);
+        joker.setUnlockedAt(new Date());
+        joker.setUsedAt(null);
+        joker.setId(storage.addObject(joker,new Request(new Columns.Exclude("id"))));
+        return joker;
+    }
+
+    public Joker getJoker(long jokerId) throws StorageException {
+        return storage.getObject(Joker.class, new Request(
+                new Columns.All(), new Condition.Equals("id", jokerId)
+        ));
+    }
+
+    public void useJoker(Joker joker) throws StorageException {
+        joker.setStatus(JokerStatus.USED);
+        joker.setUsedAt(new Date());
+
+        storage.updateObject(joker,new Request(
+                new Columns.Include("status", "usedAt"),
+                new Condition.Equals("id", joker.getId())
+        ));
+    }
+
+    public void setSkipNextLocation(long deviceId) throws StorageException {
+        Device device = new Device();
+        device.setId(deviceId);
+        device.setSkipNextManhuntLocation(true);
+
+        storage.updateObject(device,new Request(
+                new Columns.Include("skipNextManhuntLocation"),
+                new Condition.Equals("id", device.getId())
+        ));
     }
 }

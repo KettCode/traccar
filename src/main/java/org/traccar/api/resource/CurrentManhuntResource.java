@@ -6,6 +6,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.traccar.api.BaseResource;
 import org.traccar.api.TraccarException;
+import org.traccar.manhunt.JokerType;
 import org.traccar.manhunt.dto.DeviceDto;
 import org.traccar.model.*;
 import org.traccar.notification.NotificationMessage;
@@ -56,20 +57,6 @@ public class CurrentManhuntResource extends BaseResource {
                     .toList();
 
         return devices;
-    }
-
-    @Path("getJoker")
-    @GET
-    public Collection<Joker> getJoker(@QueryParam("manhuntId") long manhuntId,
-                                      @QueryParam("all") boolean all) throws StorageException {
-        var joker = manhuntDatabaseStorage.getJoker(manhuntId);
-
-        if(all) {
-            permissionsService.checkRestriction(getUserId(), (userRestrictions) -> !userRestrictions.getTriggerManhuntActions());;
-            return joker;
-        }
-
-        return joker.stream().filter(j -> j.getUserId() == getUserId()).toList();
     }
 
     @Path("createCatch")
@@ -158,6 +145,51 @@ public class CurrentManhuntResource extends BaseResource {
         sendSpeedHuntRequestNotification(lastSpeedHunt.getLocationRequests().size() + 1, manhunt.getLocationRequestLimit());
 
         return Response.ok(speedHuntRequest).build();
+    }
+
+    @Path("getJoker")
+    @GET
+    public Collection<Joker> getJoker(@QueryParam("manhuntId") long manhuntId,
+                                      @QueryParam("all") boolean all) throws StorageException {
+        var joker = manhuntDatabaseStorage.getJokers(manhuntId);
+
+        if(all) {
+            permissionsService.checkRestriction(getUserId(), (userRestrictions) -> !userRestrictions.getTriggerManhuntActions());;
+            return joker;
+        }
+
+        return joker.stream().filter(j -> j.getUserId() == getUserId()).toList();
+    }
+
+    @Path("unlockJoker")
+    @POST
+    public Response unlockJoker(@QueryParam("manhuntId") long manhuntId, @QueryParam("huntedUserId") long huntedUserId, @QueryParam("jokerTypeId") int jokerTypeId) throws StorageException, TraccarException {
+        permissionsService.checkRestriction(getUserId(), (userRestrictions) -> !userRestrictions.getTriggerManhuntActions());
+
+        var joker = manhuntDatabaseStorage.createJoker(manhuntId, huntedUserId, jokerTypeId);
+
+        return Response.ok(joker).build();
+    }
+
+    @Path("useJoker")
+    @POST
+    public Response useJoker(@QueryParam("jokerId") long jokerId, @QueryParam("deviceId") long deviceId) throws StorageException, TraccarException {
+        permissionsService.checkRestriction(getUserId(), (userRestrictions) -> !userRestrictions.getTriggerManhuntActions());
+
+        var joker = manhuntDatabaseStorage.getJoker(jokerId);
+        if(joker == null)
+            throw new TraccarException("Der Joker konnte nicht gefunden werden.");
+
+        if(joker.getJokerTypeId() == JokerType.SKIP_LOCATION) {
+            var deviceDto = manhuntDatabaseStorage.getDevice(joker.getManhuntsId(), deviceId);
+            CheckDevice(deviceDto);
+
+            manhuntDatabaseStorage.setSkipNextLocation(deviceId);
+        }
+
+        manhuntDatabaseStorage.useJoker(joker);
+
+        return Response.ok(joker).build();
     }
 
     private void CheckDevice(DeviceDto dto) throws TraccarException {
