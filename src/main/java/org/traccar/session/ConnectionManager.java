@@ -450,11 +450,18 @@ public class ConnectionManager implements BroadcastInterface {
 
         manhuntScheduler = scheduler.scheduleAtFixedRate(() -> {
             try {
-                var deviceIds = storage
-                        .getObjects(Device.class,
-                                new Request(new Columns.All(), new Condition.Equals("manhuntRole", 2)))
-                        .stream().map(Device::getId)
-                        .toList();
+                var devices = storage.getObjects(Device.class, new Request(
+                        new Columns.All(), new Condition.Equals("manhuntRole", 2))
+                );
+
+                List<Long> deviceIds = new ArrayList<>();
+                for (Device device : devices) {
+                    if (device.getSkipNextManhuntLocation()) {
+                        manhuntDatabaseStorage.resetSkipNextLocation(device.getId());
+                    } else {
+                        deviceIds.add(device.getId());
+                    }
+                }
 
                 var positions = storage.getObjects(Position.class, new Request(
                                 new Columns.All(), new Condition.LatestPositions()))

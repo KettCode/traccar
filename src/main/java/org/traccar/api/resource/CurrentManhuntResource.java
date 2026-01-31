@@ -102,11 +102,16 @@ public class CurrentManhuntResource extends BaseResource {
         if(position == null)
             throw new TraccarException("Es konnte keine Position gefunden werden.");
 
-        manhuntDatabaseStorage.saveManhuntPosition(position);
-
         var speedHunt = manhuntDatabaseStorage.createSpeedHunt(manhunt.getId(), getUserId(), deviceId);
         manhuntDatabaseStorage.createLocationRequest(speedHunt.getId(), getUserId());
-        connectionManager.updateAllPosition(true, position);
+
+        if(deviceDto.getSkipNextManhuntLocation())
+            manhuntDatabaseStorage.resetSkipNextLocation(deviceDto.getId());
+        else {
+            manhuntDatabaseStorage.saveManhuntPosition(position);
+            connectionManager.updateAllPosition(true, position);
+        }
+
         sendSpeedHuntNotification(manhunt.getSpeedHunts().size() + 1, manhunt.getSpeedHuntLimit());
 
         return Response.ok(speedHunt).build();
@@ -139,9 +144,15 @@ public class CurrentManhuntResource extends BaseResource {
         if(position == null)
             throw new TraccarException("Es konnte keine Position gefunden werden.");
 
-        manhuntDatabaseStorage.saveManhuntPosition(position);
         var speedHuntRequest = manhuntDatabaseStorage.createLocationRequest(lastSpeedHunt.getId(), getUserId());
-        connectionManager.updateAllPosition(true, position);
+
+        if(deviceDto.getSkipNextManhuntLocation())
+            manhuntDatabaseStorage.resetSkipNextLocation(deviceDto.getId());
+        else {
+            manhuntDatabaseStorage.saveManhuntPosition(position);
+            connectionManager.updateAllPosition(true, position);
+        }
+
         sendSpeedHuntRequestNotification(lastSpeedHunt.getLocationRequests().size() + 1, manhunt.getLocationRequestLimit());
 
         return Response.ok(speedHuntRequest).build();

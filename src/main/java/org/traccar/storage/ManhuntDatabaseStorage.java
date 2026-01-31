@@ -260,4 +260,15 @@ public class ManhuntDatabaseStorage {
                 new Condition.Equals("id", device.getId())
         ));
     }
+
+    public void resetSkipNextLocation(long deviceId) throws StorageException{
+        Device device = new Device();
+        device.setId(deviceId);
+        device.setSkipNextManhuntLocation(false);
+
+        storage.updateObject(device,new Request(
+                new Columns.Include("skipNextManhuntLocation"),
+                new Condition.Equals("id", device.getId())
+        ));
+    }
 }
