@@ -306,7 +306,7 @@ public class DatabaseStorage extends Storage {
                     result.append(String.join(" AND ", conditions));
                 }
 
-                if(condition.getManhuntRole() > 0) {
+                if(condition.getManhuntRole() == 1) {
                     result.append(" UNION ");
                     result.append("SELECT manhuntPositionId as positionId FROM ");
                     result.append(getStorageName(Device.class));
