@@ -235,7 +235,7 @@ public class DatabaseStorage extends Storage {
         } else if (genericCondition instanceof Condition.LatestPositions condition) {
             if (condition.getDeviceId() > 0) {
                 results.add(condition.getDeviceId());
-                if(condition.getManhuntRole() > 0)
+                if(condition.getManhuntRole() == 1)
                     results.add(condition.getDeviceId());
             }
         }
