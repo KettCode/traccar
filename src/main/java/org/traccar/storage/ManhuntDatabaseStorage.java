@@ -116,6 +116,12 @@ public class ManhuntDatabaseStorage {
         }
     }
 
+    public Device getDevice(long userId) throws StorageException {
+        return storage.getObject(Device.class, new Request(
+                new Columns.All(),
+                new Condition.Equals("manhuntUserId", userId)));
+    }
+
     public DeviceDto getDevice(long manhuntId, long deviceId) throws StorageException {
         try {
             var query = "SELECT d.*, " +

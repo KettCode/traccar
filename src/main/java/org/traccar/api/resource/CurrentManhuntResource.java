@@ -59,6 +59,13 @@ public class CurrentManhuntResource extends BaseResource {
         return devices;
     }
 
+    @Path("getDevice")
+    @GET
+    public Response getDevice() throws StorageException {
+        var device = manhuntDatabaseStorage.getDevice(getUserId());
+        return Response.ok(device).build();
+    }
+
     @Path("createCatch")
     @POST
     public Response createCatch(@QueryParam("manhuntId") long manhuntId, @QueryParam("deviceId") long deviceId) throws StorageException, TraccarException {
