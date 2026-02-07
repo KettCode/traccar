@@ -476,7 +476,7 @@ public class ConnectionManager implements BroadcastInterface {
                     updateAllPosition(true, position);
                 }
 
-                sendLocationUpdateNotification();
+                //sendLocationUpdateNotification();
             } catch (Exception e) {
                 LOGGER.error(e.getMessage());
             }
