@@ -210,6 +210,27 @@ public class CurrentManhuntResource extends BaseResource {
         return Response.ok(joker).build();
     }
 
+    @Path("refreshManhuntLocation")
+    @POST
+    public Response refreshManhuntLocation(@QueryParam("manhuntId") long manhuntId, @QueryParam("deviceId") long deviceId) throws StorageException, TraccarException, InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+        permissionsService.checkRestriction(getUserId(), (userRestrictions) -> !userRestrictions.getTriggerManhuntActions());
+
+        var manhunt = manhuntDatabaseStorage.getCurrent(true);
+
+        var deviceDto = manhuntDatabaseStorage.getDevice(manhunt.getId(), deviceId);
+        CheckDevice(deviceDto);
+
+        var position = storage.getObject(Position.class, new Request(
+                new Columns.All(), new Condition.LatestPositions(deviceId)));
+        if(position == null)
+            throw new TraccarException("Es konnte keine Position gefunden werden.");
+
+        manhuntDatabaseStorage.saveManhuntPosition(position);
+        connectionManager.updateAllPosition(true, position);
+
+        return Response.ok(position).build();
+    }
+
     private void CheckDevice(DeviceDto dto) throws TraccarException {
         if(dto == null || dto.getId() == 0)
             throw new TraccarException("Das Gerät konnte nicht gefunden werden.");
