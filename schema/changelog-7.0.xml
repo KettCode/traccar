@@ -35,6 +35,7 @@
       <column name="frequency" type="bigint"/>
       <column name="speedHuntLimit" type="int" />
       <column name="locationRequestLimit" type="int" />
+      <column name="locationUpdateReminderSeconds" type="int" />
     </createTable>
 
     <createTable tableName="tc_speedHunts">

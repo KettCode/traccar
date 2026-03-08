@@ -35,6 +35,10 @@ public class Manhunt extends BaseModel {
     public long getLocationRequestLimit() { return locationRequestLimit; }
     public void setLocationRequestLimit(long locationRequestLimit) { this.locationRequestLimit = locationRequestLimit; }
 
+    private long locationUpdateReminderSeconds;
+    public long getLocationUpdateReminderSeconds() { return locationUpdateReminderSeconds; }
+    public void setLocationUpdateReminderSeconds(long locationUpdateReminderSeconds) { this.locationUpdateReminderSeconds = locationUpdateReminderSeconds; }
+
     private List<SpeedHunt> speedHunts = new ArrayList<>();
     @QueryIgnore
     public List<SpeedHunt> getSpeedHunts() {
