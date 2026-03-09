@@ -389,6 +389,8 @@ public class ConnectionManager implements BroadcastInterface {
         void onUpdatePosition(Position position);
         void onUpdateEvent(Event event);
         void onUpdateLog(LogRecord record);
+        void onAddGeofence(Geofence geofence);
+        void onRemoveGeofence(Geofence geofence);
     }
 
     public synchronized void addListener(long userId, UpdateListener listener) throws StorageException {
@@ -504,6 +506,22 @@ public class ConnectionManager implements BroadcastInterface {
                 throw new RuntimeException(e);
             }
         });
+    }
+
+    public void sendAddGeofenceBroadcast(Geofence geofence) {
+        for (Set<UpdateListener> userListeners : listeners.values()) {
+            for (UpdateListener listener : userListeners) {
+                listener.onAddGeofence(geofence);
+            }
+        }
+    }
+
+    public void sendRemoveGeofenceBroadcast(Geofence geofence) {
+        for (Set<UpdateListener> userListeners : listeners.values()) {
+            for (UpdateListener listener : userListeners) {
+                listener.onRemoveGeofence(geofence);
+            }
+        }
     }
 
 }

@@ -277,4 +277,33 @@ public class ManhuntDatabaseStorage {
                 new Condition.Equals("id", device.getId())
         ));
     }
+
+    public void assignGeofenceToAllUsers(long geofenceId) throws Exception {
+        List<User> users = storage.getObjects(User.class, new Request(new Columns.All()));
+
+        for (User user : users) {
+            if (user.getAdministrator())
+                continue;
+
+            Permission permission = new Permission(User.class, user.getId(), Geofence.class, geofenceId);
+            storage.addPermission(permission);
+        }
+    }
+
+    public void removeGeofenceFromAllUsers(long geofenceId) throws Exception {
+        List<User> users = storage.getObjects(User.class, new Request(new Columns.All()));
+
+        for (User user : users) {
+            if (user.getAdministrator())
+                continue;
+
+            Permission permission = new Permission(User.class, user.getId(), Geofence.class, geofenceId);
+            storage.removePermission(permission);
+        }
+    }
+
+    public Geofence getGeofence(long geofenceId) throws StorageException {
+        return storage.getObject(Geofence.class, new Request(
+                new Columns.All(), new Condition.Equals("id", geofenceId)));
+    }
 }

@@ -6,6 +6,8 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.traccar.api.BaseResource;
 import org.traccar.api.TraccarException;
+import org.traccar.broadcast.BaseBroadcastService;
+import org.traccar.broadcast.BroadcastService;
 import org.traccar.manhunt.JokerType;
 import org.traccar.manhunt.dto.DeviceDto;
 import org.traccar.model.*;
@@ -229,6 +231,32 @@ public class CurrentManhuntResource extends BaseResource {
         connectionManager.updateAllPosition(true, position);
 
         return Response.ok(position).build();
+    }
+
+    @Path("assignGeofenceToAllUsers")
+    @POST
+    public Response assignGeofenceToAllUsers(@QueryParam("geofenceId") long geofenceId) throws Exception {
+        permissionsService.checkPermission(Geofence.class, getUserId(), geofenceId);
+
+        manhuntDatabaseStorage.assignGeofenceToAllUsers(geofenceId);
+
+        var geofence = manhuntDatabaseStorage.getGeofence(geofenceId);
+        connectionManager.sendAddGeofenceBroadcast(geofence);
+
+        return Response.noContent().build();
+    }
+
+    @Path("removeGeofenceFromAllUsers")
+    @POST
+    public Response removeGeofenceFromAllUsers(@QueryParam("geofenceId") long geofenceId) throws Exception {
+        permissionsService.checkPermission(Geofence.class, getUserId(), geofenceId);
+
+        manhuntDatabaseStorage.removeGeofenceFromAllUsers(geofenceId);
+
+        var geofence = manhuntDatabaseStorage.getGeofence(geofenceId);
+        connectionManager.sendRemoveGeofenceBroadcast(geofence);
+
+        return Response.noContent().build();
     }
 
     private void CheckDevice(DeviceDto dto) throws TraccarException {
