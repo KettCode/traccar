@@ -6,8 +6,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.traccar.api.BaseResource;
 import org.traccar.api.TraccarException;
-import org.traccar.broadcast.BaseBroadcastService;
-import org.traccar.broadcast.BroadcastService;
 import org.traccar.manhunt.JokerType;
 import org.traccar.manhunt.dto.DeviceDto;
 import org.traccar.model.*;

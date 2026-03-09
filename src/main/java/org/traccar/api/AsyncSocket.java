@@ -22,7 +22,6 @@ import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.traccar.broadcast.BroadcastMessage;
 import org.traccar.helper.model.PositionUtil;
 import org.traccar.model.*;
 import org.traccar.session.ConnectionManager;
@@ -43,8 +42,8 @@ public class AsyncSocket implements Session.Listener.AutoDemanding, ConnectionMa
     private static final String KEY_POSITIONS = "positions";
     private static final String KEY_EVENTS = "events";
     private static final String KEY_LOGS = "logs";
-    private static final String KEY_UPDATE_GEOFENCE = "updateGeofence";
-    private static final String KEY_REMOVE_GEOFENCE = "removeGeofence";
+    private static final String KEY_UPDATE_GEOFENCES = "updateGeofences";
+    private static final String KEY_REMOVE_GEOFENCES = "removeGeofences";
 
     private final ObjectMapper objectMapper;
     private final ConnectionManager connectionManager;
@@ -129,12 +128,12 @@ public class AsyncSocket implements Session.Listener.AutoDemanding, ConnectionMa
 
     @Override
     public void onAddGeofence(Geofence geofence) {
-        sendData(Map.of(KEY_UPDATE_GEOFENCE, List.of(geofence)));
+        sendData(Map.of(KEY_UPDATE_GEOFENCES, List.of(geofence)));
     }
 
     @Override
     public void onRemoveGeofence(Geofence geofence) {
-        sendData(Map.of(KEY_REMOVE_GEOFENCE, List.of(geofence)));
+        sendData(Map.of(KEY_REMOVE_GEOFENCES, List.of(geofence)));
     }
 
     private void sendData(Map<String, Collection<?>> data) {
