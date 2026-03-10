@@ -444,7 +444,7 @@ public class ConnectionManager implements BroadcastInterface {
         cancelScheduler();
 
         var manhunt = manhuntDatabaseStorage.getCurrent(false);
-        if(manhunt == null)
+        if(manhunt == null || manhunt.getFrequency() <= 0)
             return;
 
         var frequency = manhunt.getFrequency();
