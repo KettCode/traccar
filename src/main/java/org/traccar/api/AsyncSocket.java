@@ -27,6 +27,10 @@ import org.traccar.model.*;
 import org.traccar.session.ConnectionManager;
 import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
+import org.traccar.storage.query.Columns;
+import org.traccar.storage.query.Condition;
+import org.traccar.storage.query.Order;
+import org.traccar.storage.query.Request;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
@@ -42,6 +46,7 @@ public class AsyncSocket implements Session.Listener.AutoDemanding, ConnectionMa
     private static final String KEY_POSITIONS = "positions";
     private static final String KEY_EVENTS = "events";
     private static final String KEY_LOGS = "logs";
+    private static final String KEY_REFRESH_GEOFENCES = "refreshGeofences";
     private static final String KEY_UPDATE_GEOFENCES = "updateGeofences";
     private static final String KEY_REMOVE_GEOFENCES = "removeGeofences";
 
@@ -66,7 +71,11 @@ public class AsyncSocket implements Session.Listener.AutoDemanding, ConnectionMa
         try {
             Map<String, Collection<?>> data = new HashMap<>();
             data.put(KEY_POSITIONS, PositionUtil.getLatestPositions(storage, userId));
+            var geofences = storage.getObjects(Geofence.class, new Request(new Columns.All(),
+                    new Condition.Permission(User.class, userId, Geofence.class)));
+            data.put(KEY_REFRESH_GEOFENCES, geofences);
             sendData(data);
+
             connectionManager.addListener(userId, this);
         } catch (StorageException e) {
             throw new RuntimeException(e);
