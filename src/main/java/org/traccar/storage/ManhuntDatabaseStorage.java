@@ -306,4 +306,43 @@ public class ManhuntDatabaseStorage {
         return storage.getObject(Geofence.class, new Request(
                 new Columns.All(), new Condition.Equals("id", geofenceId)));
     }
+
+    public List<Position> getLatestPositionForTime(List<Long> deviceIds, Date fixTime) throws StorageException {
+        try {
+            StringBuilder query = new StringBuilder();
+            query.append("SELECT p.* ")
+                    .append("FROM tc_positions p ")
+                    .append("JOIN ( ")
+                    .append("    SELECT deviceId, MAX(fixTime) AS lastTime ")
+                    .append("    FROM tc_positions ")
+                    .append("    WHERE fixTime <= ? ");
+
+            if (deviceIds != null && !deviceIds.isEmpty()) {
+                String placeholders = deviceIds.stream()
+                        .map(id -> "?")
+                        .collect(Collectors.joining(","));
+
+                query.append("AND deviceId IN (")
+                        .append(placeholders)
+                        .append(") ");
+            }
+
+            query.append(" GROUP BY deviceId ")
+                    .append(") m ON p.deviceId = m.deviceId AND p.fixTime = m.lastTime");
+
+            QueryBuilder builder = QueryBuilder.create(config, dataSource, objectMapper, query.toString());
+
+            int index = 0;
+            builder.setDate(index++, fixTime);
+            if (deviceIds != null && !deviceIds.isEmpty()) {
+                for (Long id : deviceIds) {
+                    builder.setLong(index++, id);
+                }
+            }
+
+            return builder.executeQuery(Position.class);
+        } catch (SQLException e) {
+            throw new StorageException(e);
+        }
+    }
 }

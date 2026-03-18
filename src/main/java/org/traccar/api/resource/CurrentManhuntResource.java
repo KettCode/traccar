@@ -19,6 +19,8 @@ import org.traccar.storage.query.Request;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
+import java.util.Date;
+import java.util.List;
 
 @Path("currentManhunt")
 @Produces(MediaType.APPLICATION_JSON)
@@ -255,6 +257,12 @@ public class CurrentManhuntResource extends BaseResource {
         connectionManager.sendRemoveGeofenceBroadcast(geofence);
 
         return Response.noContent().build();
+    }
+
+    @Path("getLatestPositionsForTime")
+    @GET
+    public Collection<Position> getLatestPositionsForTime(@QueryParam("deviceId") List<Long> deviceIds, @QueryParam("fixTime") Date fixTime) throws StorageException {
+        return manhuntDatabaseStorage.getLatestPositionForTime(deviceIds, fixTime);
     }
 
     private void CheckDevice(DeviceDto dto) throws TraccarException {
