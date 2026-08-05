@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd"
+  logicalFilePath="changelog-game-mvp">
+
+  <changeSet author="author" id="changelog-game-mvp">
+
+    <createTable tableName="tc_games">
+      <column name="id" type="INT" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false" />
+      </column>
+      <column name="name" type="VARCHAR(128)">
+        <constraints nullable="false" />
+      </column>
+      <column name="status" type="VARCHAR(16)" defaultValue="draft">
+        <constraints nullable="false" />
+      </column>
+      <column name="pingIntervalSeconds" type="INT" defaultValueNumeric="900">
+        <constraints nullable="false" />
+      </column>
+      <column name="speedhuntLimit" type="INT" defaultValueNumeric="0">
+        <constraints nullable="false" />
+      </column>
+      <column name="speedhuntPingLimit" type="INT" defaultValueNumeric="3">
+        <constraints nullable="false" />
+      </column>
+      <column name="allowConsecutiveSpeedhuntsSameTarget" type="BOOLEAN" defaultValueBoolean="false">
+        <constraints nullable="false" />
+      </column>
+      <column name="fakePingMaxDistanceMeters" type="INT" defaultValueNumeric="1000">
+        <constraints nullable="false" />
+      </column>
+      <column name="locationReminderEnabled" type="BOOLEAN" defaultValueBoolean="true">
+        <constraints nullable="false" />
+      </column>
+      <column name="maxPositionAgeSeconds" type="INT" defaultValueNumeric="300">
+        <constraints nullable="false" />
+      </column>
+      <column name="locationReminderIntervalSeconds" type="INT" defaultValueNumeric="300">
+        <constraints nullable="false" />
+      </column>
+      <column name="startedAt" type="timestamp" />
+      <column name="finishedAt" type="timestamp" />
+      <column name="createdAt" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP">
+        <constraints nullable="false" />
+      </column>
+      <column name="updatedAt" type="timestamp" />
+    </createTable>
+
+    <createTable tableName="tc_user_game">
+      <column name="userid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="gameid" type="INT">
+        <constraints nullable="false" />
+      </column>
+    </createTable>
+
+    <addUniqueConstraint tableName="tc_user_game" columnNames="userid, gameid" constraintName="uk_user_game" />
+    <addForeignKeyConstraint baseTableName="tc_user_game" baseColumnNames="userid"
+      referencedTableName="tc_users" referencedColumnNames="id" constraintName="fk_user_game_user" onDelete="CASCADE" />
+    <addForeignKeyConstraint baseTableName="tc_user_game" baseColumnNames="gameid"
+      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_user_game_game" onDelete="CASCADE" />
+
+    <createTable tableName="tc_game_players">
+      <column name="id" type="INT" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false" />
+      </column>
+      <column name="gameid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="userid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="deviceid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="active" type="BOOLEAN" defaultValueBoolean="true">
+        <constraints nullable="false" />
+      </column>
+      <column name="createdAt" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP">
+        <constraints nullable="false" />
+      </column>
+      <column name="updatedAt" type="timestamp" />
+    </createTable>
+
+    <addForeignKeyConstraint baseTableName="tc_game_players" baseColumnNames="gameid"
+      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_players_game" onDelete="CASCADE" />
+    <addForeignKeyConstraint baseTableName="tc_game_players" baseColumnNames="userid"
+      referencedTableName="tc_users" referencedColumnNames="id" constraintName="fk_game_players_user" />
+    <addForeignKeyConstraint baseTableName="tc_game_players" baseColumnNames="deviceid"
+      referencedTableName="tc_devices" referencedColumnNames="id" constraintName="fk_game_players_device" />
+
+    <createTable tableName="tc_game_members">
+      <column name="id" type="INT" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false" />
+      </column>
+      <column name="gameid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="playerid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="role" type="VARCHAR(32)">
+        <constraints nullable="false" />
+      </column>
+      <column name="status" type="VARCHAR(16)" defaultValue="active">
+        <constraints nullable="false" />
+      </column>
+      <column name="displayName" type="VARCHAR(128)" />
+      <column name="canStartSpeedhunt" type="BOOLEAN" defaultValueBoolean="false">
+        <constraints nullable="false" />
+      </column>
+      <column name="canRequestSpeedhuntPing" type="BOOLEAN" defaultValueBoolean="false">
+        <constraints nullable="false" />
+      </column>
+      <column name="caughtAt" type="timestamp" />
+      <column name="lastVisiblePingid" type="INT" />
+      <column name="lastLocationReminderAt" type="timestamp" />
+    </createTable>
+
+    <addForeignKeyConstraint baseTableName="tc_game_members" baseColumnNames="gameid"
+      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_members_game" />
+    <addForeignKeyConstraint baseTableName="tc_game_members" baseColumnNames="playerid"
+      referencedTableName="tc_game_players" referencedColumnNames="id" constraintName="fk_game_members_player" />
+
+    <createTable tableName="tc_game_speedhunts">
+      <column name="id" type="INT" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false" />
+      </column>
+      <column name="gameid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="sequenceNumber" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="targetMemberid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="createdByUserid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="maxPings" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="startedAt" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP">
+        <constraints nullable="false" />
+      </column>
+      <column name="endedAt" type="timestamp" />
+    </createTable>
+
+    <addForeignKeyConstraint baseTableName="tc_game_speedhunts" baseColumnNames="gameid"
+      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_speedhunts_game" />
+    <addForeignKeyConstraint baseTableName="tc_game_speedhunts" baseColumnNames="targetMemberid"
+      referencedTableName="tc_game_members" referencedColumnNames="id" constraintName="fk_game_speedhunts_target_member" />
+    <addForeignKeyConstraint baseTableName="tc_game_speedhunts" baseColumnNames="createdByUserid"
+      referencedTableName="tc_users" referencedColumnNames="id" constraintName="fk_game_speedhunts_created_by" />
+
+    <createTable tableName="tc_game_pings">
+      <column name="id" type="INT" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false" />
+      </column>
+      <column name="gameid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="targetMemberid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="source" type="VARCHAR(24)">
+        <constraints nullable="false" />
+      </column>
+      <column name="skipped" type="BOOLEAN" defaultValueBoolean="false">
+        <constraints nullable="false" />
+      </column>
+      <column name="positionid" type="INT" />
+      <column name="fixTime" type="timestamp" />
+      <column name="latitude" type="DOUBLE" />
+      <column name="longitude" type="DOUBLE" />
+      <column name="accuracy" type="DOUBLE" />
+      <column name="speedhuntid" type="INT" />
+      <column name="sequenceNumber" type="INT" />
+      <column name="consumedJokerid" type="INT" />
+      <column name="createdAt" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP">
+        <constraints nullable="false" />
+      </column>
+    </createTable>
+
+    <addForeignKeyConstraint baseTableName="tc_game_pings" baseColumnNames="gameid"
+      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_pings_game" />
+    <addForeignKeyConstraint baseTableName="tc_game_pings" baseColumnNames="targetMemberid"
+      referencedTableName="tc_game_members" referencedColumnNames="id" constraintName="fk_game_pings_target_member" />
+    <addForeignKeyConstraint baseTableName="tc_game_pings" baseColumnNames="positionid"
+      referencedTableName="tc_positions" referencedColumnNames="id" constraintName="fk_game_pings_position" />
+    <addForeignKeyConstraint baseTableName="tc_game_pings" baseColumnNames="speedhuntid"
+      referencedTableName="tc_game_speedhunts" referencedColumnNames="id" constraintName="fk_game_pings_speedhunt" />
+
+    <createTable tableName="tc_game_jokers">
+      <column name="id" type="INT" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false" />
+      </column>
+      <column name="gameid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="memberid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="type" type="VARCHAR(40)">
+        <constraints nullable="false" />
+      </column>
+      <column name="status" type="VARCHAR(24)" defaultValue="unlocked">
+        <constraints nullable="false" />
+      </column>
+      <column name="unlockedAt" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP">
+        <constraints nullable="false" />
+      </column>
+      <column name="unlockedByUserid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="usedAt" type="timestamp" />
+      <column name="cancelledAt" type="timestamp" />
+    </createTable>
+
+    <addForeignKeyConstraint baseTableName="tc_game_jokers" baseColumnNames="gameid"
+      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_jokers_game" />
+    <addForeignKeyConstraint baseTableName="tc_game_jokers" baseColumnNames="memberid"
+      referencedTableName="tc_game_members" referencedColumnNames="id" constraintName="fk_game_jokers_member" />
+    <addForeignKeyConstraint baseTableName="tc_game_jokers" baseColumnNames="unlockedByUserid"
+      referencedTableName="tc_users" referencedColumnNames="id" constraintName="fk_game_jokers_unlocked_by" />
+
+    <createTable tableName="tc_game_pending_effects">
+      <column name="id" type="INT" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false" />
+      </column>
+      <column name="gameid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="memberid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="jokerid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="effect" type="VARCHAR(32)">
+        <constraints nullable="false" />
+      </column>
+      <column name="active" type="BOOLEAN" defaultValueBoolean="true">
+        <constraints nullable="false" />
+      </column>
+      <column name="payload" type="VARCHAR(2048)" />
+      <column name="createdAt" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP">
+        <constraints nullable="false" />
+      </column>
+      <column name="consumedAt" type="timestamp" />
+      <column name="consumedPingid" type="INT" />
+    </createTable>
+
+    <addForeignKeyConstraint baseTableName="tc_game_pending_effects" baseColumnNames="gameid"
+      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_pending_effects_game" />
+    <addForeignKeyConstraint baseTableName="tc_game_pending_effects" baseColumnNames="memberid"
+      referencedTableName="tc_game_members" referencedColumnNames="id" constraintName="fk_game_pending_effects_member" />
+    <addForeignKeyConstraint baseTableName="tc_game_pending_effects" baseColumnNames="jokerid"
+      referencedTableName="tc_game_jokers" referencedColumnNames="id" constraintName="fk_game_pending_effects_joker" />
+
+    <createTable tableName="tc_game_reveals">
+      <column name="id" type="INT" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false" />
+      </column>
+      <column name="gameid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="memberid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="jokerid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="type" type="VARCHAR(40)">
+        <constraints nullable="false" />
+      </column>
+      <column name="speedhuntid" type="INT" />
+      <column name="payload" type="VARCHAR(2048)" />
+      <column name="revealedAt" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP">
+        <constraints nullable="false" />
+      </column>
+      <column name="invalidatedAt" type="timestamp" />
+    </createTable>
+
+    <addForeignKeyConstraint baseTableName="tc_game_reveals" baseColumnNames="gameid"
+      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_reveals_game" />
+    <addForeignKeyConstraint baseTableName="tc_game_reveals" baseColumnNames="memberid"
+      referencedTableName="tc_game_members" referencedColumnNames="id" constraintName="fk_game_reveals_member" />
+    <addForeignKeyConstraint baseTableName="tc_game_reveals" baseColumnNames="jokerid"
+      referencedTableName="tc_game_jokers" referencedColumnNames="id" constraintName="fk_game_reveals_joker" />
+    <addForeignKeyConstraint baseTableName="tc_game_reveals" baseColumnNames="speedhuntid"
+      referencedTableName="tc_game_speedhunts" referencedColumnNames="id" constraintName="fk_game_reveals_speedhunt" />
+
+    <createTable tableName="tc_game_revealed_positions">
+      <column name="id" type="INT" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false" />
+      </column>
+      <column name="revealid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="memberid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="positionid" type="INT" />
+      <column name="fixTime" type="timestamp" />
+      <column name="latitude" type="DOUBLE">
+        <constraints nullable="false" />
+      </column>
+      <column name="longitude" type="DOUBLE">
+        <constraints nullable="false" />
+      </column>
+      <column name="accuracy" type="DOUBLE" />
+    </createTable>
+
+    <addForeignKeyConstraint baseTableName="tc_game_revealed_positions" baseColumnNames="revealid"
+      referencedTableName="tc_game_reveals" referencedColumnNames="id" constraintName="fk_game_revealed_positions_reveal" />
+    <addForeignKeyConstraint baseTableName="tc_game_revealed_positions" baseColumnNames="memberid"
+      referencedTableName="tc_game_members" referencedColumnNames="id" constraintName="fk_game_revealed_positions_member" />
+    <addForeignKeyConstraint baseTableName="tc_game_revealed_positions" baseColumnNames="positionid"
+      referencedTableName="tc_positions" referencedColumnNames="id" constraintName="fk_game_revealed_positions_position" />
+
+    <createTable tableName="tc_game_catches">
+      <column name="id" type="INT" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false" />
+      </column>
+      <column name="gameid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="caughtMemberid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="reportedByUserid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="status" type="VARCHAR(16)" defaultValue="active">
+        <constraints nullable="false" />
+      </column>
+      <column name="caughtAt" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP">
+        <constraints nullable="false" />
+      </column>
+      <column name="positionid" type="INT" />
+      <column name="latitude" type="DOUBLE" />
+      <column name="longitude" type="DOUBLE" />
+      <column name="note" type="VARCHAR(512)" />
+      <column name="revertedAt" type="timestamp" />
+      <column name="revertedByUserid" type="INT" />
+    </createTable>
+
+    <addForeignKeyConstraint baseTableName="tc_game_catches" baseColumnNames="gameid"
+      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_catches_game" />
+    <addForeignKeyConstraint baseTableName="tc_game_catches" baseColumnNames="caughtMemberid"
+      referencedTableName="tc_game_members" referencedColumnNames="id" constraintName="fk_game_catches_caught_member" />
+    <addForeignKeyConstraint baseTableName="tc_game_catches" baseColumnNames="reportedByUserid"
+      referencedTableName="tc_users" referencedColumnNames="id" constraintName="fk_game_catches_reported_by" />
+    <addForeignKeyConstraint baseTableName="tc_game_catches" baseColumnNames="positionid"
+      referencedTableName="tc_positions" referencedColumnNames="id" constraintName="fk_game_catches_position" />
+    <addForeignKeyConstraint baseTableName="tc_game_catches" baseColumnNames="revertedByUserid"
+      referencedTableName="tc_users" referencedColumnNames="id" constraintName="fk_game_catches_reverted_by" />
+
+    <addForeignKeyConstraint baseTableName="tc_game_members" baseColumnNames="lastVisiblePingid"
+      referencedTableName="tc_game_pings" referencedColumnNames="id" constraintName="fk_game_members_last_visible_ping" />
+    <addForeignKeyConstraint baseTableName="tc_game_pings" baseColumnNames="consumedJokerid"
+      referencedTableName="tc_game_jokers" referencedColumnNames="id" constraintName="fk_game_pings_consumed_joker" />
+    <addForeignKeyConstraint baseTableName="tc_game_pending_effects" baseColumnNames="consumedPingid"
+      referencedTableName="tc_game_pings" referencedColumnNames="id" constraintName="fk_game_pending_effects_consumed_ping" />
+
+  </changeSet>
+
+</databaseChangeLog>
