@@ -127,6 +127,35 @@
     <addForeignKeyConstraint baseTableName="tc_game_members" baseColumnNames="playerid"
       referencedTableName="tc_game_players" referencedColumnNames="id" constraintName="fk_game_members_player" />
 
+    <createTable tableName="tc_game_geofences">
+      <column name="id" type="INT" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false" />
+      </column>
+      <column name="gameid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="geofenceid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="name" type="VARCHAR(128)" />
+      <column name="type" type="VARCHAR(32)" defaultValue="playfield">
+        <constraints nullable="false" />
+      </column>
+      <column name="role" type="VARCHAR(32)" />
+      <column name="active" type="BOOLEAN" defaultValueBoolean="true">
+        <constraints nullable="false" />
+      </column>
+      <column name="createdAt" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP">
+        <constraints nullable="false" />
+      </column>
+      <column name="updatedAt" type="timestamp" />
+    </createTable>
+
+    <addForeignKeyConstraint baseTableName="tc_game_geofences" baseColumnNames="gameid"
+      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_geofences_game" onDelete="CASCADE" />
+    <addForeignKeyConstraint baseTableName="tc_game_geofences" baseColumnNames="geofenceid"
+      referencedTableName="tc_geofences" referencedColumnNames="id" constraintName="fk_game_geofences_geofence" />
+
     <createTable tableName="tc_game_speedhunts">
       <column name="id" type="INT" autoIncrement="true">
         <constraints primaryKey="true" nullable="false" />
