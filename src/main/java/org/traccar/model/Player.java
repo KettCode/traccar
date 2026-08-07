@@ -4,8 +4,8 @@ import org.traccar.storage.StorageName;
 
 import java.util.Date;
 
-@StorageName("tc_game_players")
-public class GamePlayer extends GameBaseModel {
+@StorageName("tc_players")
+public class Player extends BaseModel {
 
     private long userId;
     private long deviceId;

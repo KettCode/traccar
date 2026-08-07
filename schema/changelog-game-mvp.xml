@@ -65,12 +65,9 @@
     <addForeignKeyConstraint baseTableName="tc_user_game" baseColumnNames="gameid"
       referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_user_game_game" onDelete="CASCADE" />
 
-    <createTable tableName="tc_game_players">
+    <createTable tableName="tc_players">
       <column name="id" type="INT" autoIncrement="true">
         <constraints primaryKey="true" nullable="false" />
-      </column>
-      <column name="gameid" type="INT">
-        <constraints nullable="false" />
       </column>
       <column name="userid" type="INT">
         <constraints nullable="false" />
@@ -87,12 +84,26 @@
       <column name="updatedAt" type="timestamp" />
     </createTable>
 
-    <addForeignKeyConstraint baseTableName="tc_game_players" baseColumnNames="gameid"
-      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_players_game" onDelete="CASCADE" />
-    <addForeignKeyConstraint baseTableName="tc_game_players" baseColumnNames="userid"
-      referencedTableName="tc_users" referencedColumnNames="id" constraintName="fk_game_players_user" />
-    <addForeignKeyConstraint baseTableName="tc_game_players" baseColumnNames="deviceid"
-      referencedTableName="tc_devices" referencedColumnNames="id" constraintName="fk_game_players_device" />
+    <createTable tableName="tc_user_player">
+      <column name="userid" type="INT">
+        <constraints nullable="false" />
+      </column>
+      <column name="playerid" type="INT">
+        <constraints nullable="false" />
+      </column>
+    </createTable>
+
+    <addUniqueConstraint tableName="tc_players" columnNames="userid" constraintName="uk_players_user" />
+    <addUniqueConstraint tableName="tc_players" columnNames="deviceid" constraintName="uk_players_device" />
+    <addUniqueConstraint tableName="tc_user_player" columnNames="userid, playerid" constraintName="uk_user_player" />
+    <addForeignKeyConstraint baseTableName="tc_players" baseColumnNames="userid"
+      referencedTableName="tc_users" referencedColumnNames="id" constraintName="fk_players_user" />
+    <addForeignKeyConstraint baseTableName="tc_players" baseColumnNames="deviceid"
+      referencedTableName="tc_devices" referencedColumnNames="id" constraintName="fk_players_device" />
+    <addForeignKeyConstraint baseTableName="tc_user_player" baseColumnNames="userid"
+      referencedTableName="tc_users" referencedColumnNames="id" constraintName="fk_user_player_user" onDelete="CASCADE" />
+    <addForeignKeyConstraint baseTableName="tc_user_player" baseColumnNames="playerid"
+      referencedTableName="tc_players" referencedColumnNames="id" constraintName="fk_user_player_player" onDelete="CASCADE" />
 
     <createTable tableName="tc_game_members">
       <column name="id" type="INT" autoIncrement="true">
@@ -123,9 +134,9 @@
     </createTable>
 
     <addForeignKeyConstraint baseTableName="tc_game_members" baseColumnNames="gameid"
-      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_members_game" />
+      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_members_game" onDelete="CASCADE" />
     <addForeignKeyConstraint baseTableName="tc_game_members" baseColumnNames="playerid"
-      referencedTableName="tc_game_players" referencedColumnNames="id" constraintName="fk_game_members_player" />
+      referencedTableName="tc_players" referencedColumnNames="id" constraintName="fk_game_members_player" />
 
     <createTable tableName="tc_game_geofences">
       <column name="id" type="INT" autoIncrement="true">
@@ -182,7 +193,7 @@
     </createTable>
 
     <addForeignKeyConstraint baseTableName="tc_game_speedhunts" baseColumnNames="gameid"
-      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_speedhunts_game" />
+      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_speedhunts_game" onDelete="CASCADE" />
     <addForeignKeyConstraint baseTableName="tc_game_speedhunts" baseColumnNames="targetMemberid"
       referencedTableName="tc_game_members" referencedColumnNames="id" constraintName="fk_game_speedhunts_target_member" />
     <addForeignKeyConstraint baseTableName="tc_game_speedhunts" baseColumnNames="createdByUserid"
@@ -218,7 +229,7 @@
     </createTable>
 
     <addForeignKeyConstraint baseTableName="tc_game_pings" baseColumnNames="gameid"
-      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_pings_game" />
+      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_pings_game" onDelete="CASCADE" />
     <addForeignKeyConstraint baseTableName="tc_game_pings" baseColumnNames="targetMemberid"
       referencedTableName="tc_game_members" referencedColumnNames="id" constraintName="fk_game_pings_target_member" />
     <addForeignKeyConstraint baseTableName="tc_game_pings" baseColumnNames="positionid"
@@ -253,7 +264,7 @@
     </createTable>
 
     <addForeignKeyConstraint baseTableName="tc_game_jokers" baseColumnNames="gameid"
-      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_jokers_game" />
+      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_jokers_game" onDelete="CASCADE" />
     <addForeignKeyConstraint baseTableName="tc_game_jokers" baseColumnNames="memberid"
       referencedTableName="tc_game_members" referencedColumnNames="id" constraintName="fk_game_jokers_member" />
     <addForeignKeyConstraint baseTableName="tc_game_jokers" baseColumnNames="unlockedByUserid"
@@ -287,7 +298,7 @@
     </createTable>
 
     <addForeignKeyConstraint baseTableName="tc_game_pending_effects" baseColumnNames="gameid"
-      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_pending_effects_game" />
+      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_pending_effects_game" onDelete="CASCADE" />
     <addForeignKeyConstraint baseTableName="tc_game_pending_effects" baseColumnNames="memberid"
       referencedTableName="tc_game_members" referencedColumnNames="id" constraintName="fk_game_pending_effects_member" />
     <addForeignKeyConstraint baseTableName="tc_game_pending_effects" baseColumnNames="jokerid"
@@ -318,7 +329,7 @@
     </createTable>
 
     <addForeignKeyConstraint baseTableName="tc_game_reveals" baseColumnNames="gameid"
-      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_reveals_game" />
+      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_reveals_game" onDelete="CASCADE" />
     <addForeignKeyConstraint baseTableName="tc_game_reveals" baseColumnNames="memberid"
       referencedTableName="tc_game_members" referencedColumnNames="id" constraintName="fk_game_reveals_member" />
     <addForeignKeyConstraint baseTableName="tc_game_reveals" baseColumnNames="jokerid"
@@ -382,7 +393,7 @@
     </createTable>
 
     <addForeignKeyConstraint baseTableName="tc_game_catches" baseColumnNames="gameid"
-      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_catches_game" />
+      referencedTableName="tc_games" referencedColumnNames="id" constraintName="fk_game_catches_game" onDelete="CASCADE" />
     <addForeignKeyConstraint baseTableName="tc_game_catches" baseColumnNames="caughtMemberid"
       referencedTableName="tc_game_members" referencedColumnNames="id" constraintName="fk_game_catches_caught_member" />
     <addForeignKeyConstraint baseTableName="tc_game_catches" baseColumnNames="reportedByUserid"
