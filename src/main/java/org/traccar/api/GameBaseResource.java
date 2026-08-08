@@ -1,6 +1,7 @@
 package org.traccar.api;
 
 import org.traccar.helper.LogAction;
+import org.traccar.game.GamePermissionService;
 import org.traccar.model.Game;
 import org.traccar.model.GameBaseModel;
 import org.traccar.model.ObjectOperation;
@@ -32,6 +33,9 @@ public abstract class GameBaseResource<T extends GameBaseModel> extends BaseReso
 
     @Inject
     private LogAction actionLogger;
+
+    @Inject
+    private GamePermissionService gamePermissionService;
 
     @Context
     private HttpServletRequest request;
@@ -122,12 +126,11 @@ public abstract class GameBaseResource<T extends GameBaseModel> extends BaseReso
     }
 
     protected void checkGame(long gameId) throws StorageException {
-        permissionsService.checkPermission(Game.class, getUserId(), gameId);
+        gamePermissionService.checkPermission(getUserId(), gameId);
     }
 
     protected void checkGameEdit(long gameId) throws StorageException {
-        checkGame(gameId);
-        permissionsService.checkEdit(getUserId(), Game.class, false, false);
+        gamePermissionService.checkEdit(getUserId(), gameId);
     }
 
     protected Stream<T> getVisibleGameObjects() throws StorageException {
