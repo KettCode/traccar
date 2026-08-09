@@ -33,7 +33,7 @@ public class GameRuntimePermissionService {
 
         Player player = storage.getObject(Player.class, new Request(
                 new Columns.All(), new Condition.Equals("userId", userId)));
-        if (player == null || !player.getActive()) {
+        if (player == null) {
             throw new SecurityException("Game member access denied");
         }
 
@@ -53,7 +53,7 @@ public class GameRuntimePermissionService {
         if (context == null) {
             return null;
         }
-        if (context.isLeft()) {
+        if (!context.isActive() && !context.isCaught()) {
             throw new SecurityException("Game member access denied");
         }
         return context;
