@@ -17,6 +17,7 @@ package org.traccar.web;
 
 import com.google.inject.servlet.ServletModule;
 import org.traccar.api.AsyncSocketServlet;
+import org.traccar.game.notification.GameAsyncSocketServlet;
 
 public class WebModule extends ServletModule {
 
@@ -25,5 +26,6 @@ public class WebModule extends ServletModule {
         filter("/*").through(OverrideTextFilter.class);
         serve("/.well-known/*").with(WellKnownServlet.class);
         serve("/api/socket").with(AsyncSocketServlet.class);
+        serve("/api/game/socket").with(GameAsyncSocketServlet.class);
     }
 }

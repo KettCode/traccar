@@ -15,6 +15,7 @@
  */
 package org.traccar.schedule;
 
+import org.traccar.game.notification.GameConnectionManager;
 import org.traccar.session.ConnectionManager;
 
 import jakarta.inject.Inject;
@@ -26,10 +27,13 @@ public class TaskWebSocketKeepalive implements ScheduleTask {
     private static final long PERIOD_SECONDS = 55;
 
     private final ConnectionManager connectionManager;
+    private final GameConnectionManager gameConnectionManager;
 
     @Inject
-    public TaskWebSocketKeepalive(ConnectionManager connectionManager) {
+    public TaskWebSocketKeepalive(
+            ConnectionManager connectionManager, GameConnectionManager gameConnectionManager) {
         this.connectionManager = connectionManager;
+        this.gameConnectionManager = gameConnectionManager;
     }
 
     @Override
@@ -40,6 +44,7 @@ public class TaskWebSocketKeepalive implements ScheduleTask {
     @Override
     public void run() {
         connectionManager.sendKeepalive();
+        gameConnectionManager.sendKeepalive();
     }
 
 }
