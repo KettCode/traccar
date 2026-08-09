@@ -7,6 +7,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.traccar.game.GameRuntimeContext;
 import org.traccar.game.GameRuntimePermissionService;
 import org.traccar.game.joker.request.ActivateJokerRequest;
+import org.traccar.game.notification.GameNotificationMessage;
+import org.traccar.game.notification.GameNotificationService;
 import org.traccar.helper.LogAction;
 import org.traccar.model.GameJoker;
 import org.traccar.model.GameMember;
@@ -45,6 +47,9 @@ public class GameJokerService {
     @Inject
     private GameRuntimePermissionService runtimePermissionService;
 
+    @Inject
+    private GameNotificationService notificationService;
+
     public GameJoker unlockJoker(
             long userId, long gameId, long memberId, String type, HttpServletRequest request) throws Exception {
         GameRuntimeContext context = runtimePermissionService.requireGameManagement(userId, gameId);
@@ -68,6 +73,7 @@ public class GameJokerService {
         joker.setUnlockedByUserId(userId);
         joker.setId(storage.addObject(joker, new Request(new Columns.Exclude("id"))));
         actionLogger.create(request, userId, joker);
+        notifyJokerChanged(gameId, joker);
         return joker;
     }
 
@@ -103,6 +109,11 @@ public class GameJokerService {
             default -> throw new IllegalArgumentException("Invalid joker type");
         }
 
+        Player ownerPlayer = getPlayer(owner.getPlayerId());
+        if (ownerPlayer != null && ownerPlayer.getUserId() != userId) {
+            notifyJokerChanged(gameId, joker);
+        }
+
         return getJoker(gameId, jokerId);
     }
 
@@ -134,6 +145,7 @@ public class GameJokerService {
 
         joker.setStatus(GameJoker.STATUS_CANCELLED);
         joker.setCancelledAt(update.getCancelledAt());
+        notifyJokerChanged(gameId, joker);
         return joker;
     }
 
@@ -236,6 +248,13 @@ public class GameJokerService {
         if (longitude < -180 || longitude > 180) {
             throw new IllegalArgumentException("Longitude out of range");
         }
+    }
+
+    private void notifyJokerChanged(long gameId, GameJoker joker) throws StorageException {
+        GameNotificationMessage message = notificationService.createStateChangedMessage(
+                gameId, GameNotificationMessage.TYPE_JOKER_CHANGED);
+        message.setJokerId(joker.getId());
+        notificationService.notifyMember(gameId, joker.getMemberId(), message);
     }
 
     private void updateJokerActivated(long userId, long jokerId, HttpServletRequest request) throws Exception {

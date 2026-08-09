@@ -6,6 +6,9 @@ import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 import org.traccar.game.GameRuntimeContext;
 import org.traccar.game.GameRuntimePermissionService;
+import org.traccar.game.map.GameMapUpdateService;
+import org.traccar.game.notification.GameNotificationMessage;
+import org.traccar.game.notification.GameNotificationService;
 import org.traccar.helper.LogAction;
 import org.traccar.model.Game;
 import org.traccar.model.GameJoker;
@@ -44,6 +47,12 @@ public class GameSpeedhuntService {
 
     @Inject
     private GameRuntimePermissionService runtimePermissionService;
+
+    @Inject
+    private GameNotificationService notificationService;
+
+    @Inject
+    private GameMapUpdateService mapUpdateService;
 
     public GameSpeedhunt startSpeedhunt(
             long userId, long gameId, long targetMemberId, HttpServletRequest request) throws Exception {
@@ -87,6 +96,11 @@ public class GameSpeedhuntService {
         speedhunt.setStartedAt(new Date());
         speedhunt.setId(storage.addObject(speedhunt, new Request(new Columns.Exclude("id"))));
         actionLogger.create(request, userId, speedhunt);
+
+        GameNotificationMessage message = notificationService.createStateChangedMessage(
+                gameId, GameNotificationMessage.TYPE_SPEEDHUNT_STARTED);
+        message.setSpeedhuntId(speedhunt.getId());
+        notificationService.notifyGameMembers(gameId, message);
 
         createSpeedhuntPing(context, speedhunt, request);
 
@@ -163,6 +177,8 @@ public class GameSpeedhuntService {
         if (effect != null) {
             consumeEffect(context.userId(), effect, ping, request);
         }
+
+        mapUpdateService.notifySpeedhuntPingCreated(ping);
 
         if (ping.getSequenceNumber() >= speedhunt.getMaxPings()) {
             finishSpeedhunt(context, speedhunt, request);
@@ -262,6 +278,11 @@ public class GameSpeedhuntService {
         cacheManager.invalidateObject(true, GameSpeedhunt.class, speedhunt.getId(), ObjectOperation.UPDATE);
         actionLogger.edit(request, context.userId(), update);
         speedhunt.setEndedAt(endedAt);
+
+        GameNotificationMessage message = notificationService.createStateChangedMessage(
+                context.game().getId(), GameNotificationMessage.TYPE_SPEEDHUNT_FINISHED);
+        message.setSpeedhuntId(speedhunt.getId());
+        notificationService.notifyGameMembers(context.game().getId(), message);
     }
 
     private void validateTarget(GameMember target) {

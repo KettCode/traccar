@@ -4,6 +4,8 @@ import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 import org.traccar.game.GameRuntimeContext;
 import org.traccar.game.GameRuntimePermissionService;
+import org.traccar.game.notification.GameNotificationMessage;
+import org.traccar.game.notification.GameNotificationService;
 import org.traccar.helper.LogAction;
 import org.traccar.model.GameCatch;
 import org.traccar.model.GameJoker;
@@ -38,6 +40,9 @@ public class GameCatchService {
     @Inject
     private GameRuntimePermissionService runtimePermissionService;
 
+    @Inject
+    private GameNotificationService notificationService;
+
     public GameCatch createCatch(
             long userId, long gameId, long caughtMemberId, String note, HttpServletRequest request) throws Exception {
         GameRuntimeContext context = runtimePermissionService.requireGameManagement(userId, gameId);
@@ -69,6 +74,11 @@ public class GameCatchService {
         updateMemberCaught(userId, target, caughtAt, request);
         finishActiveSpeedhuntsForTarget(context, caughtMemberId, request);
         expireMemberRuntimeState(userId, gameId, caughtMemberId, request);
+
+        GameNotificationMessage message = notificationService.createStateChangedMessage(
+                gameId, GameNotificationMessage.TYPE_CATCH_CREATED);
+        message.setCatchId(catchItem.getId());
+        notificationService.notifyGameMembers(gameId, message);
 
         return catchItem;
     }
@@ -109,6 +119,11 @@ public class GameCatchService {
         catchItem.setStatus(GameCatch.STATUS_REVERTED);
         catchItem.setRevertedAt(revertedAt);
         catchItem.setRevertedByUserId(userId);
+
+        GameNotificationMessage message = notificationService.createStateChangedMessage(
+                gameId, GameNotificationMessage.TYPE_CATCH_REVERTED);
+        message.setCatchId(catchId);
+        notificationService.notifyGameMembers(gameId, message);
         return catchItem;
     }
 
