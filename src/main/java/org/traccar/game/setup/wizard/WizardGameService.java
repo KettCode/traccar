@@ -58,6 +58,7 @@ public class WizardGameService {
         game.setLocationReminderEnabled(entity.getLocationReminderEnabled());
         game.setMaxPositionAgeSeconds(entity.getMaxPositionAgeSeconds());
         game.setLocationReminderIntervalSeconds(entity.getLocationReminderIntervalSeconds());
+        game.setPlannedEndAt(entity.getPlannedEndAt());
         game.setCreatedAt(new Date());
 
         permissionsService.checkEdit(userId, game, true, false);
@@ -98,6 +99,7 @@ public class WizardGameService {
         update.setLocationReminderEnabled(settings.getLocationReminderEnabled());
         update.setMaxPositionAgeSeconds(settings.getMaxPositionAgeSeconds());
         update.setLocationReminderIntervalSeconds(settings.getLocationReminderIntervalSeconds());
+        update.setPlannedEndAt(settings.getPlannedEndAt());
         update.setUpdatedAt(new Date());
 
         storage.updateObject(update, new Request(
@@ -111,6 +113,7 @@ public class WizardGameService {
                         "locationReminderEnabled",
                         "maxPositionAgeSeconds",
                         "locationReminderIntervalSeconds",
+                        "plannedEndAt",
                         "updatedAt"),
                 new Condition.Equals("id", gameId)));
 

@@ -13,6 +13,7 @@ public class GameJoker extends GameBaseModel {
     public static final String TYPE_FAKE_PING = "fake_ping";
 
     public static final String STATUS_UNLOCKED = "unlocked";
+    public static final String STATUS_ACTIVATED = "activated";
     public static final String STATUS_USED = "used";
     public static final String STATUS_CANCELLED = "cancelled";
     public static final String STATUS_EXPIRED = "expired";
@@ -22,6 +23,7 @@ public class GameJoker extends GameBaseModel {
     private String status = STATUS_UNLOCKED;
     private Date unlockedAt = new Date();
     private long unlockedByUserId;
+    private Date activatedAt;
     private Date usedAt;
     private Date cancelledAt;
 
@@ -63,6 +65,14 @@ public class GameJoker extends GameBaseModel {
 
     public void setUnlockedByUserId(long unlockedByUserId) {
         this.unlockedByUserId = unlockedByUserId;
+    }
+
+    public Date getActivatedAt() {
+        return activatedAt;
+    }
+
+    public void setActivatedAt(Date activatedAt) {
+        this.activatedAt = activatedAt;
     }
 
     public Date getUsedAt() {

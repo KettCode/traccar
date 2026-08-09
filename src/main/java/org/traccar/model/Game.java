@@ -21,6 +21,7 @@ public class Game extends BaseModel {
     private boolean locationReminderEnabled = true;
     private int maxPositionAgeSeconds = 300;
     private int locationReminderIntervalSeconds = 300;
+    private Date plannedEndAt;
     private Date startedAt;
     private Date finishedAt;
     private Date createdAt = new Date();
@@ -104,6 +105,14 @@ public class Game extends BaseModel {
 
     public void setLocationReminderIntervalSeconds(int locationReminderIntervalSeconds) {
         this.locationReminderIntervalSeconds = locationReminderIntervalSeconds;
+    }
+
+    public Date getPlannedEndAt() {
+        return plannedEndAt;
+    }
+
+    public void setPlannedEndAt(Date plannedEndAt) {
+        this.plannedEndAt = plannedEndAt;
     }
 
     public Date getStartedAt() {

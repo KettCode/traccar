@@ -42,6 +42,7 @@
       <column name="locationReminderIntervalSeconds" type="INT" defaultValueNumeric="300">
         <constraints nullable="false" />
       </column>
+      <column name="plannedEndAt" type="timestamp" />
       <column name="startedAt" type="timestamp" />
       <column name="finishedAt" type="timestamp" />
       <column name="createdAt" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP">
@@ -259,6 +260,7 @@
       <column name="unlockedByUserid" type="INT">
         <constraints nullable="false" />
       </column>
+      <column name="activatedAt" type="timestamp" />
       <column name="usedAt" type="timestamp" />
       <column name="cancelledAt" type="timestamp" />
     </createTable>
