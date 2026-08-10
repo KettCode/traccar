@@ -2,6 +2,7 @@ package org.traccar.game.catching;
 
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
+import org.traccar.game.GameDevicePermissionService;
 import org.traccar.game.GameRuntimeContext;
 import org.traccar.game.GameRuntimePermissionService;
 import org.traccar.game.notification.GameNotificationMessage;
@@ -47,6 +48,9 @@ public class GameCatchService {
     @Inject
     private GamePushNotificationService pushNotificationService;
 
+    @Inject
+    private GameDevicePermissionService devicePermissionService;
+
     public GameCatch createCatch(
             long userId, long gameId, long caughtMemberId, String note, HttpServletRequest request) throws Exception {
         GameRuntimeContext context = runtimePermissionService.requireGameManagement(userId, gameId);
@@ -78,6 +82,7 @@ public class GameCatchService {
         updateMemberCaught(userId, target, caughtAt, request);
         finishActiveSpeedhuntsForTarget(context, caughtMemberId, request);
         expireMemberRuntimeState(userId, gameId, caughtMemberId, request);
+        devicePermissionService.syncGameDevicePermissions(userId, gameId, request);
 
         GameNotificationMessage message = notificationService.createStateChangedMessage(
                 gameId, GameNotificationMessage.TYPE_CATCH_CREATED);
@@ -120,6 +125,7 @@ public class GameCatchService {
         actionLogger.edit(request, userId, update);
 
         updateMemberActive(userId, member, request);
+        devicePermissionService.syncGameDevicePermissions(userId, gameId, request);
 
         catchItem.setStatus(GameCatch.STATUS_REVERTED);
         catchItem.setRevertedAt(revertedAt);
