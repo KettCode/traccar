@@ -20,8 +20,11 @@ import org.traccar.storage.query.Condition;
 import org.traccar.storage.query.Order;
 import org.traccar.storage.query.Request;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class GameMapUpdateService {
@@ -42,23 +45,54 @@ public class GameMapUpdateService {
     private GameNotificationService notificationService;
 
     public void notifySpeedhuntPingCreated(GamePing ping) throws StorageException {
-        GameMember target = getMember(ping.getGameId(), ping.getTargetMemberId());
-        if (target == null) {
+        notifyPingsCreated(List.of(ping), GameNotificationMessage.TYPE_SPEEDHUNT_PING_CREATED);
+    }
+
+    public void notifyRegularPingCreated(GamePing ping) throws StorageException {
+        notifyRegularPingsCreated(List.of(ping));
+    }
+
+    public void notifyRegularPingsCreated(List<GamePing> pings) throws StorageException {
+        notifyPingsCreated(pings, GameNotificationMessage.TYPE_REGULAR_PING_CREATED);
+    }
+
+    private void notifyPingsCreated(List<GamePing> pings, String notificationType) throws StorageException {
+        if (pings.isEmpty()) {
             return;
         }
 
-        GameMapMarker marker = toMarker(ping, target);
-        if (marker == null) {
+        long gameId = pings.get(0).getGameId();
+        List<GameMember> members = getMembers(gameId);
+        Map<Long, GameMember> membersById = new HashMap<>();
+        for (GameMember member : members) {
+            membersById.put(member.getId(), member);
+        }
+
+        var markers = new ArrayList<GameMapMarker>();
+        for (GamePing ping : pings) {
+            GameMember target = membersById.get(ping.getTargetMemberId());
+            if (target != null) {
+                GameMapMarker marker = toMarker(ping, target);
+                if (marker != null) {
+                    markers.add(marker);
+                }
+            }
+        }
+
+        if (markers.isEmpty()) {
             GameNotificationMessage message = notificationService.createStateChangedMessage(
-                    ping.getGameId(), GameNotificationMessage.TYPE_SPEEDHUNT_PING_CREATED);
-            message.setSpeedhuntId(ping.getSpeedhuntId());
-            message.setPingId(ping.getId());
-            notifyActiveHunters(ping.getGameId(), message);
+                    gameId, notificationType);
+            if (pings.size() == 1) {
+                GamePing ping = pings.get(0);
+                message.setSpeedhuntId(ping.getSpeedhuntId());
+                message.setPingId(ping.getId());
+            }
+            notifyActiveHunters(gameId, message);
             return;
         }
 
         Set<Long> notifiedUserIds = new HashSet<>();
-        for (GameMember member : getMembers(ping.getGameId())) {
+        for (GameMember member : members) {
             if (!canReceivePingUpdate(member)) {
                 continue;
             }
@@ -68,8 +102,8 @@ public class GameMapUpdateService {
             }
 
             GameMapUpdateMessage update = createUpdate(
-                    ping.getGameId(), GameMapUpdateMessage.TYPE_GAME_POSITION_UPDATED, true);
-            update.getMarkers().add(marker);
+                    gameId, GameMapUpdateMessage.TYPE_GAME_POSITION_UPDATED, true);
+            update.getMarkers().addAll(markers);
             gameConnectionManager.updateGameMap(player.getUserId(), update);
         }
     }

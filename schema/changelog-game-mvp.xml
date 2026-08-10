@@ -224,6 +224,7 @@
       <column name="speedhuntid" type="INT" />
       <column name="sequenceNumber" type="INT" />
       <column name="consumedJokerid" type="INT" />
+      <column name="scheduledAt" type="timestamp" />
       <column name="createdAt" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP">
         <constraints nullable="false" />
       </column>

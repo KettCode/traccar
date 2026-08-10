@@ -23,6 +23,7 @@ public class GamePing extends GameBaseModel {
     private long speedhuntId;
     private int sequenceNumber;
     private long consumedJokerId;
+    private Date scheduledAt;
     private Date createdAt = new Date();
 
     public long getTargetMemberId() {
@@ -111,6 +112,14 @@ public class GamePing extends GameBaseModel {
 
     public void setConsumedJokerId(long consumedJokerId) {
         this.consumedJokerId = consumedJokerId;
+    }
+
+    public Date getScheduledAt() {
+        return scheduledAt;
+    }
+
+    public void setScheduledAt(Date scheduledAt) {
+        this.scheduledAt = scheduledAt;
     }
 
     public Date getCreatedAt() {
