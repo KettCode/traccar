@@ -11,6 +11,7 @@ public class GameNotificationMessage {
     public static final String TYPE_CATCH_REVERTED = "catchReverted";
     public static final String TYPE_JOKER_CHANGED = "jokerChanged";
     public static final String TYPE_REGULAR_PING_CREATED = "regularPingCreated";
+    public static final String TYPE_MEMBER_CONVERTED_TO_HUNTER = "memberConvertedToHunter";
 
     private long gameId;
     private String type;
@@ -18,6 +19,7 @@ public class GameNotificationMessage {
     private Long gameGeofenceId;
     private Long speedhuntId;
     private Long pingId;
+    private Long memberId;
     private Long jokerId;
     private Long catchId;
     private Date createdAt = new Date();
@@ -68,6 +70,14 @@ public class GameNotificationMessage {
 
     public void setPingId(Long pingId) {
         this.pingId = pingId;
+    }
+
+    public Long getMemberId() {
+        return memberId;
+    }
+
+    public void setMemberId(Long memberId) {
+        this.memberId = memberId;
     }
 
     public Long getJokerId() {
