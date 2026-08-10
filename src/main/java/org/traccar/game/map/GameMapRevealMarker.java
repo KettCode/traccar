@@ -2,29 +2,27 @@ package org.traccar.game.map;
 
 import java.util.Date;
 
-public class GameMapMarker {
+public class GameMapRevealMarker {
 
-    private long gameId;
+    private long revealId;
     private long memberId;
-    private Long deviceId;
     private String displayName;
     private String role;
     private String status;
     private String source;
-    private Long pingId;
-    private Long speedhuntId;
     private Long positionId;
     private Double latitude;
     private Double longitude;
     private Double accuracy;
     private Date fixTime;
+    private Date revealedAt;
 
-    public long getGameId() {
-        return gameId;
+    public long getRevealId() {
+        return revealId;
     }
 
-    public void setGameId(long gameId) {
-        this.gameId = gameId;
+    public void setRevealId(long revealId) {
+        this.revealId = revealId;
     }
 
     public long getMemberId() {
@@ -33,14 +31,6 @@ public class GameMapMarker {
 
     public void setMemberId(long memberId) {
         this.memberId = memberId;
-    }
-
-    public Long getDeviceId() {
-        return deviceId;
-    }
-
-    public void setDeviceId(Long deviceId) {
-        this.deviceId = deviceId;
     }
 
     public String getDisplayName() {
@@ -73,22 +63,6 @@ public class GameMapMarker {
 
     public void setSource(String source) {
         this.source = source;
-    }
-
-    public Long getPingId() {
-        return pingId;
-    }
-
-    public void setPingId(Long pingId) {
-        this.pingId = pingId;
-    }
-
-    public Long getSpeedhuntId() {
-        return speedhuntId;
-    }
-
-    public void setSpeedhuntId(Long speedhuntId) {
-        this.speedhuntId = speedhuntId;
     }
 
     public Long getPositionId() {
@@ -129,6 +103,14 @@ public class GameMapMarker {
 
     public void setFixTime(Date fixTime) {
         this.fixTime = fixTime;
+    }
+
+    public Date getRevealedAt() {
+        return revealedAt;
+    }
+
+    public void setRevealedAt(Date revealedAt) {
+        this.revealedAt = revealedAt;
     }
 
 }
