@@ -1,6 +1,7 @@
 package org.traccar.game.state;
 
 import jakarta.inject.Inject;
+import org.traccar.game.GameStorage;
 import org.traccar.game.GameRuntimeContext;
 import org.traccar.game.GameRuntimePermissionService;
 import org.traccar.game.state.view.GameStateView;
@@ -47,6 +48,9 @@ public class GameStateService {
     @Inject
     private GameRuntimePermissionService runtimePermissionService;
 
+    @Inject
+    private GameStorage gameStorage;
+
     public GameStateView getState(long userId, long gameId, String include) throws StorageException {
         GameRuntimeContext context = runtimePermissionService.requireRunningMember(userId, gameId);
         if (context == null) {
@@ -55,7 +59,7 @@ public class GameStateService {
 
         Set<String> includes = parseIncludes(include);
         Game game = context.game();
-        List<GameMember> members = getMembers(gameId);
+        List<GameMember> members = gameStorage.getGameMembers(gameId);
         Map<Long, GameMember> membersById = indexMembers(members);
         List<GameSpeedhunt> speedhunts = getSpeedhunts(gameId);
         GameSpeedhunt activeSpeedhunt = getActiveSpeedhunt(speedhunts);
@@ -129,11 +133,6 @@ public class GameStateService {
             }
         }
         return result;
-    }
-
-    private List<GameMember> getMembers(long gameId) throws StorageException {
-        return storage.getObjects(GameMember.class, new Request(
-                new Columns.All(), new Condition.Equals("gameId", gameId), new Order("id")));
     }
 
     private Map<Long, GameMember> indexMembers(List<GameMember> members) {

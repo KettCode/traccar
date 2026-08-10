@@ -2,6 +2,7 @@ package org.traccar.game.speedhunt;
 
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
+import org.traccar.game.GameStorage;
 import org.traccar.game.GameRuntimeContext;
 import org.traccar.game.GameRuntimePermissionService;
 import org.traccar.game.map.GameMapUpdateService;
@@ -42,6 +43,9 @@ public class GameSpeedhuntService {
     private GameRuntimePermissionService runtimePermissionService;
 
     @Inject
+    private GameStorage gameStorage;
+
+    @Inject
     private GameNotificationService notificationService;
 
     @Inject
@@ -73,7 +77,7 @@ public class GameSpeedhuntService {
             throw new IllegalArgumentException("A speedhunt is already active");
         }
 
-        GameMember target = getTargetMember(gameId, targetMemberId);
+        GameMember target = gameStorage.getGameMember(gameId, targetMemberId);
         if (target == null) {
             throw new IllegalArgumentException("Speedhunt target not found");
         }
@@ -143,7 +147,7 @@ public class GameSpeedhuntService {
             throw new IllegalArgumentException("Speedhunt is not active");
         }
 
-        GameMember target = getTargetMember(context.game().getId(), speedhunt.getTargetMemberId());
+        GameMember target = gameStorage.getGameMember(context.game().getId(), speedhunt.getTargetMemberId());
         if (target == null) {
             throw new IllegalArgumentException("Speedhunt target not found");
         }
@@ -217,13 +221,6 @@ public class GameSpeedhuntService {
         if (!GameMember.STATUS_ACTIVE.equals(target.getStatus())) {
             throw new IllegalArgumentException("Speedhunt target must be active");
         }
-    }
-
-    private GameMember getTargetMember(long gameId, long targetMemberId) throws StorageException {
-        return storage.getObject(GameMember.class, new Request(
-                new Columns.All(), new Condition.And(
-                        new Condition.Equals("id", targetMemberId),
-                        new Condition.Equals("gameId", gameId))));
     }
 
     private List<GameSpeedhunt> getSpeedhunts(long gameId) throws StorageException {

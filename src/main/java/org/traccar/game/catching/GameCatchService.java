@@ -3,6 +3,7 @@ package org.traccar.game.catching;
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 import org.traccar.game.GameDevicePermissionService;
+import org.traccar.game.GameStorage;
 import org.traccar.game.GameRuntimeContext;
 import org.traccar.game.GameRuntimePermissionService;
 import org.traccar.game.notification.GameNotificationMessage;
@@ -51,6 +52,9 @@ public class GameCatchService {
     @Inject
     private GameDevicePermissionService devicePermissionService;
 
+    @Inject
+    private GameStorage gameStorage;
+
     public GameCatch createCatch(
             long userId, long gameId, long caughtMemberId, String note, HttpServletRequest request) throws Exception {
         GameRuntimeContext context = runtimePermissionService.requireGameManagement(userId, gameId);
@@ -58,7 +62,7 @@ public class GameCatchService {
             return null;
         }
 
-        GameMember target = getMember(gameId, caughtMemberId);
+        GameMember target = gameStorage.getGameMember(gameId, caughtMemberId);
         if (target == null) {
             throw new IllegalArgumentException("Caught member not found");
         }
@@ -107,7 +111,7 @@ public class GameCatchService {
             throw new IllegalArgumentException("Only active catches can be reverted");
         }
 
-        GameMember member = getMember(gameId, catchItem.getCaughtMemberId());
+        GameMember member = gameStorage.getGameMember(gameId, catchItem.getCaughtMemberId());
         if (member == null) {
             throw new IllegalArgumentException("Caught member not found");
         }
@@ -140,13 +144,12 @@ public class GameCatchService {
     }
 
     private void applyOptionalPosition(GameMember target, GameCatch catchItem) throws StorageException {
-        Player player = getPlayer(target.getPlayerId());
+        Player player = gameStorage.getPlayer(target.getPlayerId());
         if (player == null || player.getDeviceId() == 0) {
             return;
         }
 
-        Position position = storage.getObject(Position.class, new Request(
-                new Columns.All(), new Condition.LatestPositions(player.getDeviceId())));
+        Position position = gameStorage.getLatestPositionByDeviceId(player.getDeviceId());
         if (position == null) {
             return;
         }
@@ -250,18 +253,6 @@ public class GameCatchService {
         if (!GameMember.STATUS_ACTIVE.equals(member.getStatus())) {
             throw new IllegalArgumentException("Caught member must be active");
         }
-    }
-
-    private GameMember getMember(long gameId, long memberId) throws StorageException {
-        return storage.getObject(GameMember.class, new Request(
-                new Columns.All(), new Condition.And(
-                        new Condition.Equals("id", memberId),
-                        new Condition.Equals("gameId", gameId))));
-    }
-
-    private Player getPlayer(long playerId) throws StorageException {
-        return storage.getObject(Player.class, new Request(
-                new Columns.All(), new Condition.Equals("id", playerId)));
     }
 
     private GameCatch getCatch(long gameId, long catchId) throws StorageException {

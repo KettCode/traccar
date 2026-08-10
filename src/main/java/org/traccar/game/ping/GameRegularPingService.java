@@ -1,6 +1,7 @@
 package org.traccar.game.ping;
 
 import jakarta.inject.Inject;
+import org.traccar.game.GameStorage;
 import org.traccar.game.map.GameMapUpdateService;
 import org.traccar.game.notification.GamePushNotificationService;
 import org.traccar.helper.LogAction;
@@ -16,7 +17,6 @@ import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
 import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;
-import org.traccar.storage.query.Order;
 import org.traccar.storage.query.Request;
 
 import java.util.ArrayList;
@@ -44,6 +44,9 @@ public class GameRegularPingService {
     private CacheManager cacheManager;
 
     @Inject
+    private GameStorage gameStorage;
+
+    @Inject
     private GamePingService pingService;
 
     @Inject
@@ -54,7 +57,7 @@ public class GameRegularPingService {
 
     public void runDuePings() throws Exception {
         Date now = new Date();
-        List<Game> runningGames = getRunningGames();
+        List<Game> runningGames = gameStorage.getRunningGames();
         scheduleStates.keySet().retainAll(runningGames.stream().map(Game::getId).collect(Collectors.toSet()));
 
         for (Game game : runningGames) {
@@ -68,7 +71,7 @@ public class GameRegularPingService {
     }
 
     private boolean createRegularPings(Game game, RegularPingSlot slot, Date now) throws Exception {
-        List<GameMember> targets = getActiveHuntedMembers(game.getId());
+        List<GameMember> targets = gameStorage.getActiveHuntedMembers(game.getId());
         if (targets.isEmpty()) {
             return false;
         }
@@ -78,8 +81,8 @@ public class GameRegularPingService {
             return true;
         }
 
-        Map<Long, Player> playersById = getPlayersById(targets);
-        Map<Long, Position> latestPositionsByDeviceId = getLatestPositionsByDeviceId(playersById.values().stream()
+        Map<Long, Player> playersById = gameStorage.getPlayersByMembers(targets);
+        Map<Long, Position> latestPositionsByDeviceId = gameStorage.getLatestPositionsByDeviceIds(playersById.values().stream()
                 .map(Player::getDeviceId)
                 .filter(deviceId -> deviceId != 0)
                 .collect(Collectors.toSet()));
@@ -191,71 +194,13 @@ public class GameRegularPingService {
                 game.getStartedAt().getTime(), game.getPingIntervalSeconds(), slot.scheduledAt().getTime()));
     }
 
-    private List<Game> getRunningGames() throws StorageException {
-        return storage.getObjects(Game.class, new Request(
-                new Columns.All(), new Condition.Equals("status", Game.STATUS_RUNNING), new Order("id")));
-    }
-
-    private List<GameMember> getActiveHuntedMembers(long gameId) throws StorageException {
-        return storage.getObjects(GameMember.class, new Request(
-                new Columns.All(), new Condition.And(
-                        new Condition.And(
-                                new Condition.Equals("gameId", gameId),
-                                new Condition.Equals("role", GameMember.ROLE_HUNTED)),
-                        new Condition.Equals("status", GameMember.STATUS_ACTIVE)), new Order("id")));
-    }
-
     private Set<Long> getCompletedMemberIds(long gameId, Date scheduledAt) throws StorageException {
         Set<Long> result = new HashSet<>();
-        var pings = storage.getObjects(GamePing.class, new Request(
-                new Columns.All(), new Condition.And(
-                        new Condition.Equals("gameId", gameId),
-                        new Condition.Equals("scheduledAt", scheduledAt)), new Order("id")));
+        var pings = gameStorage.getGamePingsByScheduledAt(gameId, scheduledAt);
         for (GamePing ping : pings) {
             result.add(ping.getTargetMemberId());
         }
         return result;
-    }
-
-    private Map<Long, Player> getPlayersById(List<GameMember> members) throws StorageException {
-        Condition condition = null;
-        for (GameMember member : members) {
-            condition = addOrEquals(condition, "id", member.getPlayerId());
-        }
-        if (condition == null) {
-            return Map.of();
-        }
-
-        var result = new HashMap<Long, Player>();
-        var players = storage.getObjects(Player.class, new Request(new Columns.All(), condition, new Order("id")));
-        for (Player player : players) {
-            result.put(player.getId(), player);
-        }
-        return result;
-    }
-
-    private Map<Long, Position> getLatestPositionsByDeviceId(Set<Long> deviceIds) throws StorageException {
-        if (deviceIds.isEmpty()) {
-            return Map.of();
-        }
-
-        var result = new HashMap<Long, Position>();
-        var positions = storage.getObjects(Position.class, new Request(
-                new Columns.All(), new Condition.LatestPositions()));
-        for (Position position : positions) {
-            if (deviceIds.contains(position.getDeviceId())) {
-                result.put(position.getDeviceId(), position);
-            }
-        }
-        return result;
-    }
-
-    private Condition addOrEquals(Condition condition, String column, long value) {
-        Condition equals = new Condition.Equals(column, value);
-        if (condition == null) {
-            return equals;
-        }
-        return new Condition.Or(condition, equals);
     }
 
     private record RegularPingSlot(Date scheduledAt) {

@@ -5,12 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.traccar.model.Device;
 import org.traccar.model.GameMember;
 import org.traccar.model.Player;
-import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
-import org.traccar.storage.query.Columns;
-import org.traccar.storage.query.Condition;
-import org.traccar.storage.query.Order;
-import org.traccar.storage.query.Request;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -21,13 +16,13 @@ public class GameDevicePermissionService {
     private record GameParticipant(long userId, long deviceId, String role) {}
 
     @Inject
-    private Storage storage;
-
-    @Inject
     private GamePermissionService gamePermissionService;
 
     @Inject
     private GameValidatorService validator;
+
+    @Inject
+    private GameStorage gameStorage;
 
     public void validateActiveParticipants(long gameId) throws StorageException {
         List<GameParticipant> participants = getActiveParticipants(gameId);
@@ -47,7 +42,7 @@ public class GameDevicePermissionService {
 
     public void syncGameDevicePermissions(long userId, long gameId, HttpServletRequest httpRequest) throws Exception {
         List<GameParticipant> participants = getActiveParticipants(gameId);
-        clearGameDevicePermissions(userId, getPermissionParticipants(gameId), httpRequest);
+        clearGameDevicePermissions(userId, getNonLeftParticipants(gameId), httpRequest);
 
         var added = new HashSet<String>();
         for (GameParticipant participant : participants) {
@@ -64,43 +59,28 @@ public class GameDevicePermissionService {
     }
 
     public void clearGameDevicePermissions(long userId, long gameId, HttpServletRequest httpRequest) throws Exception {
-        clearGameDevicePermissions(userId, getPermissionParticipants(gameId), httpRequest);
+        clearGameDevicePermissions(userId, getNonLeftParticipants(gameId), httpRequest);
     }
 
     private List<GameParticipant> getActiveParticipants(long gameId) throws StorageException {
         var participants = new ArrayList<GameParticipant>();
-        for (GameMember member : getPermissionMembers(gameId)) {
-            if (GameMember.STATUS_ACTIVE.equals(member.getStatus())) {
-                participants.add(toParticipant(member));
-            }
-        }
-        return participants;
-    }
-
-    private List<GameParticipant> getPermissionParticipants(long gameId) throws StorageException {
-        var participants = new ArrayList<GameParticipant>();
-        for (GameMember member : getPermissionMembers(gameId)) {
+        for (GameMember member : gameStorage.getActiveGameMembers(gameId)) {
             participants.add(toParticipant(member));
         }
         return participants;
     }
 
-    private List<GameMember> getPermissionMembers(long gameId) throws StorageException {
-        var result = new ArrayList<GameMember>();
-        var members = storage.getObjects(GameMember.class, new Request(
-                new Columns.All(), new Condition.Equals("gameId", gameId), new Order("id")));
-        for (GameMember member : members) {
-            if (!GameMember.STATUS_LEFT.equals(member.getStatus())) {
-                result.add(member);
-            }
+    private List<GameParticipant> getNonLeftParticipants(long gameId) throws StorageException {
+        var participants = new ArrayList<GameParticipant>();
+        for (GameMember member : gameStorage.getNonLeftGameMembers(gameId)) {
+            participants.add(toParticipant(member));
         }
-        return result;
+        return participants;
     }
 
     private GameParticipant toParticipant(GameMember member) throws StorageException {
         validator.validateRole(member.getRole());
-        Player player = storage.getObject(Player.class, new Request(
-                new Columns.All(), new Condition.Equals("id", member.getPlayerId())));
+        Player player = gameStorage.getPlayer(member.getPlayerId());
         if (player == null || player.getUserId() == 0 || player.getDeviceId() == 0) {
             throw new IllegalArgumentException("Game member has invalid player assignment");
         }

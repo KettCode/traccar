@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
+import org.traccar.game.GameStorage;
 import org.traccar.game.GameRuntimeContext;
 import org.traccar.game.GameRuntimePermissionService;
 import org.traccar.game.joker.request.ActivateJokerRequest;
@@ -49,6 +50,9 @@ public class GameJokerService {
     private GameRuntimePermissionService runtimePermissionService;
 
     @Inject
+    private GameStorage gameStorage;
+
+    @Inject
     private GameNotificationService notificationService;
 
     @Inject
@@ -62,7 +66,7 @@ public class GameJokerService {
         }
 
         validateJokerType(type);
-        GameMember member = getMember(gameId, memberId);
+        GameMember member = gameStorage.getGameMember(gameId, memberId);
         if (member == null) {
             throw new IllegalArgumentException("Joker member not found");
         }
@@ -90,7 +94,7 @@ public class GameJokerService {
             return null;
         }
 
-        GameJoker joker = getJoker(gameId, jokerId);
+        GameJoker joker = gameStorage.getGameJoker(gameId, jokerId);
         if (joker == null) {
             return null;
         }
@@ -98,7 +102,7 @@ public class GameJokerService {
             throw new IllegalArgumentException("Joker is not unlocked");
         }
 
-        GameMember owner = getMember(gameId, joker.getMemberId());
+        GameMember owner = gameStorage.getGameMember(gameId, joker.getMemberId());
         if (owner == null) {
             throw new IllegalArgumentException("Joker member not found");
         }
@@ -114,13 +118,13 @@ public class GameJokerService {
             default -> throw new IllegalArgumentException("Invalid joker type");
         }
 
-        Player ownerPlayer = getPlayer(owner.getPlayerId());
+        Player ownerPlayer = gameStorage.getPlayer(owner.getPlayerId());
         if (ownerPlayer != null && ownerPlayer.getUserId() != userId) {
             notifyJokerChanged(gameId, joker);
             pushNotificationService.notifyJokerActivated(gameId, joker);
         }
 
-        return getJoker(gameId, jokerId);
+        return gameStorage.getGameJoker(gameId, jokerId);
     }
 
     public GameJoker cancelJoker(long userId, long gameId, long jokerId, HttpServletRequest request) throws Exception {
@@ -129,7 +133,7 @@ public class GameJokerService {
             return null;
         }
 
-        GameJoker joker = getJoker(gameId, jokerId);
+        GameJoker joker = gameStorage.getGameJoker(gameId, jokerId);
         if (joker == null) {
             return null;
         }
@@ -192,13 +196,12 @@ public class GameJokerService {
         GameReveal reveal = createReveal(
                 context.userId(), context.game().getId(), joker, GameReveal.TYPE_HUNTER_LOCATIONS,
                 0, null, request);
-        for (GameMember member : getActiveHunterMembers(context.game().getId())) {
-            Player player = getPlayer(member.getPlayerId());
+        for (GameMember member : gameStorage.getActiveHunterMembers(context.game().getId())) {
+            Player player = gameStorage.getPlayer(member.getPlayerId());
             if (player == null || player.getDeviceId() == 0) {
                 continue;
             }
-            Position position = storage.getObject(Position.class, new Request(
-                    new Columns.All(), new Condition.LatestPositions(player.getDeviceId())));
+            Position position = gameStorage.getLatestPositionByDeviceId(player.getDeviceId());
             if (position == null) {
                 continue;
             }
@@ -308,25 +311,6 @@ public class GameJokerService {
         }
     }
 
-    private GameJoker getJoker(long gameId, long jokerId) throws StorageException {
-        return storage.getObject(GameJoker.class, new Request(
-                new Columns.All(), new Condition.And(
-                        new Condition.Equals("id", jokerId),
-                        new Condition.Equals("gameId", gameId))));
-    }
-
-    private GameMember getMember(long gameId, long memberId) throws StorageException {
-        return storage.getObject(GameMember.class, new Request(
-                new Columns.All(), new Condition.And(
-                        new Condition.Equals("id", memberId),
-                        new Condition.Equals("gameId", gameId))));
-    }
-
-    private Player getPlayer(long playerId) throws StorageException {
-        return storage.getObject(Player.class, new Request(
-                new Columns.All(), new Condition.Equals("id", playerId)));
-    }
-
     private GameSpeedhunt getActiveSpeedhunt(long gameId) throws StorageException {
         var speedhunts = storage.getObjects(GameSpeedhunt.class, new Request(
                 new Columns.All(), new Condition.Equals("gameId", gameId), new Order("sequenceNumber")));
@@ -337,15 +321,6 @@ public class GameJokerService {
             }
         }
         return result;
-    }
-
-    private List<GameMember> getActiveHunterMembers(long gameId) throws StorageException {
-        return storage.getObjects(GameMember.class, new Request(
-                new Columns.All(), new Condition.And(
-                        new Condition.And(
-                                new Condition.Equals("gameId", gameId),
-                                new Condition.Equals("role", GameMember.ROLE_HUNTER)),
-                        new Condition.Equals("status", GameMember.STATUS_ACTIVE)), new Order("id")));
     }
 
     private void validateJokerOwner(GameMember member) {

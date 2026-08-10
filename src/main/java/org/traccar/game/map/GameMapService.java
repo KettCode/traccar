@@ -1,6 +1,7 @@
 package org.traccar.game.map;
 
 import jakarta.inject.Inject;
+import org.traccar.game.GameStorage;
 import org.traccar.game.GameRuntimeContext;
 import org.traccar.game.GameRuntimePermissionService;
 import org.traccar.game.map.view.GameMapView;
@@ -39,6 +40,9 @@ public class GameMapService {
     @Inject
     private GameRuntimePermissionService runtimePermissionService;
 
+    @Inject
+    private GameStorage gameStorage;
+
     public GameMapView getMap(long userId, long gameId, String include) throws StorageException {
         GameRuntimeContext context = runtimePermissionService.requireRunningMember(userId, gameId);
         if (context == null) {
@@ -46,7 +50,7 @@ public class GameMapService {
         }
         Set<String> includes = parseIncludes(include);
 
-        List<GameMember> members = getMembers(gameId);
+        List<GameMember> members = gameStorage.getGameMembers(gameId);
         Map<Long, GameMember> membersById = indexMembers(members);
 
         GameMapView view = new GameMapView();
@@ -80,8 +84,8 @@ public class GameMapService {
         List<GameMember> liveMembers = members.stream()
                 .filter(member -> canViewLiveMember(context, member))
                 .toList();
-        Map<Long, Player> playersById = getPlayersById(liveMembers);
-        Map<Long, Position> latestPositionsByDeviceId = getLatestPositionsByDeviceId(playersById.values().stream()
+        Map<Long, Player> playersById = gameStorage.getPlayersByMembers(liveMembers);
+        Map<Long, Position> latestPositionsByDeviceId = gameStorage.getLatestPositionsByDeviceIds(playersById.values().stream()
                 .map(Player::getDeviceId)
                 .filter(deviceId -> deviceId != 0)
                 .collect(Collectors.toSet()));
@@ -252,39 +256,6 @@ public class GameMapService {
         return result;
     }
 
-    private Map<Long, Player> getPlayersById(List<GameMember> members) throws StorageException {
-        Condition condition = null;
-        for (GameMember member : members) {
-            condition = addOrEquals(condition, "id", member.getPlayerId());
-        }
-        if (condition == null) {
-            return Map.of();
-        }
-
-        var result = new HashMap<Long, Player>();
-        var players = storage.getObjects(Player.class, new Request(new Columns.All(), condition, new Order("id")));
-        for (Player player : players) {
-            result.put(player.getId(), player);
-        }
-        return result;
-    }
-
-    private Map<Long, Position> getLatestPositionsByDeviceId(Set<Long> deviceIds) throws StorageException {
-        if (deviceIds.isEmpty()) {
-            return Map.of();
-        }
-
-        var result = new HashMap<Long, Position>();
-        var positions = storage.getObjects(Position.class, new Request(
-                new Columns.All(), new Condition.LatestPositions()));
-        for (Position position : positions) {
-            if (deviceIds.contains(position.getDeviceId())) {
-                result.put(position.getDeviceId(), position);
-            }
-        }
-        return result;
-    }
-
     private Map<Long, Geofence> getGeofencesById(List<GameGeofence> gameGeofences) throws StorageException {
         Condition condition = null;
         for (GameGeofence gameGeofence : gameGeofences) {
@@ -349,11 +320,6 @@ public class GameMapService {
                 && context.isHunter()
                 && GameMember.STATUS_ACTIVE.equals(member.getStatus())
                 && GameMember.ROLE_HUNTED.equals(member.getRole());
-    }
-
-    private List<GameMember> getMembers(long gameId) throws StorageException {
-        return storage.getObjects(GameMember.class, new Request(
-                new Columns.All(), new Condition.Equals("gameId", gameId), new Order("id")));
     }
 
     private Map<Long, GameMember> indexMembers(List<GameMember> members) {

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
+import org.traccar.game.GameStorage;
 import org.traccar.helper.LogAction;
 import org.traccar.model.Game;
 import org.traccar.model.GameJoker;
@@ -41,6 +42,9 @@ public class GamePingService {
 
     @Inject
     private ObjectMapper objectMapper;
+
+    @Inject
+    private GameStorage gameStorage;
 
     public GamePendingEffect getNextPendingEffect(long gameId, long memberId) throws StorageException {
         return getNextPendingEffects(gameId, Set.of(memberId)).get(memberId);
@@ -82,13 +86,12 @@ public class GamePingService {
     }
 
     public void applyRealPosition(Game game, GameMember target, GamePing ping, String source) throws StorageException {
-        Player player = getPlayer(target.getPlayerId());
+        Player player = gameStorage.getPlayer(target.getPlayerId());
         if (player == null || player.getDeviceId() == 0) {
             throw new IllegalArgumentException("Ping target has no valid device");
         }
 
-        Position position = storage.getObject(Position.class, new Request(
-                new Columns.All(), new Condition.LatestPositions(player.getDeviceId())));
+        Position position = gameStorage.getLatestPositionByDeviceId(player.getDeviceId());
         if (position == null) {
             throw new IllegalArgumentException("No position found for ping target");
         }
@@ -165,11 +168,6 @@ public class GamePingService {
         } catch (IOException e) {
             throw new IllegalArgumentException("Invalid fake ping payload", e);
         }
-    }
-
-    private Player getPlayer(long playerId) throws StorageException {
-        return storage.getObject(Player.class, new Request(
-                new Columns.All(), new Condition.Equals("id", playerId)));
     }
 
 }

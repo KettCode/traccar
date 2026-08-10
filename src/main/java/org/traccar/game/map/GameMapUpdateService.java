@@ -1,6 +1,7 @@
 package org.traccar.game.map;
 
 import jakarta.inject.Inject;
+import org.traccar.game.GameStorage;
 import org.traccar.game.GameRuntimeContext;
 import org.traccar.game.GameRuntimePermissionService;
 import org.traccar.game.GameService;
@@ -17,7 +18,6 @@ import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
 import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;
-import org.traccar.storage.query.Order;
 import org.traccar.storage.query.Request;
 
 import java.util.ArrayList;
@@ -34,6 +34,9 @@ public class GameMapUpdateService {
 
     @Inject
     private GameService gameService;
+
+    @Inject
+    private GameStorage gameStorage;
 
     @Inject
     private GameRuntimePermissionService runtimePermissionService;
@@ -62,7 +65,7 @@ public class GameMapUpdateService {
         }
 
         long gameId = pings.get(0).getGameId();
-        List<GameMember> members = getMembers(gameId);
+        List<GameMember> members = gameStorage.getGameMembers(gameId);
         Map<Long, GameMember> membersById = new HashMap<>();
         for (GameMember member : members) {
             membersById.put(member.getId(), member);
@@ -96,7 +99,7 @@ public class GameMapUpdateService {
             if (!canReceivePingUpdate(member)) {
                 continue;
             }
-            Player player = getPlayer(member.getPlayerId());
+            Player player = gameStorage.getPlayer(member.getPlayerId());
             if (player == null || player.getUserId() == 0 || !notifiedUserIds.add(player.getUserId())) {
                 continue;
             }
@@ -110,11 +113,11 @@ public class GameMapUpdateService {
 
     private void notifyActiveHunters(long gameId, GameNotificationMessage message) throws StorageException {
         Set<Long> notifiedUserIds = new HashSet<>();
-        for (GameMember member : getMembers(gameId)) {
+        for (GameMember member : gameStorage.getGameMembers(gameId)) {
             if (!canReceivePingUpdate(member)) {
                 continue;
             }
-            Player player = getPlayer(member.getPlayerId());
+            Player player = gameStorage.getPlayer(member.getPlayerId());
             if (player != null && player.getUserId() != 0 && notifiedUserIds.add(player.getUserId())) {
                 gameConnectionManager.updateGameNotification(player.getUserId(), message);
             }
@@ -138,11 +141,11 @@ public class GameMapUpdateService {
         }
 
         Set<Long> notifiedUserIds = new HashSet<>();
-        for (GameMember member : getMembers(gameGeofence.getGameId())) {
+        for (GameMember member : gameStorage.getGameMembers(gameGeofence.getGameId())) {
             if (!canReceiveMapUpdate(member)) {
                 continue;
             }
-            Player player = getPlayer(member.getPlayerId());
+            Player player = gameStorage.getPlayer(member.getPlayerId());
             if (player == null || player.getUserId() == 0 || !notifiedUserIds.add(player.getUserId())) {
                 continue;
             }
@@ -166,11 +169,11 @@ public class GameMapUpdateService {
 
     private void notifyGameMembers(long gameId, GameMapUpdateMessage update) throws StorageException {
         Set<Long> notifiedUserIds = new HashSet<>();
-        for (GameMember member : getMembers(gameId)) {
+        for (GameMember member : gameStorage.getGameMembers(gameId)) {
             if (!canReceiveMapUpdate(member)) {
                 continue;
             }
-            Player player = getPlayer(member.getPlayerId());
+            Player player = gameStorage.getPlayer(member.getPlayerId());
             if (player != null && player.getUserId() != 0 && notifiedUserIds.add(player.getUserId())) {
                 gameConnectionManager.updateGameMap(player.getUserId(), update);
             }
@@ -244,23 +247,6 @@ public class GameMapUpdateService {
     private boolean canReceivePingUpdate(GameMember member) {
         return GameMember.STATUS_ACTIVE.equals(member.getStatus())
                 && GameMember.ROLE_HUNTER.equals(member.getRole());
-    }
-
-    private GameMember getMember(long gameId, long memberId) throws StorageException {
-        return storage.getObject(GameMember.class, new Request(
-                new Columns.All(), new Condition.And(
-                        new Condition.Equals("id", memberId),
-                        new Condition.Equals("gameId", gameId))));
-    }
-
-    private List<GameMember> getMembers(long gameId) throws StorageException {
-        return storage.getObjects(GameMember.class, new Request(
-                new Columns.All(), new Condition.Equals("gameId", gameId), new Order("id")));
-    }
-
-    private Player getPlayer(long playerId) throws StorageException {
-        return storage.getObject(Player.class, new Request(
-                new Columns.All(), new Condition.Equals("id", playerId)));
     }
 
 }

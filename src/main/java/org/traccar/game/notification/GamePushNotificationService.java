@@ -3,6 +3,7 @@ package org.traccar.game.notification;
 import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.traccar.game.GameStorage;
 import org.traccar.model.GameJoker;
 import org.traccar.model.GameMember;
 import org.traccar.model.Player;
@@ -11,12 +12,7 @@ import org.traccar.model.User;
 import org.traccar.notificators.Notificator;
 import org.traccar.notification.NotificationMessage;
 import org.traccar.notification.NotificatorManager;
-import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
-import org.traccar.storage.query.Columns;
-import org.traccar.storage.query.Condition;
-import org.traccar.storage.query.Order;
-import org.traccar.storage.query.Request;
 
 import java.util.HashSet;
 import java.util.List;
@@ -29,13 +25,13 @@ public class GamePushNotificationService {
     private static final String SUBJECT = "Stadtjagd";
 
     @Inject
-    private Storage storage;
-
-    @Inject
     private NotificatorManager notificatorManager;
 
+    @Inject
+    private GameStorage gameStorage;
+
     public void notifySpeedhuntStarted(long gameId) throws StorageException {
-        notifyMembers(getMembers(gameId).stream()
+        notifyMembers(gameStorage.getGameMembers(gameId).stream()
                 .filter(member -> GameMember.STATUS_ACTIVE.equals(member.getStatus()))
                 .filter(member -> GameMember.ROLE_HUNTER.equals(member.getRole())
                         || GameMember.ROLE_GAME_MANAGEMENT.equals(member.getRole()))
@@ -43,7 +39,7 @@ public class GamePushNotificationService {
     }
 
     public void notifySpeedhuntPingCreated(long gameId) throws StorageException {
-        notifyMembers(getMembers(gameId).stream()
+        notifyMembers(gameStorage.getGameMembers(gameId).stream()
                 .filter(member -> GameMember.STATUS_ACTIVE.equals(member.getStatus()))
                 .filter(member -> GameMember.ROLE_HUNTER.equals(member.getRole())
                         || GameMember.ROLE_GAME_MANAGEMENT.equals(member.getRole()))
@@ -51,32 +47,32 @@ public class GamePushNotificationService {
     }
 
     public void notifyCatchCreated(long gameId) throws StorageException {
-        notifyMembers(getMembers(gameId).stream()
+        notifyMembers(gameStorage.getGameMembers(gameId).stream()
                 .filter(member -> !GameMember.STATUS_LEFT.equals(member.getStatus()))
                 .toList(), "Ein Spieler wurde gefangen.", true);
     }
 
     public void notifyCatchReverted(long gameId) throws StorageException {
-        notifyMembers(getMembers(gameId).stream()
+        notifyMembers(gameStorage.getGameMembers(gameId).stream()
                 .filter(member -> !GameMember.STATUS_LEFT.equals(member.getStatus()))
                 .toList(), "Ein Catch wurde zurueckgenommen.", true);
     }
 
     public void notifyRegularPingsCreated(long gameId) throws StorageException {
-        notifyMembers(getMembers(gameId).stream()
+        notifyMembers(gameStorage.getGameMembers(gameId).stream()
                 .filter(member -> !GameMember.STATUS_LEFT.equals(member.getStatus()))
                 .toList(), "Standorte wurden aktualisiert.", true);
     }
 
     public void notifyJokerUnlocked(long gameId, GameJoker joker) throws StorageException {
-        GameMember member = getMember(gameId, joker.getMemberId());
+        GameMember member = gameStorage.getGameMember(gameId, joker.getMemberId());
         if (member != null && GameMember.STATUS_ACTIVE.equals(member.getStatus())) {
             notifyMembers(List.of(member), "Ein Joker wurde fuer dich freigeschaltet.", false);
         }
     }
 
     public void notifyJokerActivated(long gameId, GameJoker joker) throws StorageException {
-        GameMember member = getMember(gameId, joker.getMemberId());
+        GameMember member = gameStorage.getGameMember(gameId, joker.getMemberId());
         if (member != null && GameMember.STATUS_ACTIVE.equals(member.getStatus())) {
             notifyMembers(List.of(member), "Ein Joker wurde fuer dich aktiviert.", false);
         }
@@ -93,7 +89,7 @@ public class GamePushNotificationService {
         if (targets.isEmpty()) {
             return;
         }
-        notifyMembers(getMembers(gameId).stream()
+        notifyMembers(gameStorage.getGameMembers(gameId).stream()
                 .filter(member -> GameMember.STATUS_ACTIVE.equals(member.getStatus()))
                 .filter(member -> GameMember.ROLE_GAME_MANAGEMENT.equals(member.getRole()))
                 .toList(), "Keine aktuellen Standorte fuer Regular-Pings von " + formatMemberNames(targets) + ".", true);
@@ -156,25 +152,11 @@ public class GamePushNotificationService {
     }
 
     private User getUser(GameMember member) throws StorageException {
-        Player player = storage.getObject(Player.class, new Request(
-                new Columns.All(), new Condition.Equals("id", member.getPlayerId())));
+        Player player = gameStorage.getPlayer(member.getPlayerId());
         if (player == null || player.getUserId() == 0) {
             return null;
         }
-        return storage.getObject(User.class, new Request(
-                new Columns.All(), new Condition.Equals("id", player.getUserId())));
-    }
-
-    private GameMember getMember(long gameId, long memberId) throws StorageException {
-        return storage.getObject(GameMember.class, new Request(
-                new Columns.All(), new Condition.And(
-                        new Condition.Equals("id", memberId),
-                        new Condition.Equals("gameId", gameId))));
-    }
-
-    private List<GameMember> getMembers(long gameId) throws StorageException {
-        return storage.getObjects(GameMember.class, new Request(
-                new Columns.All(), new Condition.Equals("gameId", gameId), new Order("id")));
+        return gameStorage.getUser(player.getUserId());
     }
 
 }

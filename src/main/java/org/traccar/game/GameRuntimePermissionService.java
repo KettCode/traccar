@@ -22,6 +22,9 @@ public class GameRuntimePermissionService {
     @Inject
     private GameService gameService;
 
+    @Inject
+    private GameStorage gameStorage;
+
     public GameRuntimeContext getContext(long userId, long gameId) throws StorageException {
         Game game = gameService.getGame(gameId);
         if (game == null) {
@@ -31,16 +34,12 @@ public class GameRuntimePermissionService {
             throw new IllegalArgumentException("Runtime permissions require a running game");
         }
 
-        Player player = storage.getObject(Player.class, new Request(
-                new Columns.All(), new Condition.Equals("userId", userId)));
+        Player player = gameStorage.getPlayerByUser(userId);
         if (player == null) {
             throw new SecurityException("Game member access denied");
         }
 
-        GameMember member = storage.getObject(GameMember.class, new Request(
-                new Columns.All(), new Condition.And(
-                        new Condition.Equals("gameId", gameId),
-                        new Condition.Equals("playerId", player.getId()))));
+        GameMember member = gameStorage.getGameMemberByPlayer(gameId, player.getId());
         if (member == null) {
             throw new SecurityException("Game member access denied");
         }
@@ -109,10 +108,7 @@ public class GameRuntimePermissionService {
             return null;
         }
 
-        GameJoker joker = storage.getObject(GameJoker.class, new Request(
-                new Columns.All(), new Condition.And(
-                        new Condition.Equals("id", jokerId),
-                        new Condition.Equals("gameId", gameId))));
+        GameJoker joker = gameStorage.getGameJoker(gameId, jokerId);
         if (joker == null) {
             throw new SecurityException("Joker access denied");
         }

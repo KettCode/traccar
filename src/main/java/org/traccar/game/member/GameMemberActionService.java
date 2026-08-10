@@ -3,6 +3,7 @@ package org.traccar.game.member;
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 import org.traccar.game.GameDevicePermissionService;
+import org.traccar.game.GameStorage;
 import org.traccar.game.GameRuntimePermissionService;
 import org.traccar.game.notification.GameNotificationMessage;
 import org.traccar.game.notification.GameNotificationService;
@@ -11,7 +12,6 @@ import org.traccar.model.GameMember;
 import org.traccar.model.ObjectOperation;
 import org.traccar.session.cache.CacheManager;
 import org.traccar.storage.Storage;
-import org.traccar.storage.StorageException;
 import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;
 import org.traccar.storage.query.Request;
@@ -34,6 +34,9 @@ public class GameMemberActionService {
     private GameDevicePermissionService devicePermissionService;
 
     @Inject
+    private GameStorage gameStorage;
+
+    @Inject
     private GameNotificationService notificationService;
 
     public GameMember convertCaughtHuntedToHunter(
@@ -42,7 +45,7 @@ public class GameMemberActionService {
             return null;
         }
 
-        GameMember member = getMember(gameId, memberId);
+        GameMember member = gameStorage.getGameMember(gameId, memberId);
         if (member == null) {
             return null;
         }
@@ -70,14 +73,7 @@ public class GameMemberActionService {
         message.setMemberId(memberId);
         notificationService.notifyGameMembers(gameId, message);
 
-        return getMember(gameId, memberId);
-    }
-
-    private GameMember getMember(long gameId, long memberId) throws StorageException {
-        return storage.getObject(GameMember.class, new Request(
-                new Columns.All(), new Condition.And(
-                        new Condition.Equals("id", memberId),
-                        new Condition.Equals("gameId", gameId))));
+        return gameStorage.getGameMember(gameId, memberId);
     }
 
 }
