@@ -95,12 +95,8 @@ public class GamePingService {
         applyPosition(game, ping, position, source);
     }
 
-    public boolean applyPositionIfValid(Game game, GamePing ping, Position position, String source) {
-        if (position == null || isPositionTooOld(game, position)) {
-            return false;
-        }
-        applyPosition(ping, position, source);
-        return true;
+    public boolean isPositionValid(Game game, Position position) {
+        return position != null && !isPositionTooOld(game, position);
     }
 
     public void consumeEffect(
@@ -136,7 +132,7 @@ public class GamePingService {
         applyPosition(ping, position, source);
     }
 
-    private void applyPosition(GamePing ping, Position position, String source) {
+    public void applyPosition(GamePing ping, Position position, String source) {
         ping.setSource(source);
         ping.setPositionId(position.getId());
         ping.setFixTime(position.getFixTime());

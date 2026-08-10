@@ -9,6 +9,7 @@ import org.traccar.game.GameRuntimePermissionService;
 import org.traccar.game.joker.request.ActivateJokerRequest;
 import org.traccar.game.notification.GameNotificationMessage;
 import org.traccar.game.notification.GameNotificationService;
+import org.traccar.game.notification.GamePushNotificationService;
 import org.traccar.helper.LogAction;
 import org.traccar.model.GameJoker;
 import org.traccar.model.GameMember;
@@ -50,6 +51,9 @@ public class GameJokerService {
     @Inject
     private GameNotificationService notificationService;
 
+    @Inject
+    private GamePushNotificationService pushNotificationService;
+
     public GameJoker unlockJoker(
             long userId, long gameId, long memberId, String type, HttpServletRequest request) throws Exception {
         GameRuntimeContext context = runtimePermissionService.requireGameManagement(userId, gameId);
@@ -74,6 +78,7 @@ public class GameJokerService {
         joker.setId(storage.addObject(joker, new Request(new Columns.Exclude("id"))));
         actionLogger.create(request, userId, joker);
         notifyJokerChanged(gameId, joker);
+        pushNotificationService.notifyJokerUnlocked(gameId, joker);
         return joker;
     }
 
@@ -112,6 +117,7 @@ public class GameJokerService {
         Player ownerPlayer = getPlayer(owner.getPlayerId());
         if (ownerPlayer != null && ownerPlayer.getUserId() != userId) {
             notifyJokerChanged(gameId, joker);
+            pushNotificationService.notifyJokerActivated(gameId, joker);
         }
 
         return getJoker(gameId, jokerId);

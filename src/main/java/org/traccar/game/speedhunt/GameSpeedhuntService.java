@@ -7,6 +7,7 @@ import org.traccar.game.GameRuntimePermissionService;
 import org.traccar.game.map.GameMapUpdateService;
 import org.traccar.game.notification.GameNotificationMessage;
 import org.traccar.game.notification.GameNotificationService;
+import org.traccar.game.notification.GamePushNotificationService;
 import org.traccar.game.ping.GamePingService;
 import org.traccar.helper.LogAction;
 import org.traccar.model.Game;
@@ -45,6 +46,9 @@ public class GameSpeedhuntService {
 
     @Inject
     private GameMapUpdateService mapUpdateService;
+
+    @Inject
+    private GamePushNotificationService pushNotificationService;
 
     @Inject
     private GamePingService pingService;
@@ -96,8 +100,9 @@ public class GameSpeedhuntService {
                 gameId, GameNotificationMessage.TYPE_SPEEDHUNT_STARTED);
         message.setSpeedhuntId(speedhunt.getId());
         notificationService.notifyGameMembers(gameId, message);
+        pushNotificationService.notifySpeedhuntStarted(gameId);
 
-        createSpeedhuntPing(context, speedhunt, request);
+        createSpeedhuntPing(context, speedhunt, request, false);
 
         return speedhunt;
     }
@@ -113,7 +118,7 @@ public class GameSpeedhuntService {
         if (speedhunt == null) {
             return null;
         }
-        return createSpeedhuntPing(context, speedhunt, request);
+        return createSpeedhuntPing(context, speedhunt, request, true);
     }
 
     public GameSpeedhunt finishSpeedhunt(
@@ -132,7 +137,8 @@ public class GameSpeedhuntService {
     }
 
     private GamePing createSpeedhuntPing(
-            GameRuntimeContext context, GameSpeedhunt speedhunt, HttpServletRequest request) throws Exception {
+            GameRuntimeContext context, GameSpeedhunt speedhunt, HttpServletRequest request,
+            boolean notifyPush) throws Exception {
         if (speedhunt.getEndedAt() != null) {
             throw new IllegalArgumentException("Speedhunt is not active");
         }
@@ -170,6 +176,9 @@ public class GameSpeedhuntService {
         }
 
         mapUpdateService.notifySpeedhuntPingCreated(ping);
+        if (notifyPush) {
+            pushNotificationService.notifySpeedhuntPingCreated(context.game().getId());
+        }
 
         if (ping.getSequenceNumber() >= speedhunt.getMaxPings()) {
             finishSpeedhunt(context, speedhunt, request);

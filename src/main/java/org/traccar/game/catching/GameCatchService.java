@@ -6,6 +6,7 @@ import org.traccar.game.GameRuntimeContext;
 import org.traccar.game.GameRuntimePermissionService;
 import org.traccar.game.notification.GameNotificationMessage;
 import org.traccar.game.notification.GameNotificationService;
+import org.traccar.game.notification.GamePushNotificationService;
 import org.traccar.helper.LogAction;
 import org.traccar.model.GameCatch;
 import org.traccar.model.GameJoker;
@@ -43,6 +44,9 @@ public class GameCatchService {
     @Inject
     private GameNotificationService notificationService;
 
+    @Inject
+    private GamePushNotificationService pushNotificationService;
+
     public GameCatch createCatch(
             long userId, long gameId, long caughtMemberId, String note, HttpServletRequest request) throws Exception {
         GameRuntimeContext context = runtimePermissionService.requireGameManagement(userId, gameId);
@@ -79,6 +83,7 @@ public class GameCatchService {
                 gameId, GameNotificationMessage.TYPE_CATCH_CREATED);
         message.setCatchId(catchItem.getId());
         notificationService.notifyGameMembers(gameId, message);
+        pushNotificationService.notifyCatchCreated(gameId);
 
         return catchItem;
     }
@@ -124,6 +129,7 @@ public class GameCatchService {
                 gameId, GameNotificationMessage.TYPE_CATCH_REVERTED);
         message.setCatchId(catchId);
         notificationService.notifyGameMembers(gameId, message);
+        pushNotificationService.notifyCatchReverted(gameId);
         return catchItem;
     }
 
