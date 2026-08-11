@@ -66,7 +66,7 @@ public class GameMemberActionService {
         cacheManager.invalidateObject(true, GameMember.class, memberId, ObjectOperation.UPDATE);
         actionLogger.edit(request, userId, update);
 
-        devicePermissionService.syncGameDevicePermissions(userId, gameId, request);
+        devicePermissionService.applyMemberConvertedToHunterPermissions(userId, gameId, memberId, request);
 
         GameNotificationMessage message = notificationService.createStateChangedMessage(
                 gameId, GameNotificationMessage.TYPE_MEMBER_CONVERTED_TO_HUNTER);

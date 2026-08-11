@@ -6,8 +6,10 @@ import org.traccar.model.GameMember;
 import org.traccar.model.Player;
 import org.traccar.storage.StorageException;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class GameNotificationService {
@@ -55,18 +57,18 @@ public class GameNotificationService {
 
     public void notifyManagementAndMember(
             long gameId, long memberId, GameNotificationMessage message) throws StorageException {
-        Set<Long> userIds = new HashSet<>();
-        addMemberUserIds(userIds, gameStorage.getGameMembersByRole(gameId, GameMember.ROLE_GAME_MANAGEMENT));
+        var members = new ArrayList<>(gameStorage.getGameMembersByRole(gameId, GameMember.ROLE_GAME_MANAGEMENT));
         GameMember member = gameStorage.getGameMember(gameId, memberId);
         if (member != null) {
-            addMemberUserId(userIds, member);
+            members.add(member);
         }
-        notifyUsers(userIds, message);
+        notifyMembers(members, message);
     }
 
     private void notifyMembers(List<GameMember> members, GameNotificationMessage message) throws StorageException {
+        Map<Long, Player> playersById = gameStorage.getPlayersByMembers(members);
         Set<Long> userIds = new HashSet<>();
-        addMemberUserIds(userIds, members);
+        addMemberUserIds(userIds, members, playersById);
         notifyUsers(userIds, message);
     }
 
@@ -76,17 +78,17 @@ public class GameNotificationService {
         }
     }
 
-    private void addMemberUserIds(Set<Long> userIds, List<GameMember> members) throws StorageException {
+    private void addMemberUserIds(Set<Long> userIds, List<GameMember> members, Map<Long, Player> playersById) {
         for (GameMember member : members) {
-            addMemberUserId(userIds, member);
+            addMemberUserId(userIds, member, playersById);
         }
     }
 
-    private void addMemberUserId(Set<Long> userIds, GameMember member) throws StorageException {
+    private void addMemberUserId(Set<Long> userIds, GameMember member, Map<Long, Player> playersById) {
         if (!canReceiveNotification(member)) {
             return;
         }
-        Player player = gameStorage.getPlayer(member.getPlayerId());
+        Player player = playersById.get(member.getPlayerId());
         if (player != null && player.getUserId() != 0) {
             userIds.add(player.getUserId());
         }

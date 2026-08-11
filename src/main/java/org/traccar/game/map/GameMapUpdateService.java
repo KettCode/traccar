@@ -94,32 +94,35 @@ public class GameMapUpdateService {
             return;
         }
 
+        Map<Long, Player> playersById = gameStorage.getPlayersByMembers(members);
         Set<Long> notifiedUserIds = new HashSet<>();
         for (GameMember member : members) {
             if (!canReceivePingUpdate(member)) {
                 continue;
             }
-            Player player = gameStorage.getPlayer(member.getPlayerId());
-            if (player == null || player.getUserId() == 0 || !notifiedUserIds.add(player.getUserId())) {
+            long playerUserId = getUserId(member, playersById);
+            if (playerUserId == 0 || !notifiedUserIds.add(playerUserId)) {
                 continue;
             }
 
             GameMapUpdateMessage update = createUpdate(
                     gameId, GameMapUpdateMessage.TYPE_GAME_POSITION_UPDATED, true);
             update.getMarkers().addAll(markers);
-            gameConnectionManager.updateGameMap(player.getUserId(), update);
+            gameConnectionManager.updateGameMap(playerUserId, update);
         }
     }
 
     private void notifyActiveHunters(long gameId, GameNotificationMessage message) throws StorageException {
+        List<GameMember> members = gameStorage.getGameMembers(gameId);
+        Map<Long, Player> playersById = gameStorage.getPlayersByMembers(members);
         Set<Long> notifiedUserIds = new HashSet<>();
-        for (GameMember member : gameStorage.getGameMembers(gameId)) {
+        for (GameMember member : members) {
             if (!canReceivePingUpdate(member)) {
                 continue;
             }
-            Player player = gameStorage.getPlayer(member.getPlayerId());
-            if (player != null && player.getUserId() != 0 && notifiedUserIds.add(player.getUserId())) {
-                gameConnectionManager.updateGameNotification(player.getUserId(), message);
+            long playerUserId = getUserId(member, playersById);
+            if (playerUserId != 0 && notifiedUserIds.add(playerUserId)) {
+                gameConnectionManager.updateGameNotification(playerUserId, message);
             }
         }
     }
@@ -140,12 +143,14 @@ public class GameMapUpdateService {
             return;
         }
 
+        List<GameMember> members = gameStorage.getGameMembers(gameGeofence.getGameId());
+        Map<Long, Player> playersById = gameStorage.getPlayersByMembers(members);
         Set<Long> notifiedUserIds = new HashSet<>();
-        for (GameMember member : gameStorage.getGameMembers(gameGeofence.getGameId())) {
+        for (GameMember member : members) {
             if (!canReceiveMapUpdate(member)) {
                 continue;
             }
-            Player player = gameStorage.getPlayer(member.getPlayerId());
+            Player player = playersById.get(member.getPlayerId());
             if (player == null || player.getUserId() == 0 || !notifiedUserIds.add(player.getUserId())) {
                 continue;
             }
@@ -168,16 +173,23 @@ public class GameMapUpdateService {
     }
 
     private void notifyGameMembers(long gameId, GameMapUpdateMessage update) throws StorageException {
+        List<GameMember> members = gameStorage.getGameMembers(gameId);
+        Map<Long, Player> playersById = gameStorage.getPlayersByMembers(members);
         Set<Long> notifiedUserIds = new HashSet<>();
-        for (GameMember member : gameStorage.getGameMembers(gameId)) {
+        for (GameMember member : members) {
             if (!canReceiveMapUpdate(member)) {
                 continue;
             }
-            Player player = gameStorage.getPlayer(member.getPlayerId());
-            if (player != null && player.getUserId() != 0 && notifiedUserIds.add(player.getUserId())) {
-                gameConnectionManager.updateGameMap(player.getUserId(), update);
+            long playerUserId = getUserId(member, playersById);
+            if (playerUserId != 0 && notifiedUserIds.add(playerUserId)) {
+                gameConnectionManager.updateGameMap(playerUserId, update);
             }
         }
+    }
+
+    private long getUserId(GameMember member, Map<Long, Player> playersById) {
+        Player player = playersById.get(member.getPlayerId());
+        return player != null ? player.getUserId() : 0;
     }
 
     private GameMapUpdateMessage createUpdate(long gameId, String type, boolean stateRefresh) {

@@ -40,8 +40,7 @@ public class GameLifecycleService {
         }
 
         validator.validateSettings(game);
-        devicePermissionService.validateActiveParticipants(gameId);
-        devicePermissionService.syncGameDevicePermissions(userId, gameId, httpRequest);
+        devicePermissionService.validateAndSyncGameDevicePermissions(userId, gameId, httpRequest);
 
         Game update = new Game();
         update.setId(gameId);

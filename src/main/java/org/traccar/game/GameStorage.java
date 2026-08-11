@@ -110,6 +110,29 @@ public class GameStorage {
                 new Columns.All(), new Condition.Equals("id", userId)));
     }
 
+    public Map<Long, User> getUsersByMembers(List<GameMember> members) throws StorageException {
+        Map<Long, Player> playersById = getPlayersByMembers(members);
+        Condition condition = null;
+        for (Player player : playersById.values()) {
+            if (player.getUserId() != 0) {
+                condition = addOrEquals(condition, "id", player.getUserId());
+            }
+        }
+
+        Map<Long, User> usersById = getUsersByCondition(condition);
+        var result = new HashMap<Long, User>();
+        for (GameMember member : members) {
+            Player player = playersById.get(member.getPlayerId());
+            if (player != null) {
+                User user = usersById.get(player.getUserId());
+                if (user != null) {
+                    result.put(member.getId(), user);
+                }
+            }
+        }
+        return result;
+    }
+
     public Map<Long, Player> getPlayersByMembers(List<GameMember> members) throws StorageException {
         Condition condition = null;
         for (GameMember member : members) {
@@ -146,6 +169,11 @@ public class GameStorage {
                         new Condition.Equals("scheduledAt", scheduledAt)), new Order("id")));
     }
 
+    public List<GamePing> getGamePings(long gameId) throws StorageException {
+        return storage.getObjects(GamePing.class, new Request(
+                new Columns.All(), new Condition.Equals("gameId", gameId), new Order("id")));
+    }
+
     private Map<Long, Player> getPlayersByCondition(Condition condition) throws StorageException {
         if (condition == null) {
             return Map.of();
@@ -155,6 +183,19 @@ public class GameStorage {
         var players = storage.getObjects(Player.class, new Request(new Columns.All(), condition, new Order("id")));
         for (Player player : players) {
             result.put(player.getId(), player);
+        }
+        return result;
+    }
+
+    private Map<Long, User> getUsersByCondition(Condition condition) throws StorageException {
+        if (condition == null) {
+            return Map.of();
+        }
+
+        var result = new HashMap<Long, User>();
+        var users = storage.getObjects(User.class, new Request(new Columns.All(), condition, new Order("id")));
+        for (User user : users) {
+            result.put(user.getId(), user);
         }
         return result;
     }

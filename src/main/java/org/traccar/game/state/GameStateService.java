@@ -63,8 +63,10 @@ public class GameStateService {
         Map<Long, GameMember> membersById = indexMembers(members);
         List<GameSpeedhunt> speedhunts = getSpeedhunts(gameId);
         GameSpeedhunt activeSpeedhunt = getActiveSpeedhunt(speedhunts);
+        Map<Long, List<GamePing>> pingsBySpeedhuntId = includes.contains(INCLUDE_SPEEDHUNT_HISTORY)
+                ? getSpeedhuntPingsBySpeedhuntId(gameId) : Map.of();
         List<GamePing> activeSpeedhuntPings = activeSpeedhunt != null
-                ? getSpeedhuntPings(gameId, activeSpeedhunt.getId()) : List.of();
+                ? getActiveSpeedhuntPings(gameId, activeSpeedhunt, pingsBySpeedhuntId) : List.of();
 
         GameStateView state = new GameStateView();
         state.setGame(toGameView(game));
@@ -81,7 +83,7 @@ public class GameStateService {
                     ? toSpeedhuntView(context, activeSpeedhunt, activeSpeedhuntPings, membersById) : null);
         }
         if (includes.contains(INCLUDE_SPEEDHUNT_HISTORY)) {
-            state.setSpeedhuntHistory(getSpeedhuntHistory(context, speedhunts, membersById));
+            state.setSpeedhuntHistory(getSpeedhuntHistory(context, speedhunts, membersById, pingsBySpeedhuntId));
         }
         if (includes.contains(INCLUDE_JOKERS)) {
             state.setJokers(getJokers(context, membersById));
@@ -163,6 +165,25 @@ public class GameStateService {
                 new Columns.All(), new Condition.And(
                         new Condition.Equals("gameId", gameId),
                         new Condition.Equals("speedhuntId", speedhuntId)), new Order("sequenceNumber")));
+    }
+
+    private Map<Long, List<GamePing>> getSpeedhuntPingsBySpeedhuntId(long gameId) throws StorageException {
+        var result = new HashMap<Long, List<GamePing>>();
+        for (GamePing ping : gameStorage.getGamePings(gameId)) {
+            if (ping.getSpeedhuntId() != 0) {
+                result.computeIfAbsent(ping.getSpeedhuntId(), key -> new ArrayList<>()).add(ping);
+            }
+        }
+        return result;
+    }
+
+    private List<GamePing> getActiveSpeedhuntPings(
+            long gameId, GameSpeedhunt activeSpeedhunt, Map<Long, List<GamePing>> pingsBySpeedhuntId)
+            throws StorageException {
+        if (!pingsBySpeedhuntId.isEmpty()) {
+            return pingsBySpeedhuntId.getOrDefault(activeSpeedhunt.getId(), List.of());
+        }
+        return getSpeedhuntPings(gameId, activeSpeedhunt.getId());
     }
 
     private GameStateView.GameView toGameView(Game game) {
@@ -302,7 +323,7 @@ public class GameStateService {
 
     private List<GameStateView.SpeedhuntView> getSpeedhuntHistory(
             GameRuntimeContext context, List<GameSpeedhunt> speedhunts,
-            Map<Long, GameMember> membersById) throws StorageException {
+            Map<Long, GameMember> membersById, Map<Long, List<GamePing>> pingsBySpeedhuntId) throws StorageException {
         if (!context.isGameManagement()) {
             return List.of();
         }
@@ -310,7 +331,7 @@ public class GameStateService {
         var result = new ArrayList<GameStateView.SpeedhuntView>();
         for (GameSpeedhunt speedhunt : speedhunts) {
             result.add(toSpeedhuntView(
-                    context, speedhunt, getSpeedhuntPings(context.game().getId(), speedhunt.getId()), membersById));
+                    context, speedhunt, pingsBySpeedhuntId.getOrDefault(speedhunt.getId(), List.of()), membersById));
         }
         return result;
     }

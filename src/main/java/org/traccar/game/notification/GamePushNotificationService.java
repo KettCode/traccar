@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import org.traccar.game.GameStorage;
 import org.traccar.model.GameJoker;
 import org.traccar.model.GameMember;
-import org.traccar.model.Player;
 import org.traccar.model.Typed;
 import org.traccar.model.User;
 import org.traccar.notificators.Notificator;
@@ -16,6 +15,7 @@ import org.traccar.storage.StorageException;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class GamePushNotificationService {
@@ -120,9 +120,10 @@ public class GamePushNotificationService {
         }
 
         NotificationMessage message = new NotificationMessage(SUBJECT, null, body, priority);
+        Map<Long, User> usersByMemberId = gameStorage.getUsersByMembers(members);
         Set<Long> notifiedUserIds = new HashSet<>();
         for (GameMember member : members) {
-            User user = getUser(member);
+            User user = usersByMemberId.get(member.getId());
             if (user == null || user.getDisabled() || !notifiedUserIds.add(user.getId())) {
                 continue;
             }
@@ -149,14 +150,6 @@ public class GamePushNotificationService {
             LOGGER.debug("Firebase notificator unavailable", e);
             return null;
         }
-    }
-
-    private User getUser(GameMember member) throws StorageException {
-        Player player = gameStorage.getPlayer(member.getPlayerId());
-        if (player == null || player.getUserId() == 0) {
-            return null;
-        }
-        return gameStorage.getUser(player.getUserId());
     }
 
 }
