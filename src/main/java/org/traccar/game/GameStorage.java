@@ -2,9 +2,13 @@ package org.traccar.game;
 
 import jakarta.inject.Inject;
 import org.traccar.model.Game;
+import org.traccar.model.GameCatch;
+import org.traccar.model.GameGeofence;
 import org.traccar.model.GameJoker;
 import org.traccar.model.GameMember;
 import org.traccar.model.GamePing;
+import org.traccar.model.GameSpeedhunt;
+import org.traccar.model.Geofence;
 import org.traccar.model.Player;
 import org.traccar.model.Position;
 import org.traccar.model.User;
@@ -93,6 +97,87 @@ public class GameStorage {
                 new Columns.All(), new Condition.And(
                         new Condition.Equals("id", jokerId),
                         new Condition.Equals("gameId", gameId))));
+    }
+
+    public GameGeofence getGameGeofence(long gameId, long gameGeofenceId) throws StorageException {
+        return storage.getObject(GameGeofence.class, new Request(
+                new Columns.All(), new Condition.And(
+                        new Condition.Equals("id", gameGeofenceId),
+                        new Condition.Equals("gameId", gameId))));
+    }
+
+    public List<GameGeofence> getActiveGameGeofencesByType(long gameId, String type) throws StorageException {
+        return storage.getObjects(GameGeofence.class, new Request(
+                new Columns.All(), new Condition.And(
+                        new Condition.And(
+                                new Condition.Equals("gameId", gameId),
+                                new Condition.Equals("type", type)),
+                        new Condition.Equals("active", true)), new Order("id")));
+    }
+
+    public Map<Long, Geofence> getGeofencesByGameGeofences(List<GameGeofence> gameGeofences) throws StorageException {
+        Condition condition = null;
+        for (GameGeofence gameGeofence : gameGeofences) {
+            condition = addOrEquals(condition, "id", gameGeofence.getGeofenceId());
+        }
+        if (condition == null) {
+            return Map.of();
+        }
+
+        var result = new HashMap<Long, Geofence>();
+        var geofences = storage.getObjects(Geofence.class, new Request(new Columns.All(), condition, new Order("id")));
+        for (Geofence geofence : geofences) {
+            result.put(geofence.getId(), geofence);
+        }
+        return result;
+    }
+
+    public GameCatch getGameCatch(long gameId, long catchId) throws StorageException {
+        return storage.getObject(GameCatch.class, new Request(
+                new Columns.All(), new Condition.And(
+                        new Condition.Equals("id", catchId),
+                        new Condition.Equals("gameId", gameId))));
+    }
+
+    public GameCatch getActiveGameCatchForMember(long gameId, long memberId) throws StorageException {
+        return storage.getObject(GameCatch.class, new Request(
+                new Columns.All(), new Condition.And(
+                        new Condition.And(
+                                new Condition.Equals("gameId", gameId),
+                                new Condition.Equals("caughtMemberId", memberId)),
+                        new Condition.Equals("status", GameCatch.STATUS_ACTIVE))));
+    }
+
+    public List<GameSpeedhunt> getGameSpeedhunts(long gameId) throws StorageException {
+        return storage.getObjects(GameSpeedhunt.class, new Request(
+                new Columns.All(), new Condition.Equals("gameId", gameId), new Order("sequenceNumber")));
+    }
+
+    public GameSpeedhunt getGameSpeedhunt(long gameId, long speedhuntId) throws StorageException {
+        return storage.getObject(GameSpeedhunt.class, new Request(
+                new Columns.All(), new Condition.And(
+                        new Condition.Equals("id", speedhuntId),
+                        new Condition.Equals("gameId", gameId))));
+    }
+
+    public GameSpeedhunt getActiveGameSpeedhunt(long gameId) throws StorageException {
+        GameSpeedhunt result = null;
+        for (GameSpeedhunt speedhunt : getGameSpeedhunts(gameId)) {
+            if (speedhunt.getEndedAt() == null) {
+                result = speedhunt;
+            }
+        }
+        return result;
+    }
+
+    public List<GameSpeedhunt> getActiveGameSpeedhuntsForTarget(long gameId, long targetMemberId)
+            throws StorageException {
+        return storage.getObjects(GameSpeedhunt.class, new Request(
+                new Columns.All(), new Condition.And(
+                        new Condition.Equals("gameId", gameId),
+                        new Condition.Equals("targetMemberId", targetMemberId)), new Order("sequenceNumber"))).stream()
+                .filter(speedhunt -> speedhunt.getEndedAt() == null)
+                .toList();
     }
 
     public Player getPlayer(long playerId) throws StorageException {

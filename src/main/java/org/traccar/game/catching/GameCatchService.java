@@ -67,7 +67,7 @@ public class GameCatchService {
             throw new IllegalArgumentException("Caught member not found");
         }
         validateCatchTarget(target);
-        if (getActiveCatch(gameId, caughtMemberId) != null) {
+        if (gameStorage.getActiveGameCatchForMember(gameId, caughtMemberId) != null) {
             throw new IllegalArgumentException("Member already has an active catch");
         }
 
@@ -103,7 +103,7 @@ public class GameCatchService {
             return null;
         }
 
-        GameCatch catchItem = getCatch(gameId, catchId);
+        GameCatch catchItem = gameStorage.getGameCatch(gameId, catchId);
         if (catchItem == null) {
             return null;
         }
@@ -131,16 +131,12 @@ public class GameCatchService {
         updateMemberActive(userId, member, request);
         devicePermissionService.applyCatchRevertedPermissions(userId, gameId, member.getId(), request);
 
-        catchItem.setStatus(GameCatch.STATUS_REVERTED);
-        catchItem.setRevertedAt(revertedAt);
-        catchItem.setRevertedByUserId(userId);
-
         GameNotificationMessage message = notificationService.createStateChangedMessage(
                 gameId, GameNotificationMessage.TYPE_CATCH_REVERTED);
         message.setCatchId(catchId);
         notificationService.notifyGameMembers(gameId, message);
         pushNotificationService.notifyCatchReverted(gameId);
-        return catchItem;
+        return gameStorage.getGameCatch(gameId, catchId);
     }
 
     private void applyOptionalPosition(GameMember target, GameCatch catchItem) throws StorageException {
@@ -188,22 +184,16 @@ public class GameCatchService {
 
     private void finishActiveSpeedhuntsForTarget(
             GameRuntimeContext context, long targetMemberId, HttpServletRequest request) throws Exception {
-        var speedhunts = storage.getObjects(GameSpeedhunt.class, new Request(
-                new Columns.All(), new Condition.And(
-                        new Condition.Equals("gameId", context.game().getId()),
-                        new Condition.Equals("targetMemberId", targetMemberId)), new Order("sequenceNumber")));
-        for (GameSpeedhunt speedhunt : speedhunts) {
-            if (speedhunt.getEndedAt() == null) {
-                Date endedAt = new Date();
-                GameSpeedhunt update = new GameSpeedhunt();
-                update.setId(speedhunt.getId());
-                update.setEndedAt(endedAt);
-                storage.updateObject(update, new Request(
-                        new Columns.Include("endedAt"),
-                        new Condition.Equals("id", speedhunt.getId())));
-                cacheManager.invalidateObject(true, GameSpeedhunt.class, speedhunt.getId(), ObjectOperation.UPDATE);
-                actionLogger.edit(request, context.userId(), update);
-            }
+        for (GameSpeedhunt speedhunt : gameStorage.getActiveGameSpeedhuntsForTarget(context.game().getId(), targetMemberId)) {
+            Date endedAt = new Date();
+            GameSpeedhunt update = new GameSpeedhunt();
+            update.setId(speedhunt.getId());
+            update.setEndedAt(endedAt);
+            storage.updateObject(update, new Request(
+                    new Columns.Include("endedAt"),
+                    new Condition.Equals("id", speedhunt.getId())));
+            cacheManager.invalidateObject(true, GameSpeedhunt.class, speedhunt.getId(), ObjectOperation.UPDATE);
+            actionLogger.edit(request, context.userId(), update);
         }
     }
 
@@ -253,22 +243,6 @@ public class GameCatchService {
         if (!GameMember.STATUS_ACTIVE.equals(member.getStatus())) {
             throw new IllegalArgumentException("Caught member must be active");
         }
-    }
-
-    private GameCatch getCatch(long gameId, long catchId) throws StorageException {
-        return storage.getObject(GameCatch.class, new Request(
-                new Columns.All(), new Condition.And(
-                        new Condition.Equals("id", catchId),
-                        new Condition.Equals("gameId", gameId))));
-    }
-
-    private GameCatch getActiveCatch(long gameId, long memberId) throws StorageException {
-        return storage.getObject(GameCatch.class, new Request(
-                new Columns.All(), new Condition.And(
-                        new Condition.And(
-                                new Condition.Equals("gameId", gameId),
-                                new Condition.Equals("caughtMemberId", memberId)),
-                        new Condition.Equals("status", GameCatch.STATUS_ACTIVE))));
     }
 
 }

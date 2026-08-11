@@ -2,6 +2,7 @@ package org.traccar.game.geofence;
 
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
+import org.traccar.game.GameStorage;
 import org.traccar.game.GameRuntimePermissionService;
 import org.traccar.game.map.GameMapUpdateService;
 import org.traccar.helper.LogAction;
@@ -9,7 +10,6 @@ import org.traccar.model.GameGeofence;
 import org.traccar.model.ObjectOperation;
 import org.traccar.session.cache.CacheManager;
 import org.traccar.storage.Storage;
-import org.traccar.storage.StorageException;
 import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;
 import org.traccar.storage.query.Request;
@@ -31,6 +31,9 @@ public class GameGeofenceActionService {
     private GameRuntimePermissionService runtimePermissionService;
 
     @Inject
+    private GameStorage gameStorage;
+
+    @Inject
     private GameMapUpdateService mapUpdateService;
 
     public GameGeofence activateGeofence(
@@ -49,7 +52,7 @@ public class GameGeofenceActionService {
             return null;
         }
 
-        GameGeofence gameGeofence = getGameGeofence(gameId, gameGeofenceId);
+        GameGeofence gameGeofence = gameStorage.getGameGeofence(gameId, gameGeofenceId);
         if (gameGeofence == null) {
             return null;
         }
@@ -72,13 +75,6 @@ public class GameGeofenceActionService {
             mapUpdateService.notifyGeofenceRemoved(gameId, gameGeofenceId);
         }
         return gameGeofence;
-    }
-
-    private GameGeofence getGameGeofence(long gameId, long gameGeofenceId) throws StorageException {
-        return storage.getObject(GameGeofence.class, new Request(
-                new Columns.All(), new Condition.And(
-                        new Condition.Equals("id", gameGeofenceId),
-                        new Condition.Equals("gameId", gameId))));
     }
 
 }

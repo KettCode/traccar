@@ -61,7 +61,7 @@ public class GameStateService {
         Game game = context.game();
         List<GameMember> members = gameStorage.getGameMembers(gameId);
         Map<Long, GameMember> membersById = indexMembers(members);
-        List<GameSpeedhunt> speedhunts = getSpeedhunts(gameId);
+        List<GameSpeedhunt> speedhunts = gameStorage.getGameSpeedhunts(gameId);
         GameSpeedhunt activeSpeedhunt = getActiveSpeedhunt(speedhunts);
         Map<Long, List<GamePing>> pingsBySpeedhuntId = includes.contains(INCLUDE_SPEEDHUNT_HISTORY)
                 ? getSpeedhuntPingsBySpeedhuntId(gameId) : Map.of();
@@ -143,11 +143,6 @@ public class GameStateService {
             result.put(member.getId(), member);
         }
         return result;
-    }
-
-    private List<GameSpeedhunt> getSpeedhunts(long gameId) throws StorageException {
-        return storage.getObjects(GameSpeedhunt.class, new Request(
-                new Columns.All(), new Condition.Equals("gameId", gameId), new Order("sequenceNumber")));
     }
 
     private GameSpeedhunt getActiveSpeedhunt(List<GameSpeedhunt> speedhunts) {

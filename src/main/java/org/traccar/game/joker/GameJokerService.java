@@ -12,12 +12,14 @@ import org.traccar.game.notification.GameNotificationMessage;
 import org.traccar.game.notification.GameNotificationService;
 import org.traccar.game.notification.GamePushNotificationService;
 import org.traccar.helper.LogAction;
+import org.traccar.model.GameGeofence;
 import org.traccar.model.GameJoker;
 import org.traccar.model.GameMember;
 import org.traccar.model.GamePendingEffect;
 import org.traccar.model.GameReveal;
 import org.traccar.model.GameRevealedPosition;
 import org.traccar.model.GameSpeedhunt;
+import org.traccar.model.Geofence;
 import org.traccar.model.ObjectOperation;
 import org.traccar.model.Player;
 import org.traccar.model.Position;
@@ -31,6 +33,8 @@ import org.traccar.storage.query.Request;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class GameJokerService {
 
@@ -109,12 +113,22 @@ public class GameJokerService {
         validateJokerOwner(owner);
 
         switch (joker.getType()) {
-            case GameJoker.TYPE_SKIP_PING -> activatePendingEffect(
-                    context, joker, GamePendingEffect.EFFECT_SKIP_NEXT_PING, null, request);
-            case GameJoker.TYPE_FAKE_PING -> activatePendingEffect(
-                    context, joker, GamePendingEffect.EFFECT_FAKE_NEXT_PING, getFakePayload(entity), request);
-            case GameJoker.TYPE_REVEAL_SPEEDHUNT -> activateSpeedhuntReveal(context, joker, request);
-            case GameJoker.TYPE_REQUEST_HUNTER_LOCATIONS -> activateHunterLocationReveal(context, joker, request);
+            case GameJoker.TYPE_SKIP_PING -> {
+                createPendingEffect(context, joker, GamePendingEffect.EFFECT_SKIP_NEXT_PING, null, request);
+                markJokerActivated(context.userId(), joker.getId(), request);
+            }
+            case GameJoker.TYPE_FAKE_PING -> {
+                createPendingEffect(context, joker, GamePendingEffect.EFFECT_FAKE_NEXT_PING, getFakePayload(context.game().getId(), entity), request);
+                markJokerActivated(context.userId(), joker.getId(), request);
+            }
+            case GameJoker.TYPE_REVEAL_SPEEDHUNT -> {
+                createSpeedhuntReveal(context, joker, request);
+                markJokerUsed(context.userId(), joker.getId(), request);
+            }
+            case GameJoker.TYPE_REQUEST_HUNTER_LOCATIONS -> {
+                createHunterLocationReveal(context, joker, request);
+                markJokerUsed(context.userId(), joker.getId(), request);
+            }
             default -> throw new IllegalArgumentException("Invalid joker type");
         }
 
@@ -159,7 +173,7 @@ public class GameJokerService {
         return joker;
     }
 
-    private void activatePendingEffect(
+    private void createPendingEffect(
             GameRuntimeContext context, GameJoker joker, String effect, String payload,
             HttpServletRequest request) throws Exception {
         GamePendingEffect pendingEffect = new GamePendingEffect();
@@ -172,13 +186,10 @@ public class GameJokerService {
         pendingEffect.setCreatedAt(new Date());
         pendingEffect.setId(storage.addObject(pendingEffect, new Request(new Columns.Exclude("id"))));
         actionLogger.create(request, context.userId(), pendingEffect);
-
-        updateJokerActivated(context.userId(), joker.getId(), request);
     }
 
-    private void activateSpeedhuntReveal(
-            GameRuntimeContext context, GameJoker joker, HttpServletRequest request) throws Exception {
-        GameSpeedhunt speedhunt = getActiveSpeedhunt(context.game().getId());
+    private void createSpeedhuntReveal(GameRuntimeContext context, GameJoker joker, HttpServletRequest request) throws Exception {
+        GameSpeedhunt speedhunt = gameStorage.getActiveGameSpeedhunt(context.game().getId());
         if (speedhunt == null) {
             throw new IllegalArgumentException("No active speedhunt found");
         }
@@ -188,20 +199,23 @@ public class GameJokerService {
 
         createReveal(context.userId(), context.game().getId(), joker, GameReveal.TYPE_SPEEDHUNT_TARGET,
                 speedhunt.getId(), payload.toString(), request);
-        markJokerUsed(context.userId(), joker.getId(), request);
     }
 
-    private void activateHunterLocationReveal(
-            GameRuntimeContext context, GameJoker joker, HttpServletRequest request) throws Exception {
-        GameReveal reveal = createReveal(
-                context.userId(), context.game().getId(), joker, GameReveal.TYPE_HUNTER_LOCATIONS,
-                0, null, request);
-        for (GameMember member : gameStorage.getActiveHunterMembers(context.game().getId())) {
-            Player player = gameStorage.getPlayer(member.getPlayerId());
+    private void createHunterLocationReveal(GameRuntimeContext context, GameJoker joker, HttpServletRequest request) throws Exception {
+        GameReveal reveal = createReveal(context.userId(), context.game().getId(), joker, GameReveal.TYPE_HUNTER_LOCATIONS,0, null, request);
+        List<GameMember> hunters = gameStorage.getActiveHunterMembers(context.game().getId());
+        Map<Long, Player> playersById = gameStorage.getPlayersByMembers(hunters);
+        Map<Long, Position> latestPositionsByDeviceId = gameStorage.getLatestPositionsByDeviceIds(
+                playersById.values().stream()
+                        .map(Player::getDeviceId)
+                        .filter(deviceId -> deviceId != 0)
+                        .collect(Collectors.toSet()));
+        for (GameMember member : hunters) {
+            Player player = playersById.get(member.getPlayerId());
             if (player == null || player.getDeviceId() == 0) {
                 continue;
             }
-            Position position = gameStorage.getLatestPositionByDeviceId(player.getDeviceId());
+            Position position = latestPositionsByDeviceId.get(player.getDeviceId());
             if (position == null) {
                 continue;
             }
@@ -217,7 +231,6 @@ public class GameJokerService {
             revealedPosition.setId(storage.addObject(revealedPosition, new Request(new Columns.Exclude("id"))));
             actionLogger.create(request, context.userId(), revealedPosition);
         }
-        markJokerUsed(context.userId(), joker.getId(), request);
     }
 
     private GameReveal createReveal(
@@ -236,11 +249,12 @@ public class GameJokerService {
         return reveal;
     }
 
-    private String getFakePayload(ActivateJokerRequest entity) {
+    private String getFakePayload(long gameId, ActivateJokerRequest entity) throws StorageException {
         if (entity == null || entity.getLatitude() == null || entity.getLongitude() == null) {
             throw new IllegalArgumentException("Fake ping requires latitude and longitude");
         }
         validateCoordinates(entity.getLatitude(), entity.getLongitude());
+        validateFakePingInActivePlayfield(gameId, entity.getLatitude(), entity.getLongitude());
         ObjectNode payload = objectMapper.createObjectNode();
         payload.put("latitude", entity.getLatitude());
         payload.put("longitude", entity.getLongitude());
@@ -248,6 +262,22 @@ public class GameJokerService {
             payload.put("accuracy", entity.getAccuracy());
         }
         return payload.toString();
+    }
+
+    private void validateFakePingInActivePlayfield(long gameId, double latitude, double longitude) throws StorageException {
+        List<GameGeofence> playfields = gameStorage.getActiveGameGeofencesByType(gameId, GameGeofence.TYPE_PLAYFIELD);
+        if (playfields.isEmpty()) {
+            return;
+        }
+
+        Map<Long, Geofence> geofencesById = gameStorage.getGeofencesByGameGeofences(playfields);
+        for (GameGeofence playfield : playfields) {
+            Geofence geofence = geofencesById.get(playfield.getGeofenceId());
+            if (geofence != null && geofence.getGeometry().containsPoint(latitude, longitude)) {
+                return;
+            }
+        }
+        throw new IllegalArgumentException("Fake ping must be inside the active playfield");
     }
 
     private void validateCoordinates(double latitude, double longitude) {
@@ -266,7 +296,7 @@ public class GameJokerService {
         notificationService.notifyMember(gameId, joker.getMemberId(), message);
     }
 
-    private void updateJokerActivated(long userId, long jokerId, HttpServletRequest request) throws Exception {
+    private void markJokerActivated(long userId, long jokerId, HttpServletRequest request) throws Exception {
         GameJoker update = new GameJoker();
         update.setId(jokerId);
         update.setStatus(GameJoker.STATUS_ACTIVATED);
@@ -309,18 +339,6 @@ public class GameJokerService {
             cacheManager.invalidateObject(true, GamePendingEffect.class, effect.getId(), ObjectOperation.UPDATE);
             actionLogger.edit(request, userId, update);
         }
-    }
-
-    private GameSpeedhunt getActiveSpeedhunt(long gameId) throws StorageException {
-        var speedhunts = storage.getObjects(GameSpeedhunt.class, new Request(
-                new Columns.All(), new Condition.Equals("gameId", gameId), new Order("sequenceNumber")));
-        GameSpeedhunt result = null;
-        for (GameSpeedhunt speedhunt : speedhunts) {
-            if (speedhunt.getEndedAt() == null) {
-                result = speedhunt;
-            }
-        }
-        return result;
     }
 
     private void validateJokerOwner(GameMember member) {

@@ -69,7 +69,7 @@ public class GameSpeedhuntService {
             throw new IllegalArgumentException("Speedhunts are disabled");
         }
 
-        List<GameSpeedhunt> speedhunts = getSpeedhunts(gameId);
+        List<GameSpeedhunt> speedhunts = gameStorage.getGameSpeedhunts(gameId);
         if (speedhunts.size() >= game.getSpeedhuntLimit()) {
             throw new IllegalArgumentException("No speedhunts remaining");
         }
@@ -118,7 +118,7 @@ public class GameSpeedhuntService {
             return null;
         }
 
-        GameSpeedhunt speedhunt = getSpeedhunt(gameId, speedhuntId);
+        GameSpeedhunt speedhunt = gameStorage.getGameSpeedhunt(gameId, speedhuntId);
         if (speedhunt == null) {
             return null;
         }
@@ -132,7 +132,7 @@ public class GameSpeedhuntService {
             return null;
         }
 
-        GameSpeedhunt speedhunt = getSpeedhunt(gameId, speedhuntId);
+        GameSpeedhunt speedhunt = gameStorage.getGameSpeedhunt(gameId, speedhuntId);
         if (speedhunt == null) {
             return null;
         }
@@ -221,18 +221,6 @@ public class GameSpeedhuntService {
         if (!GameMember.STATUS_ACTIVE.equals(target.getStatus())) {
             throw new IllegalArgumentException("Speedhunt target must be active");
         }
-    }
-
-    private List<GameSpeedhunt> getSpeedhunts(long gameId) throws StorageException {
-        return storage.getObjects(GameSpeedhunt.class, new Request(
-                new Columns.All(), new Condition.Equals("gameId", gameId), new Order("sequenceNumber")));
-    }
-
-    private GameSpeedhunt getSpeedhunt(long gameId, long speedhuntId) throws StorageException {
-        return storage.getObject(GameSpeedhunt.class, new Request(
-                new Columns.All(), new Condition.And(
-                        new Condition.Equals("id", speedhuntId),
-                        new Condition.Equals("gameId", gameId))));
     }
 
     private GameSpeedhunt getActiveSpeedhunt(List<GameSpeedhunt> speedhunts) {
