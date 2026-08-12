@@ -5,7 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.traccar.game.GameDevicePermissionService;
 import org.traccar.game.GameStorage;
 import org.traccar.game.GameRuntimePermissionService;
-import org.traccar.game.notification.GameNotificationMessage;
+import org.traccar.game.notification.message.GameNotificationMessage;
 import org.traccar.game.notification.GameNotificationService;
 import org.traccar.helper.LogAction;
 import org.traccar.model.GameMember;

@@ -1,4 +1,7 @@
-package org.traccar.game.map;
+package org.traccar.game.map.message;
+
+import org.traccar.game.map.view.GameMapGeofence;
+import org.traccar.game.map.view.GameMapMarker;
 
 import java.util.ArrayList;
 import java.util.Date;

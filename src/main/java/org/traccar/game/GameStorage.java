@@ -7,6 +7,8 @@ import org.traccar.model.GameGeofence;
 import org.traccar.model.GameJoker;
 import org.traccar.model.GameMember;
 import org.traccar.model.GamePing;
+import org.traccar.model.GameReveal;
+import org.traccar.model.GameRevealedPosition;
 import org.traccar.model.GameSpeedhunt;
 import org.traccar.model.Geofence;
 import org.traccar.model.Player;
@@ -69,20 +71,23 @@ public class GameStorage {
     }
 
     public List<GameMember> getActiveHuntedMembers(long gameId) throws StorageException {
-        return storage.getObjects(GameMember.class, new Request(
-                new Columns.All(), new Condition.And(
-                        new Condition.And(
-                                new Condition.Equals("gameId", gameId),
-                                new Condition.Equals("role", GameMember.ROLE_HUNTED)),
-                        new Condition.Equals("status", GameMember.STATUS_ACTIVE)), new Order("id")));
+        return getActiveGameMembersByRole(gameId, GameMember.ROLE_HUNTED);
     }
 
     public List<GameMember> getActiveHunterMembers(long gameId) throws StorageException {
+        return getActiveGameMembersByRole(gameId, GameMember.ROLE_HUNTER);
+    }
+
+    public List<GameMember> getActiveManagementMembers(long gameId) throws StorageException {
+        return getActiveGameMembersByRole(gameId, GameMember.ROLE_GAME_MANAGEMENT);
+    }
+
+    private List<GameMember> getActiveGameMembersByRole(long gameId, String role) throws StorageException {
         return storage.getObjects(GameMember.class, new Request(
                 new Columns.All(), new Condition.And(
                         new Condition.And(
                                 new Condition.Equals("gameId", gameId),
-                                new Condition.Equals("role", GameMember.ROLE_HUNTER)),
+                                new Condition.Equals("role", role)),
                         new Condition.Equals("status", GameMember.STATUS_ACTIVE)), new Order("id")));
     }
 
@@ -104,6 +109,11 @@ public class GameStorage {
                 new Columns.All(), new Condition.And(
                         new Condition.Equals("id", gameGeofenceId),
                         new Condition.Equals("gameId", gameId))));
+    }
+
+    public List<GameGeofence> getGameGeofences(long gameId) throws StorageException {
+        return storage.getObjects(GameGeofence.class, new Request(
+                new Columns.All(), new Condition.Equals("gameId", gameId), new Order("id")));
     }
 
     public List<GameGeofence> getActiveGameGeofencesByType(long gameId, String type) throws StorageException {
@@ -130,6 +140,11 @@ public class GameStorage {
             result.put(geofence.getId(), geofence);
         }
         return result;
+    }
+
+    public Geofence getGeofence(long geofenceId) throws StorageException {
+        return storage.getObject(Geofence.class, new Request(
+                new Columns.All(), new Condition.Equals("id", geofenceId)));
     }
 
     public GameCatch getGameCatch(long gameId, long catchId) throws StorageException {
@@ -257,6 +272,45 @@ public class GameStorage {
     public List<GamePing> getGamePings(long gameId) throws StorageException {
         return storage.getObjects(GamePing.class, new Request(
                 new Columns.All(), new Condition.Equals("gameId", gameId), new Order("id")));
+    }
+
+    public GameReveal getLatestHunterLocationReveal(long gameId, long memberId) throws StorageException {
+        var reveals = storage.getObjects(GameReveal.class, new Request(
+                new Columns.All(), new Condition.And(
+                        new Condition.And(
+                                new Condition.Equals("gameId", gameId),
+                                new Condition.Equals("memberId", memberId)),
+                        new Condition.Equals("type", GameReveal.TYPE_HUNTER_LOCATIONS)), new Order("id", true, 1)));
+        for (GameReveal reveal : reveals) {
+            if (reveal.getInvalidatedAt() == null) {
+                return reveal;
+            }
+        }
+        return null;
+    }
+
+    public List<GameRevealedPosition> getRevealedPositions(long revealId) throws StorageException {
+        return storage.getObjects(GameRevealedPosition.class, new Request(
+                new Columns.All(), new Condition.Equals("revealId", revealId), new Order("id")));
+    }
+
+    public Map<Long, GamePing> getLastVisiblePingsByMembers(List<GameMember> members) throws StorageException {
+        Condition condition = null;
+        for (GameMember member : members) {
+            if (member.getLastVisiblePingId() != 0) {
+                condition = addOrEquals(condition, "id", member.getLastVisiblePingId());
+            }
+        }
+        if (condition == null) {
+            return Map.of();
+        }
+
+        var result = new HashMap<Long, GamePing>();
+        var pings = storage.getObjects(GamePing.class, new Request(new Columns.All(), condition, new Order("id")));
+        for (GamePing ping : pings) {
+            result.put(ping.getTargetMemberId(), ping);
+        }
+        return result;
     }
 
     private Map<Long, Player> getPlayersByCondition(Condition condition) throws StorageException {

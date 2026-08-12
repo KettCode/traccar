@@ -1,4 +1,4 @@
-package org.traccar.game.notification;
+package org.traccar.game.socket;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -6,7 +6,9 @@ import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.traccar.game.map.GameMapUpdateMessage;
+import org.traccar.game.map.message.GameMapUpdateMessage;
+import org.traccar.game.notification.message.GameNotificationMessage;
+import org.traccar.game.session.GameConnectionManager;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.Collection;

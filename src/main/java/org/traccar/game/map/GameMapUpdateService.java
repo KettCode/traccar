@@ -5,20 +5,18 @@ import org.traccar.game.GameStorage;
 import org.traccar.game.GameRuntimeContext;
 import org.traccar.game.GameRuntimePermissionService;
 import org.traccar.game.GameService;
-import org.traccar.game.notification.GameConnectionManager;
-import org.traccar.game.notification.GameNotificationMessage;
+import org.traccar.game.map.message.GameMapUpdateMessage;
+import org.traccar.game.map.view.GameMapGeofence;
+import org.traccar.game.map.view.GameMapMarker;
+import org.traccar.game.notification.message.GameNotificationMessage;
 import org.traccar.game.notification.GameNotificationService;
+import org.traccar.game.session.GameConnectionManager;
 import org.traccar.model.Game;
 import org.traccar.model.GameGeofence;
 import org.traccar.model.GameMember;
 import org.traccar.model.GamePing;
-import org.traccar.model.Geofence;
 import org.traccar.model.Player;
-import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
-import org.traccar.storage.query.Columns;
-import org.traccar.storage.query.Condition;
-import org.traccar.storage.query.Request;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,11 +24,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 public class GameMapUpdateService {
-
-    @Inject
-    private Storage storage;
 
     @Inject
     private GameService gameService;
@@ -46,6 +42,9 @@ public class GameMapUpdateService {
 
     @Inject
     private GameNotificationService notificationService;
+
+    @Inject
+    private GameMapMapper mapMapper;
 
     public void notifySpeedhuntPingCreated(GamePing ping) throws StorageException {
         notifyPingsCreated(List.of(ping), GameNotificationMessage.TYPE_SPEEDHUNT_PING_CREATED);
@@ -66,64 +65,48 @@ public class GameMapUpdateService {
 
         long gameId = pings.get(0).getGameId();
         List<GameMember> members = gameStorage.getGameMembers(gameId);
-        Map<Long, GameMember> membersById = new HashMap<>();
-        for (GameMember member : members) {
-            membersById.put(member.getId(), member);
-        }
+        Map<Long, GameMember> membersById = indexMembers(members);
 
         var markers = new ArrayList<GameMapMarker>();
         for (GamePing ping : pings) {
             GameMember target = membersById.get(ping.getTargetMemberId());
             if (target != null) {
-                GameMapMarker marker = toMarker(ping, target);
+                GameMapMarker marker = mapMapper.toPingMarker(ping, target);
                 if (marker != null) {
                     markers.add(marker);
                 }
             }
         }
 
+        Map<Long, Player> playersById = gameStorage.getPlayersByMembers(members);
         if (markers.isEmpty()) {
-            GameNotificationMessage message = notificationService.createStateChangedMessage(
-                    gameId, notificationType);
-            if (pings.size() == 1) {
-                GamePing ping = pings.get(0);
-                message.setSpeedhuntId(ping.getSpeedhuntId());
-                message.setPingId(ping.getId());
-            }
-            notifyActiveHunters(gameId, message);
+            notifyActiveHunters(members, playersById, createPingStateChangedMessage(gameId, notificationType, pings));
             return;
         }
 
-        Map<Long, Player> playersById = gameStorage.getPlayersByMembers(members);
-        Set<Long> notifiedUserIds = new HashSet<>();
-        for (GameMember member : members) {
-            if (!canReceivePingUpdate(member)) {
-                continue;
-            }
-            long playerUserId = getUserId(member, playersById);
-            if (playerUserId == 0 || !notifiedUserIds.add(playerUserId)) {
-                continue;
-            }
-
-            GameMapUpdateMessage update = createUpdate(
-                    gameId, GameMapUpdateMessage.TYPE_GAME_POSITION_UPDATED, true);
+        for (long userId : getRecipientUserIds(members, playersById, runtimePermissionService::canReceivePingMapUpdates)) {
+            GameMapUpdateMessage update = createUpdate(gameId, GameMapUpdateMessage.TYPE_GAME_POSITION_UPDATED, false);
             update.getMarkers().addAll(markers);
-            gameConnectionManager.updateGameMap(playerUserId, update);
+            gameConnectionManager.updateGameMap(userId, update);
         }
     }
 
-    private void notifyActiveHunters(long gameId, GameNotificationMessage message) throws StorageException {
-        List<GameMember> members = gameStorage.getGameMembers(gameId);
-        Map<Long, Player> playersById = gameStorage.getPlayersByMembers(members);
-        Set<Long> notifiedUserIds = new HashSet<>();
-        for (GameMember member : members) {
-            if (!canReceivePingUpdate(member)) {
-                continue;
-            }
-            long playerUserId = getUserId(member, playersById);
-            if (playerUserId != 0 && notifiedUserIds.add(playerUserId)) {
-                gameConnectionManager.updateGameNotification(playerUserId, message);
-            }
+    private GameNotificationMessage createPingStateChangedMessage(
+            long gameId, String notificationType, List<GamePing> pings) {
+        GameNotificationMessage message = notificationService.createStateChangedMessage(gameId, notificationType);
+        if (GameNotificationMessage.TYPE_SPEEDHUNT_PING_CREATED.equals(notificationType) && pings.size() == 1) {
+            GamePing ping = pings.get(0);
+            message.setSpeedhuntId(ping.getSpeedhuntId());
+            message.setPingId(ping.getId());
+        }
+        return message;
+    }
+
+    private void notifyActiveHunters(
+            List<GameMember> members, Map<Long, Player> playersById, GameNotificationMessage message) {
+        for (long userId : getRecipientUserIds(
+                members, playersById, runtimePermissionService::canReceivePingMapUpdates)) {
+            gameConnectionManager.updateGameNotification(userId, message);
         }
     }
 
@@ -147,7 +130,7 @@ public class GameMapUpdateService {
         Map<Long, Player> playersById = gameStorage.getPlayersByMembers(members);
         Set<Long> notifiedUserIds = new HashSet<>();
         for (GameMember member : members) {
-            if (!canReceiveMapUpdate(member)) {
+            if (!runtimePermissionService.canReceiveMapUpdates(member)) {
                 continue;
             }
             Player player = playersById.get(member.getPlayerId());
@@ -158,7 +141,7 @@ public class GameMapUpdateService {
             GameRuntimeContext context = new GameRuntimeContext(player.getUserId(), game, member, player);
             if (runtimePermissionService.canViewGeofence(context, gameGeofence)) {
                 GameMapUpdateMessage update = createUpdate(
-                        gameGeofence.getGameId(), GameMapUpdateMessage.TYPE_GAME_GEOFENCE_UPDATED, true);
+                        gameGeofence.getGameId(), GameMapUpdateMessage.TYPE_GAME_GEOFENCE_UPDATED, false);
                 update.getGeofences().add(geofence);
                 gameConnectionManager.updateGameMap(player.getUserId(), update);
             }
@@ -175,16 +158,25 @@ public class GameMapUpdateService {
     private void notifyGameMembers(long gameId, GameMapUpdateMessage update) throws StorageException {
         List<GameMember> members = gameStorage.getGameMembers(gameId);
         Map<Long, Player> playersById = gameStorage.getPlayersByMembers(members);
-        Set<Long> notifiedUserIds = new HashSet<>();
+        for (long userId : getRecipientUserIds(
+                members, playersById, runtimePermissionService::canReceiveMapUpdates)) {
+            gameConnectionManager.updateGameMap(userId, update);
+        }
+    }
+
+    private Set<Long> getRecipientUserIds(
+            List<GameMember> members, Map<Long, Player> playersById, Predicate<GameMember> filter) {
+        Set<Long> userIds = new HashSet<>();
         for (GameMember member : members) {
-            if (!canReceiveMapUpdate(member)) {
+            if (!filter.test(member)) {
                 continue;
             }
             long playerUserId = getUserId(member, playersById);
-            if (playerUserId != 0 && notifiedUserIds.add(playerUserId)) {
-                gameConnectionManager.updateGameMap(playerUserId, update);
+            if (playerUserId != 0) {
+                userIds.add(playerUserId);
             }
         }
+        return userIds;
     }
 
     private long getUserId(GameMember member, Map<Long, Player> playersById) {
@@ -200,65 +192,16 @@ public class GameMapUpdateService {
         return update;
     }
 
-    private GameMapMarker toMarker(GamePing ping, GameMember target) {
-        if (ping.getSkipped()) {
-            return null;
-        }
-
-        GameMapMarker marker = new GameMapMarker();
-        marker.setGameId(ping.getGameId());
-        marker.setMemberId(target.getId());
-        marker.setDisplayName(target.getDisplayName());
-        marker.setRole(target.getRole());
-        marker.setStatus(target.getStatus());
-        marker.setSource(getClientSource(ping));
-        marker.setPingId(ping.getId());
-        if (ping.getSpeedhuntId() != 0) {
-            marker.setSpeedhuntId(ping.getSpeedhuntId());
-        }
-        if (ping.getPositionId() != 0) {
-            marker.setPositionId(ping.getPositionId());
-        }
-        marker.setFixTime(ping.getFixTime());
-        marker.setLatitude(ping.getLatitude());
-        marker.setLongitude(ping.getLongitude());
-        marker.setAccuracy(ping.getAccuracy());
-        return marker;
-    }
-
-    private String getClientSource(GamePing ping) {
-        if (ping.getSpeedhuntId() != 0) {
-            return GamePing.SOURCE_SPEEDHUNT;
-        }
-        return GamePing.SOURCE_REGULAR;
-    }
-
     private GameMapGeofence toGeofence(GameGeofence gameGeofence) throws StorageException {
-        Geofence geofence = storage.getObject(Geofence.class, new Request(
-                new Columns.All(), new Condition.Equals("id", gameGeofence.getGeofenceId())));
-        if (geofence == null) {
-            return null;
+        return mapMapper.toGeofence(gameGeofence, gameStorage.getGeofence(gameGeofence.getGeofenceId()));
+    }
+
+    private Map<Long, GameMember> indexMembers(List<GameMember> members) {
+        var result = new HashMap<Long, GameMember>();
+        for (GameMember member : members) {
+            result.put(member.getId(), member);
         }
-
-        GameMapGeofence view = new GameMapGeofence();
-        view.setId(gameGeofence.getId());
-        view.setGameId(gameGeofence.getGameId());
-        view.setGeofenceId(gameGeofence.getGeofenceId());
-        view.setName(gameGeofence.getName());
-        view.setType(gameGeofence.getType());
-        view.setRole(gameGeofence.getRole());
-        view.setArea(geofence.getArea());
-        return view;
-    }
-
-    private boolean canReceiveMapUpdate(GameMember member) {
-        return GameMember.STATUS_ACTIVE.equals(member.getStatus())
-                || GameMember.STATUS_CAUGHT.equals(member.getStatus());
-    }
-
-    private boolean canReceivePingUpdate(GameMember member) {
-        return GameMember.STATUS_ACTIVE.equals(member.getStatus())
-                && GameMember.ROLE_HUNTER.equals(member.getRole());
+        return result;
     }
 
 }

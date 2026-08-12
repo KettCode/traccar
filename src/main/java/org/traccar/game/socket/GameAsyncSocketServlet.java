@@ -1,4 +1,4 @@
-package org.traccar.game.notification;
+package org.traccar.game.socket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
@@ -9,6 +9,7 @@ import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServletFactory;
 import org.traccar.api.security.LoginService;
 import org.traccar.config.Config;
 import org.traccar.config.Keys;
+import org.traccar.game.session.GameConnectionManager;
 import org.traccar.helper.SessionHelper;
 import org.traccar.storage.StorageException;
 

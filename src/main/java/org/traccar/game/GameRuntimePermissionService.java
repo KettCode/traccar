@@ -158,6 +158,43 @@ public class GameRuntimePermissionService {
                 || geofence.getRole().equals(context.member().getRole());
     }
 
+    public boolean canViewLiveMapMember(GameRuntimeContext context, GameMember member) {
+        if (!context.isActive() || !GameMember.STATUS_ACTIVE.equals(member.getStatus())) {
+            return false;
+        }
+        if (context.isGameManagement()) {
+            return true;
+        }
+        if (context.isHunter()) {
+            return GameMember.ROLE_HUNTER.equals(member.getRole())
+                    || GameMember.ROLE_GAME_MANAGEMENT.equals(member.getRole());
+        }
+        return context.isHunted() && (GameMember.ROLE_HUNTED.equals(member.getRole())
+                || GameMember.ROLE_GAME_MANAGEMENT.equals(member.getRole()));
+    }
+
+    public boolean canViewPingMapMember(GameRuntimeContext context, GameMember member) {
+        return context.isActive()
+                && context.isHunter()
+                && GameMember.STATUS_ACTIVE.equals(member.getStatus())
+                && GameMember.ROLE_HUNTED.equals(member.getRole());
+    }
+
+    public boolean canReceiveMapUpdates(GameMember member) {
+        return GameMember.STATUS_ACTIVE.equals(member.getStatus())
+                || GameMember.STATUS_CAUGHT.equals(member.getStatus());
+    }
+
+    public boolean canReceiveStateNotifications(GameMember member) {
+        return GameMember.STATUS_ACTIVE.equals(member.getStatus())
+                || GameMember.STATUS_CAUGHT.equals(member.getStatus());
+    }
+
+    public boolean canReceivePingMapUpdates(GameMember member) {
+        return GameMember.STATUS_ACTIVE.equals(member.getStatus())
+                && GameMember.ROLE_HUNTER.equals(member.getRole());
+    }
+
     public boolean canViewSpeedhuntTarget(GameRuntimeContext context, GameSpeedhunt speedhunt)
             throws StorageException {
         if (context.isGameManagement() || context.isHunter()) {

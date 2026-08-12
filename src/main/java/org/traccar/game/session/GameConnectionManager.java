@@ -1,7 +1,8 @@
-package org.traccar.game.notification;
+package org.traccar.game.session;
 
 import jakarta.inject.Singleton;
-import org.traccar.game.map.GameMapUpdateMessage;
+import org.traccar.game.map.message.GameMapUpdateMessage;
+import org.traccar.game.notification.message.GameNotificationMessage;
 
 import java.util.HashMap;
 import java.util.HashSet;

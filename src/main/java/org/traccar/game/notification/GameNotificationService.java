@@ -1,12 +1,14 @@
 package org.traccar.game.notification;
 
 import jakarta.inject.Inject;
+import org.traccar.game.GameRuntimePermissionService;
 import org.traccar.game.GameStorage;
+import org.traccar.game.notification.message.GameNotificationMessage;
+import org.traccar.game.session.GameConnectionManager;
 import org.traccar.model.GameMember;
 import org.traccar.model.Player;
 import org.traccar.storage.StorageException;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +21,9 @@ public class GameNotificationService {
 
     @Inject
     private GameStorage gameStorage;
+
+    @Inject
+    private GameRuntimePermissionService runtimePermissionService;
 
     public GameNotificationMessage createMessage(long gameId, String type, boolean stateRefresh) {
         GameNotificationMessage message = new GameNotificationMessage();
@@ -36,33 +41,11 @@ public class GameNotificationService {
         notifyMembers(gameStorage.getGameMembers(gameId), message);
     }
 
-    public void notifyGameMembers(long gameId, String type, boolean stateRefresh) throws StorageException {
-        notifyGameMembers(gameId, createMessage(gameId, type, stateRefresh));
-    }
-
-    public void notifyManagement(long gameId, GameNotificationMessage message) throws StorageException {
-        notifyMembers(gameStorage.getGameMembersByRole(gameId, GameMember.ROLE_GAME_MANAGEMENT), message);
-    }
-
-    public void notifyRole(long gameId, String role, GameNotificationMessage message) throws StorageException {
-        notifyMembers(gameStorage.getGameMembersByRole(gameId, role), message);
-    }
-
     public void notifyMember(long gameId, long memberId, GameNotificationMessage message) throws StorageException {
         GameMember member = gameStorage.getGameMember(gameId, memberId);
         if (member != null) {
             notifyMembers(List.of(member), message);
         }
-    }
-
-    public void notifyManagementAndMember(
-            long gameId, long memberId, GameNotificationMessage message) throws StorageException {
-        var members = new ArrayList<>(gameStorage.getGameMembersByRole(gameId, GameMember.ROLE_GAME_MANAGEMENT));
-        GameMember member = gameStorage.getGameMember(gameId, memberId);
-        if (member != null) {
-            members.add(member);
-        }
-        notifyMembers(members, message);
     }
 
     private void notifyMembers(List<GameMember> members, GameNotificationMessage message) throws StorageException {
@@ -85,18 +68,13 @@ public class GameNotificationService {
     }
 
     private void addMemberUserId(Set<Long> userIds, GameMember member, Map<Long, Player> playersById) {
-        if (!canReceiveNotification(member)) {
+        if (!runtimePermissionService.canReceiveStateNotifications(member)) {
             return;
         }
         Player player = playersById.get(member.getPlayerId());
         if (player != null && player.getUserId() != 0) {
             userIds.add(player.getUserId());
         }
-    }
-
-    private boolean canReceiveNotification(GameMember member) {
-        return GameMember.STATUS_ACTIVE.equals(member.getStatus())
-                || GameMember.STATUS_CAUGHT.equals(member.getStatus());
     }
 
 }

@@ -17,7 +17,7 @@ package org.traccar.web;
 
 import com.google.inject.servlet.ServletModule;
 import org.traccar.api.AsyncSocketServlet;
-import org.traccar.game.notification.GameAsyncSocketServlet;
+import org.traccar.game.socket.GameAsyncSocketServlet;
 
 public class WebModule extends ServletModule {
 

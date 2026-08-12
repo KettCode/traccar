@@ -6,7 +6,7 @@ import org.traccar.game.GameStorage;
 import org.traccar.game.GameRuntimeContext;
 import org.traccar.game.GameRuntimePermissionService;
 import org.traccar.game.map.GameMapUpdateService;
-import org.traccar.game.notification.GameNotificationMessage;
+import org.traccar.game.notification.message.GameNotificationMessage;
 import org.traccar.game.notification.GameNotificationService;
 import org.traccar.game.notification.GamePushNotificationService;
 import org.traccar.game.ping.GamePingService;
@@ -173,6 +173,7 @@ public class GameSpeedhuntService {
         }
 
         ping.setId(storage.addObject(ping, new Request(new Columns.Exclude("id"))));
+        pingService.markLastVisiblePing(ping);
         actionLogger.create(request, context.userId(), ping);
 
         if (effect != null) {

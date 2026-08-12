@@ -15,7 +15,7 @@
  */
 package org.traccar.schedule;
 
-import org.traccar.game.notification.GameConnectionManager;
+import org.traccar.game.session.GameConnectionManager;
 import org.traccar.session.ConnectionManager;
 
 import jakarta.inject.Inject;

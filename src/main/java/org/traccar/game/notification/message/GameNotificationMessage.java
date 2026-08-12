@@ -1,4 +1,4 @@
-package org.traccar.game.notification;
+package org.traccar.game.notification.message;
 
 import java.util.Date;
 

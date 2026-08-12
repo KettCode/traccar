@@ -128,6 +128,20 @@ public class GamePingService {
         }
     }
 
+    public void markLastVisiblePing(GamePing ping) throws Exception {
+        if (ping.getSkipped()) {
+            return;
+        }
+
+        GameMember member = new GameMember();
+        member.setId(ping.getTargetMemberId());
+        member.setLastVisiblePingId(ping.getId());
+        storage.updateObject(member, new Request(
+                new Columns.Include("lastVisiblePingId"),
+                new Condition.Equals("id", ping.getTargetMemberId())));
+        cacheManager.invalidateObject(true, GameMember.class, ping.getTargetMemberId(), ObjectOperation.UPDATE);
+    }
+
     private void applyPosition(Game game, GamePing ping, Position position, String source) {
         if (isPositionTooOld(game, position)) {
             throw new IllegalArgumentException("Latest target position is too old");

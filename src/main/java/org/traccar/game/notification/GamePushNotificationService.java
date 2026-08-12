@@ -31,37 +31,23 @@ public class GamePushNotificationService {
     private GameStorage gameStorage;
 
     public void notifySpeedhuntStarted(long gameId) throws StorageException {
-        notifyMembers(gameStorage.getGameMembers(gameId).stream()
-                .filter(member -> GameMember.STATUS_ACTIVE.equals(member.getStatus()))
-                .filter(member -> GameMember.ROLE_HUNTER.equals(member.getRole())
-                        || GameMember.ROLE_GAME_MANAGEMENT.equals(member.getRole()))
-                .toList(), "Ein neuer Speedhunt wurde gestartet.", true);
+        notifyMembers(gameStorage.getNonLeftGameMembers(gameId), "Ein neuer Speedhunt wurde gestartet.", true);
     }
 
     public void notifySpeedhuntPingCreated(long gameId) throws StorageException {
-        notifyMembers(gameStorage.getGameMembers(gameId).stream()
-                .filter(member -> GameMember.STATUS_ACTIVE.equals(member.getStatus()))
-                .filter(member -> GameMember.ROLE_HUNTER.equals(member.getRole())
-                        || GameMember.ROLE_GAME_MANAGEMENT.equals(member.getRole()))
-                .toList(), "Ein Speedhunt-Ping wurde angefordert.", true);
+        notifyMembers(gameStorage.getNonLeftGameMembers(gameId), "Ein Speedhunt-Ping wurde angefordert.", true);
     }
 
     public void notifyCatchCreated(long gameId) throws StorageException {
-        notifyMembers(gameStorage.getGameMembers(gameId).stream()
-                .filter(member -> !GameMember.STATUS_LEFT.equals(member.getStatus()))
-                .toList(), "Ein Spieler wurde gefangen.", true);
+        notifyMembers(gameStorage.getNonLeftGameMembers(gameId), "Ein Spieler wurde gefangen.", true);
     }
 
     public void notifyCatchReverted(long gameId) throws StorageException {
-        notifyMembers(gameStorage.getGameMembers(gameId).stream()
-                .filter(member -> !GameMember.STATUS_LEFT.equals(member.getStatus()))
-                .toList(), "Ein Catch wurde zurueckgenommen.", true);
+        notifyMembers(gameStorage.getNonLeftGameMembers(gameId), "Ein Catch wurde zurueckgenommen.", true);
     }
 
     public void notifyRegularPingsCreated(long gameId) throws StorageException {
-        notifyMembers(gameStorage.getGameMembers(gameId).stream()
-                .filter(member -> !GameMember.STATUS_LEFT.equals(member.getStatus()))
-                .toList(), "Standorte wurden aktualisiert.", true);
+        notifyMembers(gameStorage.getNonLeftGameMembers(gameId), "Standorte wurden aktualisiert.", true);
     }
 
     public void notifyJokerUnlocked(long gameId, GameJoker joker) throws StorageException {
@@ -89,10 +75,9 @@ public class GamePushNotificationService {
         if (targets.isEmpty()) {
             return;
         }
-        notifyMembers(gameStorage.getGameMembers(gameId).stream()
-                .filter(member -> GameMember.STATUS_ACTIVE.equals(member.getStatus()))
-                .filter(member -> GameMember.ROLE_GAME_MANAGEMENT.equals(member.getRole()))
-                .toList(), "Keine aktuellen Standorte fuer Regular-Pings von " + formatMemberNames(targets) + ".", true);
+        notifyMembers(
+                gameStorage.getActiveManagementMembers(gameId),
+                "Keine aktuellen Standorte fuer Regular-Pings von " + formatMemberNames(targets) + ".", true);
     }
 
     private String formatMemberNames(List<GameMember> members) {

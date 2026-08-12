@@ -1,4 +1,4 @@
-package org.traccar.game.map;
+package org.traccar.game.map.view;
 
 public class GameMapGeofence {
 

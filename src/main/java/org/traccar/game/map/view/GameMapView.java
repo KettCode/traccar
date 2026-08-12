@@ -1,9 +1,5 @@
 package org.traccar.game.map.view;
 
-import org.traccar.game.map.GameMapGeofence;
-import org.traccar.game.map.GameMapMarker;
-import org.traccar.game.map.GameMapRevealMarker;
-
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;

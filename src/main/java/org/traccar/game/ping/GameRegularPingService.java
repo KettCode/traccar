@@ -119,6 +119,7 @@ public class GameRegularPingService {
             }
 
             ping.setId(storage.addObject(ping, new Request(new Columns.Exclude("id"))));
+            pingService.markLastVisiblePing(ping);
             actionLogger.create(null, SYSTEM_USER_ID, ping);
 
             if (effect != null) {
