@@ -8,15 +8,10 @@ public class GameStateView {
     private GameView game;
     private MemberView currentMember;
     private SummaryView summary;
-    private OwnRuntimeView ownRuntime;
     private AllowedActionsView allowedActions;
     private List<MemberView> members;
-    private SpeedhuntView speedhunt;
     private List<SpeedhuntView> speedhuntHistory;
     private List<JokerView> jokers;
-    private List<RevealView> reveals;
-    private List<CatchView> catches;
-    private List<GeofenceView> geofences;
 
     public GameView getGame() {
         return game;
@@ -42,14 +37,6 @@ public class GameStateView {
         this.summary = summary;
     }
 
-    public OwnRuntimeView getOwnRuntime() {
-        return ownRuntime;
-    }
-
-    public void setOwnRuntime(OwnRuntimeView ownRuntime) {
-        this.ownRuntime = ownRuntime;
-    }
-
     public AllowedActionsView getAllowedActions() {
         return allowedActions;
     }
@@ -66,14 +53,6 @@ public class GameStateView {
         this.members = members;
     }
 
-    public SpeedhuntView getSpeedhunt() {
-        return speedhunt;
-    }
-
-    public void setSpeedhunt(SpeedhuntView speedhunt) {
-        this.speedhunt = speedhunt;
-    }
-
     public List<SpeedhuntView> getSpeedhuntHistory() {
         return speedhuntHistory;
     }
@@ -88,30 +67,6 @@ public class GameStateView {
 
     public void setJokers(List<JokerView> jokers) {
         this.jokers = jokers;
-    }
-
-    public List<RevealView> getReveals() {
-        return reveals;
-    }
-
-    public void setReveals(List<RevealView> reveals) {
-        this.reveals = reveals;
-    }
-
-    public List<CatchView> getCatches() {
-        return catches;
-    }
-
-    public void setCatches(List<CatchView> catches) {
-        this.catches = catches;
-    }
-
-    public List<GeofenceView> getGeofences() {
-        return geofences;
-    }
-
-    public void setGeofences(List<GeofenceView> geofences) {
-        this.geofences = geofences;
     }
 
     public static class GameView {
@@ -231,13 +186,16 @@ public class GameStateView {
     public static class SummaryView {
         private Date nextRegularPingAt;
         private Long nextRegularPingInSeconds;
-        private int activeHunters;
-        private int activeHunted;
-        private int caughtHunted;
         private int speedhuntsRemaining;
         private boolean speedhuntActive;
+        private Long speedhuntId;
         private int speedhuntPingNumber;
         private int speedhuntPingLimit;
+        private boolean speedhuntTargetRevealed;
+        private Long speedhuntTargetMemberId;
+        private String speedhuntTargetDisplayName;
+        private boolean activeJokerEffect;
+        private List<String> activeJokerTypes = List.of();
 
         public Date getNextRegularPingAt() {
             return nextRegularPingAt;
@@ -253,30 +211,6 @@ public class GameStateView {
 
         public void setNextRegularPingInSeconds(Long nextRegularPingInSeconds) {
             this.nextRegularPingInSeconds = nextRegularPingInSeconds;
-        }
-
-        public int getActiveHunters() {
-            return activeHunters;
-        }
-
-        public void setActiveHunters(int activeHunters) {
-            this.activeHunters = activeHunters;
-        }
-
-        public int getActiveHunted() {
-            return activeHunted;
-        }
-
-        public void setActiveHunted(int activeHunted) {
-            this.activeHunted = activeHunted;
-        }
-
-        public int getCaughtHunted() {
-            return caughtHunted;
-        }
-
-        public void setCaughtHunted(int caughtHunted) {
-            this.caughtHunted = caughtHunted;
         }
 
         public int getSpeedhuntsRemaining() {
@@ -295,6 +229,14 @@ public class GameStateView {
             this.speedhuntActive = speedhuntActive;
         }
 
+        public Long getSpeedhuntId() {
+            return speedhuntId;
+        }
+
+        public void setSpeedhuntId(Long speedhuntId) {
+            this.speedhuntId = speedhuntId;
+        }
+
         public int getSpeedhuntPingNumber() {
             return speedhuntPingNumber;
         }
@@ -310,12 +252,30 @@ public class GameStateView {
         public void setSpeedhuntPingLimit(int speedhuntPingLimit) {
             this.speedhuntPingLimit = speedhuntPingLimit;
         }
-    }
 
-    public static class OwnRuntimeView {
-        private boolean activeJokerEffect;
-        private List<String> activeJokerTypes;
-        private boolean visibleSpeedhuntTarget;
+        public boolean getSpeedhuntTargetRevealed() {
+            return speedhuntTargetRevealed;
+        }
+
+        public void setSpeedhuntTargetRevealed(boolean speedhuntTargetRevealed) {
+            this.speedhuntTargetRevealed = speedhuntTargetRevealed;
+        }
+
+        public Long getSpeedhuntTargetMemberId() {
+            return speedhuntTargetMemberId;
+        }
+
+        public void setSpeedhuntTargetMemberId(Long speedhuntTargetMemberId) {
+            this.speedhuntTargetMemberId = speedhuntTargetMemberId;
+        }
+
+        public String getSpeedhuntTargetDisplayName() {
+            return speedhuntTargetDisplayName;
+        }
+
+        public void setSpeedhuntTargetDisplayName(String speedhuntTargetDisplayName) {
+            this.speedhuntTargetDisplayName = speedhuntTargetDisplayName;
+        }
 
         public boolean getActiveJokerEffect() {
             return activeJokerEffect;
@@ -331,14 +291,6 @@ public class GameStateView {
 
         public void setActiveJokerTypes(List<String> activeJokerTypes) {
             this.activeJokerTypes = activeJokerTypes;
-        }
-
-        public boolean getVisibleSpeedhuntTarget() {
-            return visibleSpeedhuntTarget;
-        }
-
-        public void setVisibleSpeedhuntTarget(boolean visibleSpeedhuntTarget) {
-            this.visibleSpeedhuntTarget = visibleSpeedhuntTarget;
         }
     }
 
@@ -392,6 +344,7 @@ public class GameStateView {
         private int maxPings;
         private Date startedAt;
         private Date endedAt;
+        private List<SpeedhuntPingView> pings = List.of();
 
         public boolean getActive() {
             return active;
@@ -471,6 +424,62 @@ public class GameStateView {
 
         public void setEndedAt(Date endedAt) {
             this.endedAt = endedAt;
+        }
+
+        public List<SpeedhuntPingView> getPings() {
+            return pings;
+        }
+
+        public void setPings(List<SpeedhuntPingView> pings) {
+            this.pings = pings;
+        }
+    }
+
+    public static class SpeedhuntPingView {
+        private long id;
+        private int sequenceNumber;
+        private Date createdAt;
+        private Date fixTime;
+        private boolean skipped;
+
+        public long getId() {
+            return id;
+        }
+
+        public void setId(long id) {
+            this.id = id;
+        }
+
+        public int getSequenceNumber() {
+            return sequenceNumber;
+        }
+
+        public void setSequenceNumber(int sequenceNumber) {
+            this.sequenceNumber = sequenceNumber;
+        }
+
+        public Date getCreatedAt() {
+            return createdAt;
+        }
+
+        public void setCreatedAt(Date createdAt) {
+            this.createdAt = createdAt;
+        }
+
+        public Date getFixTime() {
+            return fixTime;
+        }
+
+        public void setFixTime(Date fixTime) {
+            this.fixTime = fixTime;
+        }
+
+        public boolean getSkipped() {
+            return skipped;
+        }
+
+        public void setSkipped(boolean skipped) {
+            this.skipped = skipped;
         }
     }
 
@@ -555,168 +564,6 @@ public class GameStateView {
 
         public void setCancelledAt(Date cancelledAt) {
             this.cancelledAt = cancelledAt;
-        }
-    }
-
-    public static class RevealView {
-        private long id;
-        private String type;
-        private long speedhuntId;
-        private String payload;
-        private Date revealedAt;
-        private Date invalidatedAt;
-
-        public long getId() {
-            return id;
-        }
-
-        public void setId(long id) {
-            this.id = id;
-        }
-
-        public String getType() {
-            return type;
-        }
-
-        public void setType(String type) {
-            this.type = type;
-        }
-
-        public long getSpeedhuntId() {
-            return speedhuntId;
-        }
-
-        public void setSpeedhuntId(long speedhuntId) {
-            this.speedhuntId = speedhuntId;
-        }
-
-        public String getPayload() {
-            return payload;
-        }
-
-        public void setPayload(String payload) {
-            this.payload = payload;
-        }
-
-        public Date getRevealedAt() {
-            return revealedAt;
-        }
-
-        public void setRevealedAt(Date revealedAt) {
-            this.revealedAt = revealedAt;
-        }
-
-        public Date getInvalidatedAt() {
-            return invalidatedAt;
-        }
-
-        public void setInvalidatedAt(Date invalidatedAt) {
-            this.invalidatedAt = invalidatedAt;
-        }
-    }
-
-    public static class CatchView {
-        private long id;
-        private long caughtMemberId;
-        private String caughtDisplayName;
-        private String status;
-        private Date caughtAt;
-        private Date revertedAt;
-
-        public long getId() {
-            return id;
-        }
-
-        public void setId(long id) {
-            this.id = id;
-        }
-
-        public long getCaughtMemberId() {
-            return caughtMemberId;
-        }
-
-        public void setCaughtMemberId(long caughtMemberId) {
-            this.caughtMemberId = caughtMemberId;
-        }
-
-        public String getCaughtDisplayName() {
-            return caughtDisplayName;
-        }
-
-        public void setCaughtDisplayName(String caughtDisplayName) {
-            this.caughtDisplayName = caughtDisplayName;
-        }
-
-        public String getStatus() {
-            return status;
-        }
-
-        public void setStatus(String status) {
-            this.status = status;
-        }
-
-        public Date getCaughtAt() {
-            return caughtAt;
-        }
-
-        public void setCaughtAt(Date caughtAt) {
-            this.caughtAt = caughtAt;
-        }
-
-        public Date getRevertedAt() {
-            return revertedAt;
-        }
-
-        public void setRevertedAt(Date revertedAt) {
-            this.revertedAt = revertedAt;
-        }
-    }
-
-    public static class GeofenceView {
-        private long id;
-        private long geofenceId;
-        private String name;
-        private String type;
-        private String role;
-
-        public long getId() {
-            return id;
-        }
-
-        public void setId(long id) {
-            this.id = id;
-        }
-
-        public long getGeofenceId() {
-            return geofenceId;
-        }
-
-        public void setGeofenceId(long geofenceId) {
-            this.geofenceId = geofenceId;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public String getType() {
-            return type;
-        }
-
-        public void setType(String type) {
-            this.type = type;
-        }
-
-        public String getRole() {
-            return role;
-        }
-
-        public void setRole(String role) {
-            this.role = role;
         }
     }
 

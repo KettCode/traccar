@@ -9,8 +9,6 @@ public class GamePing extends GameBaseModel {
 
     public static final String SOURCE_REGULAR = "regular";
     public static final String SOURCE_SPEEDHUNT = "speedhunt";
-    public static final String SOURCE_FAKE = "fake";
-    public static final String SOURCE_MANUAL = "manual";
 
     private long targetMemberId;
     private String source;

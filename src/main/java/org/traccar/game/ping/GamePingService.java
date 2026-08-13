@@ -75,13 +75,13 @@ public class GamePingService {
         return result;
     }
 
-    public void applyPendingEffect(GamePing ping, GamePendingEffect effect, String clientSource) {
+    public void applyPendingEffect(GamePing ping, GamePendingEffect effect, String pingSource) {
         if (GamePendingEffect.EFFECT_SKIP_NEXT_PING.equals(effect.getEffect())) {
-            ping.setSource(clientSource);
+            ping.setSource(pingSource);
             ping.setSkipped(true);
             ping.setConsumedJokerId(effect.getJokerId());
         } else if (GamePendingEffect.EFFECT_FAKE_NEXT_PING.equals(effect.getEffect())) {
-            applyFakePing(ping, effect);
+            applyFakePing(ping, effect, pingSource);
         }
     }
 
@@ -95,7 +95,7 @@ public class GamePingService {
         if (position == null) {
             throw new IllegalArgumentException("No position found for ping target");
         }
-        applyPosition(game, ping, position, source);
+        applyPosition(ping, position, source);
     }
 
     public boolean isPositionValid(Game game, Position position) {
@@ -142,13 +142,6 @@ public class GamePingService {
         cacheManager.invalidateObject(true, GameMember.class, ping.getTargetMemberId(), ObjectOperation.UPDATE);
     }
 
-    private void applyPosition(Game game, GamePing ping, Position position, String source) {
-        if (isPositionTooOld(game, position)) {
-            throw new IllegalArgumentException("Latest target position is too old");
-        }
-        applyPosition(ping, position, source);
-    }
-
     public void applyPosition(GamePing ping, Position position, String source) {
         ping.setSource(source);
         ping.setPositionId(position.getId());
@@ -165,13 +158,13 @@ public class GamePingService {
                                 new Date(System.currentTimeMillis() - game.getMaxPositionAgeSeconds() * 1000L)));
     }
 
-    private void applyFakePing(GamePing ping, GamePendingEffect effect) {
+    private void applyFakePing(GamePing ping, GamePendingEffect effect, String pingSource) {
         try {
             JsonNode payload = objectMapper.readTree(effect.getPayload());
             if (!payload.has("latitude") || !payload.has("longitude")) {
                 throw new IllegalArgumentException("Fake ping payload requires latitude and longitude");
             }
-            ping.setSource(GamePing.SOURCE_FAKE);
+            ping.setSource(pingSource);
             ping.setLatitude(payload.get("latitude").asDouble());
             ping.setLongitude(payload.get("longitude").asDouble());
             if (payload.has("accuracy")) {

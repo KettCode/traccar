@@ -176,13 +176,12 @@ public class GameStorage {
     }
 
     public GameSpeedhunt getActiveGameSpeedhunt(long gameId) throws StorageException {
-        GameSpeedhunt result = null;
         for (GameSpeedhunt speedhunt : getGameSpeedhunts(gameId)) {
             if (speedhunt.getEndedAt() == null) {
-                result = speedhunt;
+                return speedhunt;
             }
         }
-        return result;
+        return null;
     }
 
     public List<GameSpeedhunt> getActiveGameSpeedhuntsForTarget(long gameId, long targetMemberId)
@@ -262,16 +261,25 @@ public class GameStorage {
                 new Columns.All(), new Condition.LatestPositions(deviceId)));
     }
 
-    public List<GamePing> getGamePingsByScheduledAt(long gameId, Date scheduledAt) throws StorageException {
+    public List<GamePing> getRegularGamePingsByScheduledAt(long gameId, Date scheduledAt) throws StorageException {
         return storage.getObjects(GamePing.class, new Request(
                 new Columns.All(), new Condition.And(
-                        new Condition.Equals("gameId", gameId),
-                        new Condition.Equals("scheduledAt", scheduledAt)), new Order("id")));
+                        new Condition.And(
+                                new Condition.Equals("gameId", gameId),
+                                new Condition.Equals("scheduledAt", scheduledAt)),
+                        new Condition.Equals("source", GamePing.SOURCE_REGULAR)), new Order("id")));
     }
 
     public List<GamePing> getGamePings(long gameId) throws StorageException {
         return storage.getObjects(GamePing.class, new Request(
                 new Columns.All(), new Condition.Equals("gameId", gameId), new Order("id")));
+    }
+
+    public List<GamePing> getSpeedhuntPings(long gameId) throws StorageException {
+        return storage.getObjects(GamePing.class, new Request(
+                new Columns.All(), new Condition.And(
+                        new Condition.Equals("gameId", gameId),
+                        new Condition.Equals("source", GamePing.SOURCE_SPEEDHUNT)), new Order("id")));
     }
 
     public GameReveal getLatestHunterLocationReveal(long gameId, long memberId) throws StorageException {

@@ -197,7 +197,7 @@ public class GameRegularPingService {
 
     private Set<Long> getCompletedMemberIds(long gameId, Date scheduledAt) throws StorageException {
         Set<Long> result = new HashSet<>();
-        var pings = gameStorage.getGamePingsByScheduledAt(gameId, scheduledAt);
+        var pings = gameStorage.getRegularGamePingsByScheduledAt(gameId, scheduledAt);
         for (GamePing ping : pings) {
             result.add(ping.getTargetMemberId());
         }

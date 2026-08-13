@@ -6,13 +6,10 @@ import org.traccar.game.GameRuntimeContext;
 import org.traccar.game.GameRuntimePermissionService;
 import org.traccar.game.state.view.GameStateView;
 import org.traccar.model.Game;
-import org.traccar.model.GameCatch;
-import org.traccar.model.GameGeofence;
 import org.traccar.model.GameJoker;
 import org.traccar.model.GameMember;
 import org.traccar.model.GamePendingEffect;
 import org.traccar.model.GamePing;
-import org.traccar.model.GameReveal;
 import org.traccar.model.GameSpeedhunt;
 import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
@@ -35,12 +32,8 @@ import java.util.Set;
 public class GameStateService {
 
     private static final String INCLUDE_MEMBERS = "members";
-    private static final String INCLUDE_SPEEDHUNT = "speedhunt";
     private static final String INCLUDE_SPEEDHUNT_HISTORY = "speedhuntHistory";
     private static final String INCLUDE_JOKERS = "jokers";
-    private static final String INCLUDE_REVEALS = "reveals";
-    private static final String INCLUDE_CATCHES = "catches";
-    private static final String INCLUDE_GEOFENCES = "geofences";
 
     @Inject
     private Storage storage;
@@ -58,44 +51,37 @@ public class GameStateService {
         }
 
         Set<String> includes = parseIncludes(include);
+        Date now = new Date();
         Game game = context.game();
         List<GameMember> members = gameStorage.getGameMembers(gameId);
         Map<Long, GameMember> membersById = indexMembers(members);
         List<GameSpeedhunt> speedhunts = gameStorage.getGameSpeedhunts(gameId);
         GameSpeedhunt activeSpeedhunt = getActiveSpeedhunt(speedhunts);
-        Map<Long, List<GamePing>> pingsBySpeedhuntId = includes.contains(INCLUDE_SPEEDHUNT_HISTORY)
-                ? getSpeedhuntPingsBySpeedhuntId(gameId) : Map.of();
-        List<GamePing> activeSpeedhuntPings = activeSpeedhunt != null
-                ? getActiveSpeedhuntPings(gameId, activeSpeedhunt, pingsBySpeedhuntId) : List.of();
+        boolean includeSpeedhuntHistory = includes.contains(INCLUDE_SPEEDHUNT_HISTORY) && context.isGameManagement();
+        Map<Long, List<GamePing>> pingsBySpeedhuntId = includeSpeedhuntHistory
+                ? getSpeedhuntPingsGroupedBySpeedhuntId(gameId) : Map.of();
+        List<GamePing> activeSpeedhuntPings = List.of();
+        if (activeSpeedhunt != null) {
+            activeSpeedhuntPings = includeSpeedhuntHistory
+                    ? pingsBySpeedhuntId.getOrDefault(activeSpeedhunt.getId(), List.of())
+                    : getSpeedhuntPings(gameId, activeSpeedhunt.getId());
+        }
 
         GameStateView state = new GameStateView();
-        state.setGame(toGameView(game));
+        state.setGame(toGameView(game, now));
         state.setCurrentMember(toMemberView(context.member()));
-        state.setSummary(toSummaryView(game, members, speedhunts, activeSpeedhunt, activeSpeedhuntPings));
-        state.setOwnRuntime(toOwnRuntimeView(context, activeSpeedhunt));
+        state.setSummary(toSummaryView(
+                context, game, speedhunts, activeSpeedhunt, activeSpeedhuntPings, membersById, now));
         state.setAllowedActions(toAllowedActionsView(context));
 
         if (includes.contains(INCLUDE_MEMBERS)) {
             state.setMembers(members.stream().map(this::toMemberView).toList());
         }
-        if (includes.contains(INCLUDE_SPEEDHUNT)) {
-            state.setSpeedhunt(activeSpeedhunt != null
-                    ? toSpeedhuntView(context, activeSpeedhunt, activeSpeedhuntPings, membersById) : null);
-        }
-        if (includes.contains(INCLUDE_SPEEDHUNT_HISTORY)) {
+        if (includeSpeedhuntHistory) {
             state.setSpeedhuntHistory(getSpeedhuntHistory(context, speedhunts, membersById, pingsBySpeedhuntId));
         }
         if (includes.contains(INCLUDE_JOKERS)) {
             state.setJokers(getJokers(context, membersById));
-        }
-        if (includes.contains(INCLUDE_REVEALS)) {
-            state.setReveals(getReveals(context));
-        }
-        if (includes.contains(INCLUDE_CATCHES)) {
-            state.setCatches(getCatches(gameId, membersById));
-        }
-        if (includes.contains(INCLUDE_GEOFENCES)) {
-            state.setGeofences(getGeofences(context));
         }
 
         return state;
@@ -115,21 +101,13 @@ public class GameStateService {
             String normalized = value.toLowerCase(Locale.ROOT);
             if ("all".equals(normalized) || "management".equals(normalized)) {
                 result.add(INCLUDE_MEMBERS);
-                result.add(INCLUDE_SPEEDHUNT);
                 result.add(INCLUDE_SPEEDHUNT_HISTORY);
                 result.add(INCLUDE_JOKERS);
-                result.add(INCLUDE_REVEALS);
-                result.add(INCLUDE_CATCHES);
-                result.add(INCLUDE_GEOFENCES);
             } else {
                 switch (normalized) {
                     case "members" -> result.add(INCLUDE_MEMBERS);
-                    case "speedhunt" -> result.add(INCLUDE_SPEEDHUNT);
                     case "speedhunthistory" -> result.add(INCLUDE_SPEEDHUNT_HISTORY);
                     case "jokers" -> result.add(INCLUDE_JOKERS);
-                    case "reveals" -> result.add(INCLUDE_REVEALS);
-                    case "catches" -> result.add(INCLUDE_CATCHES);
-                    case "geofences" -> result.add(INCLUDE_GEOFENCES);
                     default -> { }
                 }
             }
@@ -146,13 +124,12 @@ public class GameStateService {
     }
 
     private GameSpeedhunt getActiveSpeedhunt(List<GameSpeedhunt> speedhunts) {
-        GameSpeedhunt result = null;
         for (GameSpeedhunt speedhunt : speedhunts) {
             if (speedhunt.getEndedAt() == null) {
-                result = speedhunt;
+                return speedhunt;
             }
         }
-        return result;
+        return null;
     }
 
     private List<GamePing> getSpeedhuntPings(long gameId, long speedhuntId) throws StorageException {
@@ -162,26 +139,15 @@ public class GameStateService {
                         new Condition.Equals("speedhuntId", speedhuntId)), new Order("sequenceNumber")));
     }
 
-    private Map<Long, List<GamePing>> getSpeedhuntPingsBySpeedhuntId(long gameId) throws StorageException {
+    private Map<Long, List<GamePing>> getSpeedhuntPingsGroupedBySpeedhuntId(long gameId) throws StorageException {
         var result = new HashMap<Long, List<GamePing>>();
-        for (GamePing ping : gameStorage.getGamePings(gameId)) {
-            if (ping.getSpeedhuntId() != 0) {
-                result.computeIfAbsent(ping.getSpeedhuntId(), key -> new ArrayList<>()).add(ping);
-            }
+        for (GamePing ping : gameStorage.getSpeedhuntPings(gameId)) {
+            result.computeIfAbsent(ping.getSpeedhuntId(), key -> new ArrayList<>()).add(ping);
         }
         return result;
     }
 
-    private List<GamePing> getActiveSpeedhuntPings(
-            long gameId, GameSpeedhunt activeSpeedhunt, Map<Long, List<GamePing>> pingsBySpeedhuntId)
-            throws StorageException {
-        if (!pingsBySpeedhuntId.isEmpty()) {
-            return pingsBySpeedhuntId.getOrDefault(activeSpeedhunt.getId(), List.of());
-        }
-        return getSpeedhuntPings(gameId, activeSpeedhunt.getId());
-    }
-
-    private GameStateView.GameView toGameView(Game game) {
+    private GameStateView.GameView toGameView(Game game, Date now) {
         var view = new GameStateView.GameView();
         view.setId(game.getId());
         view.setName(game.getName());
@@ -189,15 +155,15 @@ public class GameStateService {
         view.setStartedAt(game.getStartedAt());
         view.setPlannedEndAt(game.getPlannedEndAt());
         view.setFinishedAt(game.getFinishedAt());
-        view.setRemainingSeconds(getRemainingSeconds(game.getPlannedEndAt()));
+        view.setRemainingSeconds(getRemainingSeconds(game.getPlannedEndAt(), now));
         return view;
     }
 
-    private Long getRemainingSeconds(Date plannedEndAt) {
+    private Long getRemainingSeconds(Date plannedEndAt, Date now) {
         if (plannedEndAt == null) {
             return null;
         }
-        return Math.max(0, Duration.between(new Date().toInstant(), plannedEndAt.toInstant()).getSeconds());
+        return Math.max(0, Duration.between(now.toInstant(), plannedEndAt.toInstant()).getSeconds());
     }
 
     private GameStateView.MemberView toMemberView(GameMember member) {
@@ -211,41 +177,41 @@ public class GameStateService {
     }
 
     private GameStateView.SummaryView toSummaryView(
-            Game game, List<GameMember> members, List<GameSpeedhunt> speedhunts,
-            GameSpeedhunt activeSpeedhunt, List<GamePing> activeSpeedhuntPings) {
+            GameRuntimeContext context, Game game, List<GameSpeedhunt> speedhunts,
+            GameSpeedhunt activeSpeedhunt, List<GamePing> activeSpeedhuntPings,
+            Map<Long, GameMember> membersById, Date now) throws StorageException {
         var view = new GameStateView.SummaryView();
-        Date nextRegularPingAt = getNextRegularPingAt(game);
+        Date nextRegularPingAt = getNextRegularPingAt(game, now);
         view.setNextRegularPingAt(nextRegularPingAt);
-        view.setNextRegularPingInSeconds(nextRegularPingAt != null ? getRemainingSeconds(nextRegularPingAt) : null);
-        for (GameMember member : members) {
-            if (GameMember.ROLE_HUNTER.equals(member.getRole())
-                    && GameMember.STATUS_ACTIVE.equals(member.getStatus())) {
-                view.setActiveHunters(view.getActiveHunters() + 1);
-            } else if (GameMember.ROLE_HUNTED.equals(member.getRole())) {
-                if (GameMember.STATUS_ACTIVE.equals(member.getStatus())) {
-                    view.setActiveHunted(view.getActiveHunted() + 1);
-                } else if (GameMember.STATUS_CAUGHT.equals(member.getStatus())) {
-                    view.setCaughtHunted(view.getCaughtHunted() + 1);
-                }
-            }
-        }
+        view.setNextRegularPingInSeconds(nextRegularPingAt != null ? getRemainingSeconds(nextRegularPingAt, now) : null);
         view.setSpeedhuntsRemaining(Math.max(0, game.getSpeedhuntLimit() - speedhunts.size()));
         view.setSpeedhuntActive(activeSpeedhunt != null);
         if (activeSpeedhunt != null) {
+            view.setSpeedhuntId(activeSpeedhunt.getId());
             view.setSpeedhuntPingNumber(activeSpeedhuntPings.size());
             view.setSpeedhuntPingLimit(activeSpeedhunt.getMaxPings());
+            boolean targetVisible = runtimePermissionService.canViewSpeedhuntTarget(context, activeSpeedhunt);
+            view.setSpeedhuntTargetRevealed(targetVisible);
+            if (targetVisible) {
+                GameMember target = membersById.get(activeSpeedhunt.getTargetMemberId());
+                view.setSpeedhuntTargetMemberId(activeSpeedhunt.getTargetMemberId());
+                view.setSpeedhuntTargetDisplayName(target != null ? target.getDisplayName() : null);
+            }
+        }
+        if (context.isHunted()) {
+            applyOwnJokerSummary(context, view);
         }
         return view;
     }
 
-    private Date getNextRegularPingAt(Game game) {
+    private Date getNextRegularPingAt(Game game, Date now) {
         if (game.getStartedAt() == null || game.getPingIntervalSeconds() <= 0) {
             return null;
         }
 
         long intervalMillis = game.getPingIntervalSeconds() * 1000L;
         long startMillis = game.getStartedAt().getTime();
-        long nowMillis = System.currentTimeMillis();
+        long nowMillis = now.getTime();
         if (nowMillis <= startMillis) {
             return game.getStartedAt();
         }
@@ -255,9 +221,8 @@ public class GameStateService {
         return new Date(startMillis + nextOffset);
     }
 
-    private GameStateView.OwnRuntimeView toOwnRuntimeView(
-            GameRuntimeContext context, GameSpeedhunt activeSpeedhunt) throws StorageException {
-        var view = new GameStateView.OwnRuntimeView();
+    private void applyOwnJokerSummary(GameRuntimeContext context, GameStateView.SummaryView view)
+            throws StorageException {
         List<GameJoker> ownJokers = getMemberJokers(context.game().getId(), context.member().getId());
         List<GamePendingEffect> activeEffects = storage.getObjects(GamePendingEffect.class, new Request(
                 new Columns.All(), new Condition.And(
@@ -280,9 +245,6 @@ public class GameStateService {
             activeJokerTypes.add(type != null ? type : effect.getEffect());
         }
         view.setActiveJokerTypes(activeJokerTypes);
-        view.setVisibleSpeedhuntTarget(activeSpeedhunt != null
-                && runtimePermissionService.canViewSpeedhuntTarget(context, activeSpeedhunt));
-        return view;
     }
 
     private GameStateView.AllowedActionsView toAllowedActionsView(GameRuntimeContext context) {
@@ -305,6 +267,7 @@ public class GameStateService {
         view.setMaxPings(speedhunt.getMaxPings());
         view.setStartedAt(speedhunt.getStartedAt());
         view.setEndedAt(speedhunt.getEndedAt());
+        view.setPings(pings.stream().map(this::toSpeedhuntPingView).toList());
 
         boolean targetVisible = runtimePermissionService.canViewSpeedhuntTarget(context, speedhunt);
         view.setTargetRevealed(targetVisible);
@@ -313,6 +276,16 @@ public class GameStateService {
             view.setTargetMemberId(speedhunt.getTargetMemberId());
             view.setTargetDisplayName(target != null ? target.getDisplayName() : null);
         }
+        return view;
+    }
+
+    private GameStateView.SpeedhuntPingView toSpeedhuntPingView(GamePing ping) {
+        var view = new GameStateView.SpeedhuntPingView();
+        view.setId(ping.getId());
+        view.setSequenceNumber(ping.getSequenceNumber());
+        view.setCreatedAt(ping.getCreatedAt());
+        view.setFixTime(ping.getFixTime());
+        view.setSkipped(ping.getSkipped());
         return view;
     }
 
@@ -333,13 +306,13 @@ public class GameStateService {
 
     private List<GameStateView.JokerView> getJokers(
             GameRuntimeContext context, Map<Long, GameMember> membersById) throws StorageException {
-        List<GameJoker> jokers = context.isGameManagement()
-                ? storage.getObjects(GameJoker.class, new Request(
-                        new Columns.All(), new Condition.Equals("gameId", context.game().getId()), new Order("id")))
-                : getMemberJokers(context.game().getId(), context.member().getId());
+        if (!context.isGameManagement()) {
+            return List.of();
+        }
 
         var result = new ArrayList<GameStateView.JokerView>();
-        for (GameJoker joker : jokers) {
+        for (GameJoker joker : storage.getObjects(GameJoker.class, new Request(
+                new Columns.All(), new Condition.Equals("gameId", context.game().getId()), new Order("id")))) {
             if (runtimePermissionService.canViewJoker(context, joker)) {
                 result.add(toJokerView(context, joker, membersById));
             }
@@ -370,72 +343,6 @@ public class GameStateService {
         view.setUsedAt(joker.getUsedAt());
         view.setCancelledAt(joker.getCancelledAt());
         return view;
-    }
-
-    private List<GameStateView.RevealView> getReveals(GameRuntimeContext context) throws StorageException {
-        List<GameReveal> reveals = context.isGameManagement()
-                ? storage.getObjects(GameReveal.class, new Request(
-                        new Columns.All(), new Condition.Equals("gameId", context.game().getId()), new Order("id")))
-                : storage.getObjects(GameReveal.class, new Request(
-                        new Columns.All(), new Condition.And(
-                                new Condition.Equals("gameId", context.game().getId()),
-                                new Condition.Equals("memberId", context.member().getId())), new Order("id")));
-
-        var result = new ArrayList<GameStateView.RevealView>();
-        for (GameReveal reveal : reveals) {
-            if (runtimePermissionService.canViewReveal(context, reveal)) {
-                result.add(toRevealView(reveal));
-            }
-        }
-        return result;
-    }
-
-    private GameStateView.RevealView toRevealView(GameReveal reveal) {
-        var view = new GameStateView.RevealView();
-        view.setId(reveal.getId());
-        view.setType(reveal.getType());
-        view.setSpeedhuntId(reveal.getSpeedhuntId());
-        view.setPayload(reveal.getPayload());
-        view.setRevealedAt(reveal.getRevealedAt());
-        view.setInvalidatedAt(reveal.getInvalidatedAt());
-        return view;
-    }
-
-    private List<GameStateView.CatchView> getCatches(
-            long gameId, Map<Long, GameMember> membersById) throws StorageException {
-        var catches = storage.getObjects(GameCatch.class, new Request(
-                new Columns.All(), new Condition.Equals("gameId", gameId), new Order("caughtAt")));
-        var result = new ArrayList<GameStateView.CatchView>();
-        for (GameCatch catchItem : catches) {
-            var view = new GameStateView.CatchView();
-            GameMember caughtMember = membersById.get(catchItem.getCaughtMemberId());
-            view.setId(catchItem.getId());
-            view.setCaughtMemberId(catchItem.getCaughtMemberId());
-            view.setCaughtDisplayName(caughtMember != null ? caughtMember.getDisplayName() : null);
-            view.setStatus(catchItem.getStatus());
-            view.setCaughtAt(catchItem.getCaughtAt());
-            view.setRevertedAt(catchItem.getRevertedAt());
-            result.add(view);
-        }
-        return result;
-    }
-
-    private List<GameStateView.GeofenceView> getGeofences(GameRuntimeContext context) throws StorageException {
-        var geofences = storage.getObjects(GameGeofence.class, new Request(
-                new Columns.All(), new Condition.Equals("gameId", context.game().getId()), new Order("id")));
-        var result = new ArrayList<GameStateView.GeofenceView>();
-        for (GameGeofence geofence : geofences) {
-            if (runtimePermissionService.canViewGeofence(context, geofence)) {
-                var view = new GameStateView.GeofenceView();
-                view.setId(geofence.getId());
-                view.setGeofenceId(geofence.getGeofenceId());
-                view.setName(geofence.getName());
-                view.setType(geofence.getType());
-                view.setRole(geofence.getRole());
-                result.add(view);
-            }
-        }
-        return result;
     }
 
 }
