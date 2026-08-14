@@ -32,6 +32,11 @@ public class GameStorage {
     @Inject
     private Storage storage;
 
+    public Game getGame(long gameId) throws StorageException {
+        return storage.getObject(Game.class, new Request(
+                new Columns.All(), new Condition.Equals("id", gameId)));
+    }
+
     public List<Game> getRunningGames() throws StorageException {
         return storage.getObjects(Game.class, new Request(
                 new Columns.All(), new Condition.Equals("status", Game.STATUS_RUNNING), new Order("id")));

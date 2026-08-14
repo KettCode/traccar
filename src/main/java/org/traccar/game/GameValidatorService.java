@@ -9,6 +9,10 @@ import java.util.List;
 
 public class GameValidatorService {
 
+    public static final int MIN_PING_INTERVAL_SECONDS = 300;
+    public static final int MIN_MAX_POSITION_AGE_SECONDS = 60;
+    public static final int MIN_LOCATION_REMINDER_INTERVAL_SECONDS = 120;
+
     public void validateRole(String role) {
         if (!GameMember.ROLE_HUNTER.equals(role)
                 && !GameMember.ROLE_HUNTED.equals(role)
@@ -27,17 +31,14 @@ public class GameValidatorService {
     }
 
     public void validateSettings(Game game) {
-        if (game.getPingIntervalSeconds() <= 0) {
-            throw new IllegalArgumentException("Ping interval must be positive");
+        if (game.getPingIntervalSeconds() < MIN_PING_INTERVAL_SECONDS) {
+            throw new IllegalArgumentException("Ping interval must be at least 300 seconds");
         }
-        if (game.getMaxPositionAgeSeconds() <= 0) {
-            throw new IllegalArgumentException("Maximum position age must be positive");
+        if (game.getMaxPositionAgeSeconds() < MIN_MAX_POSITION_AGE_SECONDS) {
+            throw new IllegalArgumentException("Maximum position age must be at least 60 seconds");
         }
-        if (game.getLocationReminderIntervalSeconds() <= 0) {
-            throw new IllegalArgumentException("Location reminder interval must be positive");
-        }
-        if (game.getFakePingMaxDistanceMeters() <= 0) {
-            throw new IllegalArgumentException("Fake ping maximum distance must be positive");
+        if (game.getLocationReminderIntervalSeconds() < MIN_LOCATION_REMINDER_INTERVAL_SECONDS) {
+            throw new IllegalArgumentException("Location reminder interval must be at least 120 seconds");
         }
         if (game.getSpeedhuntLimit() < 0) {
             throw new IllegalArgumentException("Speedhunt limit must not be negative");
@@ -55,17 +56,14 @@ public class GameValidatorService {
         if (!Game.STATUS_DRAFT.equals(game.getStatus())) {
             issues.add("Game is not in draft status");
         }
-        if (game.getPingIntervalSeconds() <= 0) {
-            issues.add("Ping interval must be positive");
+        if (game.getPingIntervalSeconds() < MIN_PING_INTERVAL_SECONDS) {
+            issues.add("Ping interval must be at least 300 seconds");
         }
-        if (game.getMaxPositionAgeSeconds() <= 0) {
-            issues.add("Maximum position age must be positive");
+        if (game.getMaxPositionAgeSeconds() < MIN_MAX_POSITION_AGE_SECONDS) {
+            issues.add("Maximum position age must be at least 60 seconds");
         }
-        if (game.getLocationReminderIntervalSeconds() <= 0) {
-            issues.add("Location reminder interval must be positive");
-        }
-        if (game.getFakePingMaxDistanceMeters() <= 0) {
-            issues.add("Fake ping maximum distance must be positive");
+        if (game.getLocationReminderIntervalSeconds() < MIN_LOCATION_REMINDER_INTERVAL_SECONDS) {
+            issues.add("Location reminder interval must be at least 120 seconds");
         }
         if (game.getSpeedhuntLimit() < 0) {
             issues.add("Speedhunt limit must not be negative");
@@ -77,20 +75,6 @@ public class GameValidatorService {
             issues.add("Speedhunt ping limit must be positive when speedhunts are enabled");
         }
 
-        boolean hasHunter = false;
-        boolean hasHunted = false;
-        for (GameMember member : members) {
-            if (GameMember.STATUS_ACTIVE.equals(member.getStatus())) {
-                hasHunter |= GameMember.ROLE_HUNTER.equals(member.getRole());
-                hasHunted |= GameMember.ROLE_HUNTED.equals(member.getRole());
-            }
-        }
-        if (!hasHunter) {
-            issues.add("No active hunter configured");
-        }
-        if (!hasHunted) {
-            issues.add("No active hunted player configured");
-        }
         return issues;
     }
 

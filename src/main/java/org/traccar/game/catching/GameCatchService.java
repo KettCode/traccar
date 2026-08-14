@@ -86,7 +86,7 @@ public class GameCatchService {
         updateMemberCaught(userId, target, caughtAt, request);
         finishActiveSpeedhuntsForTarget(context, caughtMemberId, request);
         expireMemberRuntimeState(userId, gameId, caughtMemberId, request);
-        devicePermissionService.applyCatchPermissions(userId, gameId, caughtMemberId, request);
+        devicePermissionService.syncMemberDevicePermissions(userId, gameId, caughtMemberId, request);
 
         GameNotificationMessage message = notificationService.createStateChangedMessage(
                 gameId, GameNotificationMessage.TYPE_CATCH_CREATED);
@@ -129,7 +129,7 @@ public class GameCatchService {
         actionLogger.edit(request, userId, update);
 
         updateMemberActive(userId, member, request);
-        devicePermissionService.applyCatchRevertedPermissions(userId, gameId, member.getId(), request);
+        devicePermissionService.syncMemberDevicePermissions(userId, gameId, member.getId(), request);
 
         GameNotificationMessage message = notificationService.createStateChangedMessage(
                 gameId, GameNotificationMessage.TYPE_CATCH_REVERTED);

@@ -19,7 +19,7 @@ public class Game extends BaseModel {
     private boolean allowConsecutiveSpeedhuntsSameTarget;
     private int fakePingMaxDistanceMeters = 1000;
     private boolean locationReminderEnabled = true;
-    private int maxPositionAgeSeconds = 300;
+    private int maxPositionAgeSeconds = 120;
     private int locationReminderIntervalSeconds = 300;
     private Date plannedEndAt;
     private Date startedAt;

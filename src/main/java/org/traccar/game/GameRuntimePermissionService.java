@@ -159,7 +159,13 @@ public class GameRuntimePermissionService {
     }
 
     public boolean canViewLiveMapMember(GameRuntimeContext context, GameMember member) {
-        if (!context.isActive() || !GameMember.STATUS_ACTIVE.equals(member.getStatus())) {
+        if (!context.isActive() && !context.isCaught()) {
+            return false;
+        }
+        if (member.getId() == context.member().getId()) {
+            return true;
+        }
+        if (!GameMember.STATUS_ACTIVE.equals(member.getStatus())) {
             return false;
         }
         if (context.isGameManagement()) {

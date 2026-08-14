@@ -27,129 +27,85 @@ public class GameDevicePermissionService {
 
     public void validateAndSyncGameDevicePermissions(
             long userId, long gameId, HttpServletRequest httpRequest) throws Exception {
-        List<GameMember> members = gameStorage.getNonLeftGameMembers(gameId);
-        Map<Long, Player> playersById = gameStorage.getPlayersByMembers(members);
-        validateParticipantAssignments(members, playersById);
+        List<GameParticipant> participants = getParticipants(gameId);
+        validateParticipants(participants);
 
-        List<GameParticipant> allParticipants = getParticipants(members, playersById);
-        List<GameParticipant> activeParticipants = allParticipants.stream()
-                .filter(participant -> GameMember.STATUS_ACTIVE.equals(participant.status()))
-                .toList();
-        validateRequiredActiveRoles(activeParticipants);
-
-        clearGameDevicePermissions(userId, allParticipants, httpRequest);
-        addGameDevicePermissions(userId, activeParticipants, httpRequest);
+        clearGameDevicePermissions(userId, participants, httpRequest);
+        addGameDevicePermissions(userId, participants, httpRequest);
     }
 
     public void clearGameDevicePermissions(long userId, long gameId, HttpServletRequest httpRequest) throws Exception {
         clearGameDevicePermissions(userId, getValidParticipants(gameId), httpRequest);
     }
 
-    public void applyCatchPermissions(
-            long userId, long gameId, long caughtMemberId, HttpServletRequest httpRequest) throws Exception {
+    public void syncMemberDevicePermissions(
+            long userId, long gameId, long memberId, HttpServletRequest httpRequest) throws Exception {
         List<GameParticipant> participants = getValidParticipants(gameId);
-        GameParticipant caught = findParticipant(participants, caughtMemberId);
-        if (caught == null) {
+        GameParticipant member = findParticipant(participants, memberId);
+        if (member == null) {
             return;
         }
 
-        removeDeviceAccess(userId, withoutMember(participants, caught.memberId()), List.of(caught), httpRequest);
-    }
-
-    public void applyCatchRevertedPermissions(
-            long userId, long gameId, long revertedMemberId, HttpServletRequest httpRequest) throws Exception {
-        List<GameParticipant> participants = getValidParticipants(gameId);
-        GameParticipant reverted = findParticipant(participants, revertedMemberId);
-        if (reverted == null) {
+        if (GameMember.STATUS_CAUGHT.equals(member.status())) {
+            removeDeviceAccess(userId, participants, List.of(member), httpRequest);
             return;
         }
 
-        grantDeviceAccess(userId, getHuntedParticipants(participants), List.of(reverted), httpRequest);
-    }
-
-    public void applyMemberConvertedToHunterPermissions(
-            long userId, long gameId, long convertedMemberId, HttpServletRequest httpRequest) throws Exception {
-        List<GameParticipant> participants = getValidParticipants(gameId);
-        GameParticipant converted = findParticipant(participants, convertedMemberId);
-        if (converted == null) {
-            return;
-        }
-        List<GameParticipant> hunters = getHunterParticipants(participants);
-        List<GameParticipant> hunted = getHuntedParticipants(participants);
-
-        removeDeviceAccess(userId, hunted, List.of(converted), httpRequest);
-        grantDeviceAccess(userId, hunters, List.of(converted), httpRequest);
-        removeDeviceAccess(userId, List.of(converted), hunted, httpRequest);
-        grantDeviceAccess(userId, List.of(converted), hunters, httpRequest);
-    }
-
-    private void validateRequiredActiveRoles(List<GameParticipant> participants) {
-        boolean hasHunter = false;
-        boolean hasHunted = false;
-        for (GameParticipant participant : participants) {
-            hasHunter |= GameMember.ROLE_HUNTER.equals(participant.role());
-            hasHunted |= GameMember.ROLE_HUNTED.equals(participant.role());
-        }
-        if (!hasHunter) {
-            throw new IllegalArgumentException("No active hunter configured");
-        }
-        if (!hasHunted) {
-            throw new IllegalArgumentException("No active hunted player configured");
-        }
+        removeDeviceAccess(userId, getDeniedReceivers(participants, member), List.of(member), httpRequest);
+        grantDeviceAccess(userId, getAllowedReceivers(participants, member), List.of(member), httpRequest);
+        removeDeviceAccess(userId, List.of(member), getDeniedMembers(participants, member), httpRequest);
+        grantDeviceAccess(userId, List.of(member), getAllowedMembers(participants, member), httpRequest);
     }
 
     private void addGameDevicePermissions(
             long userId, List<GameParticipant> participants, HttpServletRequest httpRequest) throws Exception {
         for (GameParticipant participant : participants) {
             for (GameParticipant target : participants) {
-                if (canSeeDevice(participant.role(), target.role())) {
+                if (canSeeDevice(participant, target)) {
                     grantDeviceAccess(userId, participant, target, httpRequest);
                 }
             }
         }
     }
 
-    private void validateParticipantAssignments(List<GameMember> members, Map<Long, Player> playersById) {
-        for (GameMember member : members) {
-            validator.validateRole(member.getRole());
-            Player player = playersById.get(member.getPlayerId());
-            if (player == null || player.getUserId() == 0 || player.getDeviceId() == 0) {
+    private void validateParticipants(List<GameParticipant> participants) {
+        for (GameParticipant participant : participants) {
+            validator.validateRole(participant.role());
+            if (participant.userId() == 0 || participant.deviceId() == 0) {
                 throw new IllegalArgumentException("Game member has invalid player assignment");
             }
         }
     }
 
-    private List<GameParticipant> getParticipants(List<GameMember> members, Map<Long, Player> playersById) {
-        var participants = new ArrayList<GameParticipant>();
-        for (GameMember member : members) {
-            Player player = playersById.get(member.getPlayerId());
-            participants.add(new GameParticipant(
-                    member.getId(), player.getUserId(), player.getDeviceId(), member.getRole(), member.getStatus()));
-        }
-        return participants;
-    }
-
-    private List<GameParticipant> getValidParticipants(long gameId) throws StorageException {
+    private List<GameParticipant> getParticipants(long gameId) throws StorageException {
         List<GameMember> members = gameStorage.getNonLeftGameMembers(gameId);
         Map<Long, Player> playersById = gameStorage.getPlayersByMembers(members);
         var participants = new ArrayList<GameParticipant>();
         for (GameMember member : members) {
-            Player player = playersById.get(member.getPlayerId());
-            if (isValidParticipant(member, player)) {
-                participants.add(new GameParticipant(
-                        member.getId(), player.getUserId(), player.getDeviceId(), member.getRole(), member.getStatus()));
-            }
+            participants.add(getParticipant(member, playersById.get(member.getPlayerId())));
         }
         return participants;
     }
 
-    private boolean isValidParticipant(GameMember member, Player player) {
+    private GameParticipant getParticipant(GameMember member, Player player) {
+        long userId = player != null ? player.getUserId() : 0;
+        long deviceId = player != null ? player.getDeviceId() : 0;
+        return new GameParticipant(member.getId(), userId, deviceId, member.getRole(), member.getStatus());
+    }
+
+    private List<GameParticipant> getValidParticipants(long gameId) throws StorageException {
+        return getParticipants(gameId).stream()
+                .filter(this::isValidParticipant)
+                .toList();
+    }
+
+    private boolean isValidParticipant(GameParticipant participant) {
         try {
-            validator.validateRole(member.getRole());
+            validator.validateRole(participant.role());
         } catch (IllegalArgumentException e) {
             return false;
         }
-        return player != null && player.getUserId() != 0 && player.getDeviceId() != 0;
+        return participant.userId() != 0 && participant.deviceId() != 0;
     }
 
     private GameParticipant findParticipant(List<GameParticipant> participants, long memberId) {
@@ -161,21 +117,27 @@ public class GameDevicePermissionService {
         return null;
     }
 
-    private List<GameParticipant> withoutMember(List<GameParticipant> participants, long memberId) {
+    private List<GameParticipant> getAllowedReceivers(List<GameParticipant> participants, GameParticipant target) {
         return participants.stream()
-                .filter(participant -> participant.memberId() != memberId)
+                .filter(participant -> canSeeDevice(participant, target))
                 .toList();
     }
 
-    private List<GameParticipant> getHunterParticipants(List<GameParticipant> participants) {
+    private List<GameParticipant> getDeniedReceivers(List<GameParticipant> participants, GameParticipant target) {
         return participants.stream()
-                .filter(participant -> GameMember.ROLE_HUNTER.equals(participant.role()))
+                .filter(participant -> !canSeeDevice(participant, target))
                 .toList();
     }
 
-    private List<GameParticipant> getHuntedParticipants(List<GameParticipant> participants) {
+    private List<GameParticipant> getAllowedMembers(List<GameParticipant> participants, GameParticipant receiver) {
         return participants.stream()
-                .filter(participant -> GameMember.ROLE_HUNTED.equals(participant.role()))
+                .filter(participant -> canSeeDevice(receiver, participant))
+                .toList();
+    }
+
+    private List<GameParticipant> getDeniedMembers(List<GameParticipant> participants, GameParticipant receiver) {
+        return participants.stream()
+                .filter(participant -> !canSeeDevice(receiver, participant))
                 .toList();
     }
 
@@ -208,7 +170,7 @@ public class GameDevicePermissionService {
                     if (grant) {
                         gamePermissionService.addPermission(
                                 httpRequest, userId, receiver.userId(), Device.class, visibleMember.deviceId());
-                    } else {
+                    } else if (!isOwnDevice(receiver, visibleMember)) {
                         gamePermissionService.removePermission(
                                 httpRequest, userId, receiver.userId(), Device.class, visibleMember.deviceId());
                     }
@@ -217,31 +179,34 @@ public class GameDevicePermissionService {
         }
     }
 
+    private boolean isOwnDevice(GameParticipant receiver, GameParticipant visibleMember) {
+        return receiver.userId() == visibleMember.userId()
+                && receiver.deviceId() == visibleMember.deviceId();
+    }
+
     private void clearGameDevicePermissions(
             long userId, List<GameParticipant> participants, HttpServletRequest httpRequest) throws Exception {
-        var participantUserIds = new HashSet<Long>();
-        var participantDeviceIds = new HashSet<Long>();
         for (GameParticipant participant : participants) {
-            participantUserIds.add(participant.userId());
-            participantDeviceIds.add(participant.deviceId());
-        }
-
-        for (long participantUserId : participantUserIds) {
-            for (long participantDeviceId : participantDeviceIds) {
-                gamePermissionService.removePermission(
-                        httpRequest, userId, participantUserId, Device.class, participantDeviceId);
+            for (GameParticipant target : participants) {
+                if (!isOwnDevice(participant, target)) {
+                    gamePermissionService.removePermission(
+                            httpRequest, userId, participant.userId(), Device.class, target.deviceId());
+                }
             }
         }
     }
 
-    private boolean canSeeDevice(String role, String targetRole) {
-        if (GameMember.ROLE_GAME_MANAGEMENT.equals(role)) {
+    private boolean canSeeDevice(GameParticipant receiver, GameParticipant target) {
+        if (GameMember.STATUS_CAUGHT.equals(target.status())) {
+            return receiver.memberId() == target.memberId();
+        }
+        if (GameMember.ROLE_GAME_MANAGEMENT.equals(receiver.role())) {
             return true;
         }
-        if (GameMember.ROLE_GAME_MANAGEMENT.equals(targetRole)) {
+        if (GameMember.ROLE_GAME_MANAGEMENT.equals(target.role())) {
             return true;
         }
-        return role.equals(targetRole);
+        return receiver.role().equals(target.role());
     }
 
 }

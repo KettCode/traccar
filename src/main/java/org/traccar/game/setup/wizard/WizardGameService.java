@@ -54,7 +54,6 @@ public class WizardGameService {
         game.setSpeedhuntLimit(entity.getSpeedhuntLimit());
         game.setSpeedhuntPingLimit(entity.getSpeedhuntPingLimit());
         game.setAllowConsecutiveSpeedhuntsSameTarget(entity.getAllowConsecutiveSpeedhuntsSameTarget());
-        game.setFakePingMaxDistanceMeters(entity.getFakePingMaxDistanceMeters());
         game.setLocationReminderEnabled(entity.getLocationReminderEnabled());
         game.setMaxPositionAgeSeconds(entity.getMaxPositionAgeSeconds());
         game.setLocationReminderIntervalSeconds(entity.getLocationReminderIntervalSeconds());
@@ -95,7 +94,6 @@ public class WizardGameService {
         update.setSpeedhuntLimit(settings.getSpeedhuntLimit());
         update.setSpeedhuntPingLimit(settings.getSpeedhuntPingLimit());
         update.setAllowConsecutiveSpeedhuntsSameTarget(settings.getAllowConsecutiveSpeedhuntsSameTarget());
-        update.setFakePingMaxDistanceMeters(settings.getFakePingMaxDistanceMeters());
         update.setLocationReminderEnabled(settings.getLocationReminderEnabled());
         update.setMaxPositionAgeSeconds(settings.getMaxPositionAgeSeconds());
         update.setLocationReminderIntervalSeconds(settings.getLocationReminderIntervalSeconds());
@@ -109,7 +107,6 @@ public class WizardGameService {
                         "speedhuntLimit",
                         "speedhuntPingLimit",
                         "allowConsecutiveSpeedhuntsSameTarget",
-                        "fakePingMaxDistanceMeters",
                         "locationReminderEnabled",
                         "maxPositionAgeSeconds",
                         "locationReminderIntervalSeconds",
@@ -141,7 +138,6 @@ public class WizardGameService {
         target.setSpeedhuntLimit(source.getSpeedhuntLimit());
         target.setSpeedhuntPingLimit(source.getSpeedhuntPingLimit());
         target.setAllowConsecutiveSpeedhuntsSameTarget(source.getAllowConsecutiveSpeedhuntsSameTarget());
-        target.setFakePingMaxDistanceMeters(source.getFakePingMaxDistanceMeters());
         target.setLocationReminderEnabled(source.getLocationReminderEnabled());
         target.setMaxPositionAgeSeconds(source.getMaxPositionAgeSeconds());
         target.setLocationReminderIntervalSeconds(source.getLocationReminderIntervalSeconds());

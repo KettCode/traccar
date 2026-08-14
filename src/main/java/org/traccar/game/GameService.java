@@ -2,23 +2,18 @@ package org.traccar.game;
 
 import jakarta.inject.Inject;
 import org.traccar.model.Game;
-import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
-import org.traccar.storage.query.Columns;
-import org.traccar.storage.query.Condition;
-import org.traccar.storage.query.Request;
 
 public class GameService {
 
     @Inject
-    private Storage storage;
+    private GameStorage gameStorage;
 
     @Inject
     private GamePermissionService gamePermissionService;
 
     public Game getGame(long gameId) throws StorageException {
-        return storage.getObject(Game.class, new Request(
-                new Columns.All(), new Condition.Equals("id", gameId)));
+        return gameStorage.getGame(gameId);
     }
 
     public Game getDraftGame(long gameId) throws StorageException {

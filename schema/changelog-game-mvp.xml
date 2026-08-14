@@ -36,7 +36,7 @@
       <column name="locationReminderEnabled" type="BOOLEAN" defaultValueBoolean="true">
         <constraints nullable="false" />
       </column>
-      <column name="maxPositionAgeSeconds" type="INT" defaultValueNumeric="300">
+      <column name="maxPositionAgeSeconds" type="INT" defaultValueNumeric="120">
         <constraints nullable="false" />
       </column>
       <column name="locationReminderIntervalSeconds" type="INT" defaultValueNumeric="300">
