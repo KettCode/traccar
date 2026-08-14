@@ -1,5 +1,6 @@
 package org.traccar.game.setup.wizard.view;
 
+import org.traccar.game.view.GameLookupOption;
 import org.traccar.model.Game;
 
 import java.util.List;
@@ -7,10 +8,10 @@ import java.util.List;
 public class WizardState {
 
     private Game game;
-    private List<WizardMemberView> players;
-    private List<WizardGeofence> geofences;
-    private List<String> availableRoles;
-    private List<String> availableGeofenceTypes;
+    private List<WizardMemberView> members;
+    private List<WizardGeofenceView> geofences;
+    private List<GameLookupOption> availableRoles;
+    private List<GameLookupOption> availableGeofenceTypes;
     private List<String> issues;
     private boolean ready;
 
@@ -22,35 +23,35 @@ public class WizardState {
         this.game = game;
     }
 
-    public List<WizardMemberView> getPlayers() {
-        return players;
+    public List<WizardMemberView> getMembers() {
+        return members;
     }
 
-    public void setPlayers(List<WizardMemberView> players) {
-        this.players = players;
+    public void setMembers(List<WizardMemberView> members) {
+        this.members = members;
     }
 
-    public List<WizardGeofence> getGeofences() {
+    public List<WizardGeofenceView> getGeofences() {
         return geofences;
     }
 
-    public void setGeofences(List<WizardGeofence> geofences) {
+    public void setGeofences(List<WizardGeofenceView> geofences) {
         this.geofences = geofences;
     }
 
-    public List<String> getAvailableRoles() {
+    public List<GameLookupOption> getAvailableRoles() {
         return availableRoles;
     }
 
-    public void setAvailableRoles(List<String> availableRoles) {
+    public void setAvailableRoles(List<GameLookupOption> availableRoles) {
         this.availableRoles = availableRoles;
     }
 
-    public List<String> getAvailableGeofenceTypes() {
+    public List<GameLookupOption> getAvailableGeofenceTypes() {
         return availableGeofenceTypes;
     }
 
-    public void setAvailableGeofenceTypes(List<String> availableGeofenceTypes) {
+    public void setAvailableGeofenceTypes(List<GameLookupOption> availableGeofenceTypes) {
         this.availableGeofenceTypes = availableGeofenceTypes;
     }
 

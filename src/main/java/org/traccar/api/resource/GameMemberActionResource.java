@@ -24,7 +24,7 @@ public class GameMemberActionResource extends BaseResource {
     @Context
     private HttpServletRequest request;
 
-    @Path("{gameId}/members/{memberId}/convert-to-hunter")
+    @Path("{gameId}/members/{memberId}/convertToHunter")
     @POST
     public Response convertToHunter(@PathParam("gameId") long gameId, @PathParam("memberId") long memberId)
             throws Exception {

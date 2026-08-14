@@ -3,11 +3,11 @@ package org.traccar.game.setup;
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 import org.traccar.api.security.PermissionsService;
-import org.traccar.game.setup.wizard.WizardClientSetupService;
-import org.traccar.game.setup.view.SetupPlayerView;
+import org.traccar.game.GameService;
+import org.traccar.game.setup.request.SetupPasswordRequest;
+import org.traccar.game.setup.view.PlayerView;
 import org.traccar.helper.LogAction;
 import org.traccar.model.Device;
-import org.traccar.model.GameMember;
 import org.traccar.model.ObjectOperation;
 import org.traccar.model.Player;
 import org.traccar.model.User;
@@ -22,6 +22,7 @@ import org.traccar.storage.query.Request;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 public class SetupPlayerService {
 
@@ -38,9 +39,34 @@ public class SetupPlayerService {
     private LogAction actionLogger;
 
     @Inject
-    private WizardClientSetupService clientSetupService;
+    private SetupClientService setupClientService;
 
-    public List<SetupPlayerView> getPlayers(long userId, boolean includeInactive) throws StorageException {
+    @Inject
+    private SetupStorage setupStorage;
+
+    @Inject
+    private GameService gameService;
+
+    public List<PlayerView> getPlayers(long userId, boolean includeInactive) throws StorageException {
+        return getPlayerViews(getPlayerObjects(userId, includeInactive));
+    }
+
+    public List<PlayerView> getAvailablePlayers(long userId, long gameId) throws StorageException {
+        if (gameService.getEditableDraftGame(userId, gameId) == null) {
+            return null;
+        }
+
+        var memberPlayerIds = setupStorage.getMemberPlayerIds(gameId);
+        var players = new ArrayList<Player>();
+        for (Player player : getPlayerObjects(userId, false)) {
+            if (!memberPlayerIds.contains(player.getId())) {
+                players.add(player);
+            }
+        }
+        return getPlayerViews(players);
+    }
+
+    private List<Player> getPlayerObjects(long userId, boolean includeInactive) throws StorageException {
         var conditions = new ArrayList<Condition>();
         if (!includeInactive) {
             conditions.add(new Condition.Equals("active", true));
@@ -48,11 +74,16 @@ public class SetupPlayerService {
         if (permissionsService.notAdmin(userId)) {
             conditions.add(new Condition.Permission(User.class, userId, Player.class));
         }
-        var result = new ArrayList<SetupPlayerView>();
-        var players = storage.getObjects(Player.class, new Request(
+        return storage.getObjects(Player.class, new Request(
                 new Columns.All(), Condition.merge(conditions), new Order("id")));
+    }
+
+    private List<PlayerView> getPlayerViews(List<Player> players) throws StorageException {
+        var result = new ArrayList<PlayerView>();
+        Map<Long, User> usersById = setupStorage.getUsersByPlayers(players);
+        Map<Long, Device> devicesById = setupStorage.getDevicesByPlayers(players);
         for (Player player : players) {
-            result.add(toPlayerView(player));
+            result.add(toPlayerView(player, usersById, devicesById));
         }
         return result;
     }
@@ -61,13 +92,12 @@ public class SetupPlayerService {
         permissionsService.checkPermission(Player.class, userId, playerId);
         permissionsService.checkEdit(userId, Player.class, false, false);
 
-        Player player = storage.getObject(Player.class, new Request(
-                new Columns.All(), new Condition.Equals("id", playerId)));
+        Player player = setupStorage.getPlayer(playerId);
         if (player == null) {
             return false;
         }
 
-        if (isReferenced(playerId)) {
+        if (setupStorage.isPlayerReferenced(playerId)) {
             Player update = new Player();
             update.setId(playerId);
             update.setActive(false);
@@ -86,31 +116,66 @@ public class SetupPlayerService {
         return true;
     }
 
-    private boolean isReferenced(long playerId) throws StorageException {
-        return storage.getObject(GameMember.class, new Request(
-                new Columns.Include("id"), new Condition.Equals("playerId", playerId))) != null;
+    public boolean updatePassword(
+            long userId, long playerId, SetupPasswordRequest request,
+            HttpServletRequest httpRequest) throws Exception {
+        if (request == null) {
+            throw new IllegalArgumentException("Password is required");
+        }
+
+        permissionsService.checkPermission(Player.class, userId, playerId);
+        Player player = setupStorage.getPlayer(playerId);
+        if (player == null) {
+            return false;
+        }
+        if (player.getUserId() == 0) {
+            throw new IllegalArgumentException("Player user assignment is missing");
+        }
+
+        permissionsService.checkUser(userId, player.getUserId());
+        updateUserPassword(userId, player.getUserId(), request.getPassword(), httpRequest);
+        return true;
     }
 
-    private SetupPlayerView toPlayerView(Player player) throws StorageException {
-        SetupPlayerView view = new SetupPlayerView();
+    private void updateUserPassword(
+            long userId, long playerUserId, String password,
+            HttpServletRequest httpRequest) throws Exception {
+        validatePassword(password);
+        User user = new User();
+        user.setId(playerUserId);
+        user.setPassword(password);
+        storage.updateObject(user, new Request(
+                new Columns.Include("hashedPassword", "salt"),
+                new Condition.Equals("id", playerUserId)));
+        cacheManager.invalidateObject(true, User.class, playerUserId, ObjectOperation.UPDATE);
+        actionLogger.edit(httpRequest, userId, user);
+    }
+
+    private void validatePassword(String password) {
+        if (password == null || password.isEmpty()) {
+            throw new IllegalArgumentException("Password is required");
+        }
+    }
+
+    private PlayerView toPlayerView(
+            Player player, Map<Long, User> usersById, Map<Long, Device> devicesById) {
+        PlayerView view = new PlayerView();
         view.setPlayerId(player.getId());
         view.setUserId(player.getUserId());
         view.setDeviceId(player.getDeviceId());
         view.setActive(player.getActive());
 
-        User user = storage.getObject(User.class, new Request(
-                new Columns.All(), new Condition.Equals("id", player.getUserId())));
+        User user = usersById.get(player.getUserId());
         if (user != null) {
-            view.setUsername(user.getLogin());
-            view.setUserName(user.getName());
+            view.setUserLogin(user.getLogin());
+            view.setUserDisplayName(user.getName());
         }
 
-        Device device = storage.getObject(Device.class, new Request(
-                new Columns.All(), new Condition.Equals("id", player.getDeviceId())));
+        Device device = devicesById.get(player.getDeviceId());
         if (device != null) {
             view.setDeviceName(device.getName());
             view.setDeviceUniqueId(device.getUniqueId());
-            view.setClientSetupLink(clientSetupService.buildSetupLink(device.getUniqueId()));
+            view.setClientSetupLink(setupClientService.buildSetupLink(device.getUniqueId()));
         }
         return view;
     }

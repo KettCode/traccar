@@ -1,4 +1,4 @@
-package org.traccar.game.setup.wizard;
+package org.traccar.game.setup;
 
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,16 +12,14 @@ import org.traccar.model.Geofence;
 import org.traccar.model.ObjectOperation;
 import org.traccar.session.cache.CacheManager;
 import org.traccar.storage.Storage;
-import org.traccar.storage.StorageException;
 import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;
-import org.traccar.storage.query.Order;
 import org.traccar.storage.query.Request;
 
 import java.util.Date;
 import java.util.List;
 
-public class WizardZoneService {
+public class SetupGameGeofenceService {
 
     @Inject
     private Storage storage;
@@ -35,10 +33,14 @@ public class WizardZoneService {
     @Inject
     private LogAction actionLogger;
 
+    @Inject
     private GameService gameService;
 
     @Inject
     private GameValidatorService validator;
+
+    @Inject
+    private SetupStorage setupStorage;
 
     public boolean addGeofences(
             long userId, long gameId, List<GameGeofence> requests,
@@ -69,7 +71,7 @@ public class WizardZoneService {
             throw new IllegalArgumentException("Game geofence is required");
         }
 
-        GameGeofence gameGeofence = getGameGeofence(gameId, gameGeofenceId);
+        GameGeofence gameGeofence = setupStorage.getGameGeofence(gameId, gameGeofenceId);
         if (gameGeofence == null) {
             return false;
         }
@@ -103,20 +105,14 @@ public class WizardZoneService {
             return false;
         }
 
-        GameGeofence gameGeofence = getGameGeofence(gameId, gameGeofenceId);
+        GameGeofence gameGeofence = setupStorage.getGameGeofence(gameId, gameGeofenceId);
         if (gameGeofence == null) {
             return false;
         }
 
-        GameGeofence update = new GameGeofence();
-        update.setId(gameGeofenceId);
-        update.setActive(false);
-        update.setUpdatedAt(new Date());
-        storage.updateObject(update, new Request(
-                new Columns.Include("active", "updatedAt"),
-                new Condition.Equals("id", gameGeofenceId)));
-        cacheManager.invalidateObject(true, GameGeofence.class, gameGeofenceId, ObjectOperation.UPDATE);
-        actionLogger.edit(httpRequest, userId, update);
+        storage.removeObject(GameGeofence.class, new Request(new Condition.Equals("id", gameGeofenceId)));
+        cacheManager.invalidateObject(true, GameGeofence.class, gameGeofenceId, ObjectOperation.DELETE);
+        actionLogger.remove(httpRequest, userId, GameGeofence.class, gameGeofenceId);
 
         return true;
     }
@@ -126,10 +122,7 @@ public class WizardZoneService {
             HttpServletRequest httpRequest) throws Exception {
         gameService.getEditableDraftGame(userId, targetGame.getId());
 
-        var gameGeofences = storage.getObjects(GameGeofence.class, new Request(
-                new Columns.All(), new Condition.And(
-                        new Condition.Equals("gameId", sourceGameId),
-                        new Condition.Equals("active", true)), new Order("id")));
+        var gameGeofences = setupStorage.getActiveGameGeofences(sourceGameId);
         for (GameGeofence gameGeofence : gameGeofences) {
             permissionsService.checkPermission(Geofence.class, userId, gameGeofence.getGeofenceId());
             GameGeofence targetGameGeofence = new GameGeofence();
@@ -153,8 +146,7 @@ public class WizardZoneService {
         }
         permissionsService.checkPermission(Geofence.class, userId, request.getGeofenceId());
 
-        Geofence geofence = storage.getObject(Geofence.class, new Request(
-                new Columns.All(), new Condition.Equals("id", request.getGeofenceId())));
+        Geofence geofence = setupStorage.getGeofence(request.getGeofenceId());
         if (geofence == null) {
             throw new IllegalArgumentException("Referenced geofence is missing");
         }
@@ -195,13 +187,6 @@ public class WizardZoneService {
             validator.validateRole(result);
         }
         return result;
-    }
-
-    private GameGeofence getGameGeofence(long gameId, long gameGeofenceId) throws StorageException {
-        return storage.getObject(GameGeofence.class, new Request(
-                new Columns.All(), new Condition.And(
-                        new Condition.Equals("id", gameGeofenceId),
-                        new Condition.Equals("gameId", gameId))));
     }
 
 }

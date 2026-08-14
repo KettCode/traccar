@@ -1,4 +1,4 @@
-package org.traccar.game.setup.wizard;
+package org.traccar.game.setup;
 
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
@@ -7,18 +7,24 @@ import org.traccar.api.security.ServiceAccountUser;
 import org.traccar.game.GamePermissionService;
 import org.traccar.game.GameService;
 import org.traccar.game.GameValidatorService;
+import org.traccar.game.setup.request.SetupCopyRequest;
 import org.traccar.helper.LogAction;
 import org.traccar.model.Game;
 import org.traccar.model.ObjectOperation;
+import org.traccar.model.User;
 import org.traccar.session.cache.CacheManager;
 import org.traccar.storage.Storage;
+import org.traccar.storage.StorageException;
 import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;
+import org.traccar.storage.query.Order;
 import org.traccar.storage.query.Request;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
-public class WizardGameService {
+public class SetupGameService {
 
     @Inject
     private Storage storage;
@@ -41,44 +47,39 @@ public class WizardGameService {
     @Inject
     private GameValidatorService validator;
 
+    @Inject
+    private SetupGameMemberService gameMemberService;
+
+    @Inject
+    private SetupGameGeofenceService gameGeofenceService;
+
+    public List<Game> getGames(long userId) throws StorageException {
+        var conditions = new ArrayList<Condition>();
+        if (permissionsService.notAdmin(userId)) {
+            conditions.add(new Condition.Permission(User.class, userId, Game.class));
+        }
+        return storage.getObjects(Game.class, new Request(
+                new Columns.All(), Condition.merge(conditions), new Order("id")));
+    }
+
     public Game createDraftGame(long userId, Game entity, HttpServletRequest request) throws Exception {
-        if (entity == null || entity.getName() == null || entity.getName().isBlank()) {
-            throw new IllegalArgumentException("Game name is required");
+        if (entity == null) {
+            throw new IllegalArgumentException("Game is required");
         }
         validator.validateSettings(entity);
 
         Game game = new Game();
-        game.setName(entity.getName().trim());
+        game.setName(normalizeRequiredName(entity.getName()));
         game.setStatus(Game.STATUS_DRAFT);
-        game.setPingIntervalSeconds(entity.getPingIntervalSeconds());
-        game.setSpeedhuntLimit(entity.getSpeedhuntLimit());
-        game.setSpeedhuntPingLimit(entity.getSpeedhuntPingLimit());
-        game.setAllowConsecutiveSpeedhuntsSameTarget(entity.getAllowConsecutiveSpeedhuntsSameTarget());
-        game.setLocationReminderEnabled(entity.getLocationReminderEnabled());
-        game.setMaxPositionAgeSeconds(entity.getMaxPositionAgeSeconds());
-        game.setLocationReminderIntervalSeconds(entity.getLocationReminderIntervalSeconds());
+        applySetupSettings(entity, game);
         game.setPlannedEndAt(entity.getPlannedEndAt());
-        game.setCreatedAt(new Date());
-
-        permissionsService.checkEdit(userId, game, true, false);
-
-        game.setId(storage.addObject(game, new Request(new Columns.Exclude("id"))));
-        actionLogger.create(request, userId, game);
-
-        if (userId != ServiceAccountUser.ID) {
-            gamePermissionService.addPermission(request, userId, userId, Game.class, game.getId());
-        }
-
-        return game;
+        return addDraftGame(userId, game, request);
     }
 
     public Game updateSettings(
             long userId, long gameId, Game settings, HttpServletRequest request) throws Exception {
         if (settings == null) {
             throw new IllegalArgumentException("Game settings are required");
-        }
-        if (settings.getName() == null || settings.getName().isBlank()) {
-            throw new IllegalArgumentException("Game name is required");
         }
 
         Game game = gameService.getEditableDraftGame(userId, gameId);
@@ -89,14 +90,8 @@ public class WizardGameService {
         validator.validateSettings(settings);
         Game update = new Game();
         update.setId(gameId);
-        update.setName(settings.getName().trim());
-        update.setPingIntervalSeconds(settings.getPingIntervalSeconds());
-        update.setSpeedhuntLimit(settings.getSpeedhuntLimit());
-        update.setSpeedhuntPingLimit(settings.getSpeedhuntPingLimit());
-        update.setAllowConsecutiveSpeedhuntsSameTarget(settings.getAllowConsecutiveSpeedhuntsSameTarget());
-        update.setLocationReminderEnabled(settings.getLocationReminderEnabled());
-        update.setMaxPositionAgeSeconds(settings.getMaxPositionAgeSeconds());
-        update.setLocationReminderIntervalSeconds(settings.getLocationReminderIntervalSeconds());
+        update.setName(normalizeRequiredName(settings.getName()));
+        applySetupSettings(settings, update);
         update.setPlannedEndAt(settings.getPlannedEndAt());
         update.setUpdatedAt(new Date());
 
@@ -133,7 +128,37 @@ public class WizardGameService {
         return true;
     }
 
+    public Game copyGame(
+            long userId, long sourceGameId, SetupCopyRequest request,
+            HttpServletRequest httpRequest) throws Exception {
+        Game source = gameService.getAccessibleGame(userId, sourceGameId);
+        if (source == null) {
+            return null;
+        }
+
+        String name = request != null ? normalizeOptionalName(request.getName()) : null;
+        if (name == null) {
+            name = source.getName() + " Copy";
+        }
+
+        Game game = createCopiedDraftGame(
+                userId, source, name, request == null || request.getCopySettings(), httpRequest);
+
+        if (request == null || request.getCopyMembers()) {
+            gameMemberService.copyActiveMembers(userId, source.getId(), game, httpRequest);
+        }
+        if (request == null || request.getCopyGeofences()) {
+            gameGeofenceService.copyActiveGeofences(userId, source.getId(), game, httpRequest);
+        }
+
+        return game;
+    }
+
     public void copySettings(Game source, Game target) {
+        applySetupSettings(source, target);
+    }
+
+    private void applySetupSettings(Game source, Game target) {
         target.setPingIntervalSeconds(source.getPingIntervalSeconds());
         target.setSpeedhuntLimit(source.getSpeedhuntLimit());
         target.setSpeedhuntPingLimit(source.getSpeedhuntPingLimit());
@@ -143,21 +168,20 @@ public class WizardGameService {
         target.setLocationReminderIntervalSeconds(source.getLocationReminderIntervalSeconds());
     }
 
-    public Game createCopiedDraftGame(
+    private Game createCopiedDraftGame(
             long userId, Game source, String name, boolean copySettings,
             HttpServletRequest request) throws Exception {
-        if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("Game name is required");
-        }
-
         Game game = new Game();
-        game.setName(name.trim());
+        game.setName(normalizeRequiredName(name));
         game.setStatus(Game.STATUS_DRAFT);
-        game.setCreatedAt(new Date());
         if (copySettings) {
             copySettings(source, game);
         }
+        return addDraftGame(userId, game, request);
+    }
 
+    private Game addDraftGame(long userId, Game game, HttpServletRequest request) throws Exception {
+        game.setCreatedAt(new Date());
         permissionsService.checkEdit(userId, game, true, false);
 
         game.setId(storage.addObject(game, new Request(new Columns.Exclude("id"))));
@@ -168,6 +192,19 @@ public class WizardGameService {
         }
 
         return game;
+    }
+
+    private String normalizeRequiredName(String name) {
+        String result = normalizeOptionalName(name);
+        if (result == null) {
+            throw new IllegalArgumentException("Game name is required");
+        }
+        return result;
+    }
+
+    private String normalizeOptionalName(String name) {
+        String result = name != null ? name.trim() : null;
+        return result != null && !result.isEmpty() ? result : null;
     }
 
 }

@@ -1,6 +1,6 @@
-package org.traccar.game.setup.wizard.request;
+package org.traccar.game.setup.request;
 
-public class WizardPasswordRequest {
+public class SetupPasswordRequest {
 
     private String password;
 

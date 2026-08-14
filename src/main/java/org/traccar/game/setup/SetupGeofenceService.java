@@ -7,17 +7,12 @@ import org.traccar.helper.LogAction;
 import org.traccar.model.GameGeofence;
 import org.traccar.model.Geofence;
 import org.traccar.model.ObjectOperation;
-import org.traccar.model.User;
 import org.traccar.session.cache.CacheManager;
 import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
 import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;
-import org.traccar.storage.query.Order;
 import org.traccar.storage.query.Request;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class SetupGeofenceService {
 
@@ -32,15 +27,6 @@ public class SetupGeofenceService {
 
     @Inject
     private LogAction actionLogger;
-
-    public List<Geofence> getGeofences(long userId) throws StorageException {
-        var conditions = new ArrayList<Condition>();
-        if (permissionsService.notAdmin(userId)) {
-            conditions.add(new Condition.Permission(User.class, userId, Geofence.class));
-        }
-        return storage.getObjects(Geofence.class, new Request(
-                new Columns.All(), Condition.merge(conditions), new Order("name")));
-    }
 
     public boolean removeGeofence(long userId, long geofenceId, HttpServletRequest request) throws Exception {
         permissionsService.checkPermission(Geofence.class, userId, geofenceId);

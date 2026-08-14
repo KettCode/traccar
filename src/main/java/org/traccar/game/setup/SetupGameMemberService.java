@@ -1,4 +1,4 @@
-package org.traccar.game.setup.wizard;
+package org.traccar.game.setup;
 
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
@@ -7,9 +7,7 @@ import org.traccar.api.security.ServiceAccountUser;
 import org.traccar.game.GamePermissionService;
 import org.traccar.game.GameService;
 import org.traccar.game.GameValidatorService;
-import org.traccar.game.setup.wizard.request.WizardMemberRequest;
-import org.traccar.game.setup.wizard.request.WizardPasswordRequest;
-import org.traccar.game.setup.wizard.view.WizardReusablePlayer;
+import org.traccar.game.setup.request.SetupMemberRequest;
 import org.traccar.helper.LogAction;
 import org.traccar.model.Device;
 import org.traccar.model.Game;
@@ -23,22 +21,19 @@ import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
 import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;
-import org.traccar.storage.query.Order;
 import org.traccar.storage.query.Request;
 
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Locale;
-import java.util.Set;
 import java.util.List;
 import java.util.regex.Pattern;
 
-public class WizardMemberService {
+public class SetupGameMemberService {
 
-    private static final String GAME_EMAIL_DOMAIN = "@game.local";
-    private static final int MAX_USERNAME_LENGTH = 128 - GAME_EMAIL_DOMAIN.length();
-    private static final Pattern USERNAME_PATTERN = Pattern.compile("[A-Za-z0-9._-]+");
+    private static final int MAX_USER_EMAIL_LENGTH = 128;
+    private static final String GENERATED_EMAIL_DOMAIN = "@game.local";
+    private static final int MAX_TECHNICAL_IDENTIFIER_LENGTH = MAX_USER_EMAIL_LENGTH - GENERATED_EMAIL_DOMAIN.length();
+    private static final Pattern SETUP_USERNAME_PATTERN = Pattern.compile("[A-Za-z0-9._-]+");
 
     @Inject
     private Storage storage;
@@ -62,13 +57,13 @@ public class WizardMemberService {
     private GameValidatorService validator;
 
     @Inject
-    private WizardClientSetupService clientSetupService;
+    private SetupStorage setupStorage;
 
-    public boolean addPlayers(
-            long userId, long gameId, List<WizardMemberRequest> requests,
+    public boolean addMembers(
+            long userId, long gameId, List<SetupMemberRequest> requests,
             HttpServletRequest httpRequest) throws Exception {
         if (requests == null || requests.isEmpty()) {
-            throw new IllegalArgumentException("Game players are required");
+            throw new IllegalArgumentException("Game members are required");
         }
 
         Game game = gameService.getEditableDraftGame(userId, gameId);
@@ -76,40 +71,17 @@ public class WizardMemberService {
             return false;
         }
 
-        for (WizardMemberRequest request : requests) {
-            addPlayer(userId, game, request, httpRequest);
+        for (SetupMemberRequest request : requests) {
+            addMember(userId, game, request, httpRequest);
         }
         return true;
     }
 
-    public List<WizardReusablePlayer> getReusablePlayers(long userId, long gameId) throws StorageException {
-        Game game = gameService.getEditableDraftGame(userId, gameId);
-        if (game == null) {
-            return null;
-        }
-        var activePlayerIds = getActivePlayerIds(gameId);
-        var conditions = new ArrayList<Condition>();
-        conditions.add(new Condition.Equals("active", true));
-        if (permissionsService.notAdmin(userId)) {
-            conditions.add(new Condition.Permission(User.class, userId, Player.class));
-        }
-
-        var result = new ArrayList<WizardReusablePlayer>();
-        var players = storage.getObjects(Player.class, new Request(
-                new Columns.All(), Condition.merge(conditions), new Order("id")));
-        for (Player player : players) {
-            if (!activePlayerIds.contains(player.getId())) {
-                result.add(toReusablePlayer(player));
-            }
-        }
-        return result;
-    }
-
-    public boolean reusePlayers(
+    public boolean addExistingPlayers(
             long userId, long gameId, List<GameMember> requests,
             HttpServletRequest httpRequest) throws Exception {
         if (requests == null || requests.isEmpty()) {
-            throw new IllegalArgumentException("Reusable game players are required");
+            throw new IllegalArgumentException("Existing players are required");
         }
 
         Game game = gameService.getEditableDraftGame(userId, gameId);
@@ -117,12 +89,12 @@ public class WizardMemberService {
             return false;
         }
         for (GameMember request : requests) {
-            reusePlayer(userId, game, request, httpRequest);
+            addExistingPlayer(userId, game, request, httpRequest);
         }
         return true;
     }
 
-    public boolean updatePlayer(
+    public boolean updateMember(
             long userId, long gameId, long memberId, GameMember request,
             HttpServletRequest httpRequest) throws Exception {
         Game game = gameService.getEditableDraftGame(userId, gameId);
@@ -133,7 +105,7 @@ public class WizardMemberService {
             throw new IllegalArgumentException("Game player is required");
         }
 
-        GameMember member = getGameMember(gameId, memberId);
+        GameMember member = setupStorage.getGameMember(gameId, memberId);
         if (member == null) {
             return false;
         }
@@ -161,60 +133,22 @@ public class WizardMemberService {
         return true;
     }
 
-    public boolean removePlayer(
+    public boolean removeMember(
             long userId, long gameId, long memberId, HttpServletRequest httpRequest) throws Exception {
         Game game = gameService.getEditableDraftGame(userId, gameId);
         if (game == null) {
             return false;
         }
 
-        GameMember member = getGameMember(gameId, memberId);
+        GameMember member = setupStorage.getGameMember(gameId, memberId);
         if (member == null) {
             return false;
         }
-        Player player = getPlayer(member.getPlayerId());
-        if (player == null) {
-            throw new IllegalArgumentException("Game player assignment is missing");
-        }
 
-        GameMember memberUpdate = new GameMember();
-        memberUpdate.setId(memberId);
-        memberUpdate.setStatus(GameMember.STATUS_LEFT);
-        storage.updateObject(memberUpdate, new Request(
-                new Columns.Include("status"),
-                new Condition.Equals("id", memberId)));
-        cacheManager.invalidateObject(true, GameMember.class, memberId, ObjectOperation.UPDATE);
-        actionLogger.edit(httpRequest, userId, memberUpdate);
+        storage.removeObject(GameMember.class, new Request(new Condition.Equals("id", memberId)));
+        cacheManager.invalidateObject(true, GameMember.class, memberId, ObjectOperation.DELETE);
+        actionLogger.remove(httpRequest, userId, GameMember.class, memberId);
 
-        return true;
-    }
-
-    public boolean updatePassword(
-            long userId, long gameId, long memberId, WizardPasswordRequest request,
-            HttpServletRequest httpRequest) throws Exception {
-        Game game = gameService.getEditableDraftGame(userId, gameId);
-        if (game == null) {
-            return false;
-        }
-        if (request == null) {
-            throw new IllegalArgumentException("Password is required");
-        }
-
-        GameMember member = getGameMember(gameId, memberId);
-        if (member == null) {
-            return false;
-        }
-        if (!GameMember.STATUS_ACTIVE.equals(member.getStatus())) {
-            throw new IllegalArgumentException("Only active setup players can be changed");
-        }
-
-        Player player = getPlayer(member.getPlayerId());
-        if (player == null || player.getUserId() == 0) {
-            throw new IllegalArgumentException("Game player assignment is missing");
-        }
-
-        permissionsService.checkUser(userId, player.getUserId());
-        updateUserPassword(userId, player.getUserId(), request.getPassword(), httpRequest);
         return true;
     }
 
@@ -223,12 +157,9 @@ public class WizardMemberService {
             HttpServletRequest httpRequest) throws Exception {
         gameService.getEditableDraftGame(userId, targetGame.getId());
 
-        var members = storage.getObjects(GameMember.class, new Request(
-                new Columns.All(), new Condition.And(
-                        new Condition.Equals("gameId", sourceGameId),
-                        new Condition.Equals("status", GameMember.STATUS_ACTIVE)), new Order("id")));
+        var members = setupStorage.getActiveMembers(sourceGameId);
         for (GameMember member : members) {
-            Player player = getPlayer(member.getPlayerId());
+            Player player = setupStorage.getPlayer(member.getPlayerId());
             if (player == null || !player.getActive() || player.getUserId() == 0 || player.getDeviceId() == 0) {
                 continue;
             }
@@ -238,11 +169,11 @@ public class WizardMemberService {
         }
     }
 
-    private void addPlayer(
-            long userId, Game game, WizardMemberRequest request,
+    private void addMember(
+            long userId, Game game, SetupMemberRequest request,
             HttpServletRequest httpRequest) throws Exception {
         if (request == null) {
-            throw new IllegalArgumentException("Game player is required");
+            throw new IllegalArgumentException("Game member is required");
         }
 
         String displayName = request.getDisplayName() != null ? request.getDisplayName().trim() : null;
@@ -250,8 +181,10 @@ public class WizardMemberService {
             throw new IllegalArgumentException("Display name is required");
         }
         String username = request.getUsername() != null ? request.getUsername().trim() : null;
-        validateUsername(username);
-        checkUsernameAvailable(username);
+        validateSetupUsername(username);
+        String technicalUsername = getTechnicalUsername(username, game.getId());
+        validateTechnicalUsername(technicalUsername);
+        checkUsernameAvailable(technicalUsername);
 
         String role = request.getRole() != null ? request.getRole().trim() : null;
         validator.validateRole(role);
@@ -259,26 +192,16 @@ public class WizardMemberService {
 
         checkAddAccess(userId);
 
-        User playerUser = addUser(userId, username, request.getPassword(), httpRequest);
-        Device device = addDevice(userId, username, httpRequest);
+        User playerUser = addUser(userId, technicalUsername, request.getPassword(), httpRequest);
+        Device device = addDevice(userId, technicalUsername, httpRequest);
+        Player player = addPlayer(userId, playerUser, device, httpRequest);
 
-        if (userId != ServiceAccountUser.ID) {
-            gamePermissionService.addPermission(httpRequest, userId, userId, ManagedUser.class, playerUser.getId());
-            gamePermissionService.addPermission(httpRequest, userId, userId, Device.class, device.getId());
-        }
-        gamePermissionService.addPermission(httpRequest, userId, playerUser.getId(), Device.class, device.getId());
-
-        Player player = addPlayerObject(userId, playerUser, device, httpRequest);
-
-        if (userId != ServiceAccountUser.ID) {
-            gamePermissionService.addPermission(httpRequest, userId, userId, Player.class, player.getId());
-        }
-        gamePermissionService.addPermission(httpRequest, userId, playerUser.getId(), Player.class, player.getId());
+        ensurePlayerPermissions(userId, player, httpRequest);
 
         addGameMember(userId, game, player, displayName, role, httpRequest);
     }
 
-    private void reusePlayer(
+    private void addExistingPlayer(
             long userId, Game game, GameMember request,
             HttpServletRequest httpRequest) throws Exception {
         if (request == null || request.getPlayerId() == 0) {
@@ -287,12 +210,12 @@ public class WizardMemberService {
 
         permissionsService.checkPermission(Player.class, userId, request.getPlayerId());
 
-        Player player = getPlayer(request.getPlayerId());
+        Player player = setupStorage.getPlayer(request.getPlayerId());
         if (player == null || !player.getActive() || player.getUserId() == 0 || player.getDeviceId() == 0) {
-            throw new IllegalArgumentException("Player is not reusable");
+            throw new IllegalArgumentException("Player is not available");
         }
-        if (getActivePlayerIds(game.getId()).contains(player.getId())) {
-            throw new IllegalArgumentException("Player is already active in this game");
+        if (setupStorage.getMemberPlayerIds(game.getId()).contains(player.getId())) {
+            throw new IllegalArgumentException("Player is already in this game");
         }
 
         String role = request.getRole() != null ? request.getRole().trim() : null;
@@ -325,15 +248,17 @@ public class WizardMemberService {
     }
 
     private User addUser(
-            long userId, String username, String password,
+            long userId, String technicalUsername, String password,
             HttpServletRequest httpRequest) throws StorageException {
         User playerUser = new User();
-        playerUser.setName(username);
-        playerUser.setLogin(username);
-        playerUser.setEmail(username + GAME_EMAIL_DOMAIN);
+        playerUser.setName(technicalUsername);
+        playerUser.setLogin(technicalUsername);
+        playerUser.setEmail(technicalUsername + GENERATED_EMAIL_DOMAIN);
         playerUser.setPassword(password);
-        playerUser.setTemporary(true);
-        playerUser.setDeviceLimit(1);
+        playerUser.setReadonly(true);
+        playerUser.setDeviceReadonly(true);
+        playerUser.setDisableReports(true);
+        playerUser.setDeviceLimit(0);
         playerUser.setUserLimit(0);
         playerUser.setId(storage.addObject(playerUser, new Request(new Columns.Exclude("id"))));
         storage.updateObject(playerUser, new Request(
@@ -344,16 +269,16 @@ public class WizardMemberService {
     }
 
     private Device addDevice(
-            long userId, String username, HttpServletRequest httpRequest) throws StorageException {
+            long userId, String technicalUsername, HttpServletRequest httpRequest) throws StorageException {
         Device device = new Device();
-        device.setName(username);
-        device.setUniqueId(username);
+        device.setName(technicalUsername);
+        device.setUniqueId(technicalUsername);
         device.setId(storage.addObject(device, new Request(new Columns.Exclude("id"))));
         actionLogger.create(httpRequest, userId, device);
         return device;
     }
 
-    private Player addPlayerObject(
+    private Player addPlayer(
             long userId, User playerUser, Device device,
             HttpServletRequest httpRequest) throws StorageException {
         Player player = new Player();
@@ -364,20 +289,6 @@ public class WizardMemberService {
         player.setId(storage.addObject(player, new Request(new Columns.Exclude("id"))));
         actionLogger.create(httpRequest, userId, player);
         return player;
-    }
-
-    private void updateUserPassword(
-            long userId, long playerUserId, String password,
-            HttpServletRequest httpRequest) throws Exception {
-        validatePassword(password);
-        User user = new User();
-        user.setId(playerUserId);
-        user.setPassword(password);
-        storage.updateObject(user, new Request(
-                new Columns.Include("hashedPassword", "salt"),
-                new Condition.Equals("id", playerUserId)));
-        cacheManager.invalidateObject(true, User.class, playerUserId, ObjectOperation.UPDATE);
-        actionLogger.edit(httpRequest, userId, user);
     }
 
     private GameMember addGameMember(
@@ -394,46 +305,29 @@ public class WizardMemberService {
         return member;
     }
 
-    private Set<Long> getActivePlayerIds(long gameId) throws StorageException {
-        var playerIds = new HashSet<Long>();
-        var members = storage.getObjects(GameMember.class, new Request(
-                new Columns.Include("playerId"), new Condition.And(
-                        new Condition.Equals("gameId", gameId),
-                        new Condition.Equals("status", GameMember.STATUS_ACTIVE))));
-        for (GameMember member : members) {
-            playerIds.add(member.getPlayerId());
-        }
-        return playerIds;
-    }
-
-    private GameMember getGameMember(long gameId, long memberId) throws StorageException {
-        return storage.getObject(GameMember.class, new Request(
-                new Columns.All(), new Condition.And(
-                        new Condition.Equals("id", memberId),
-                        new Condition.Equals("gameId", gameId))));
-    }
-
-    private Player getPlayer(long playerId) throws StorageException {
-        return storage.getObject(Player.class, new Request(
-                new Columns.All(), new Condition.Equals("id", playerId)));
-    }
-
     private void validatePassword(String password) {
         if (password == null || password.isEmpty()) {
             throw new IllegalArgumentException("Password is required");
         }
     }
 
-    private void validateUsername(String username) {
+    private void validateSetupUsername(String username) {
         if (username == null || username.isEmpty()) {
             throw new IllegalArgumentException("Username is required");
         }
-        if (username.length() > MAX_USERNAME_LENGTH) {
-            throw new IllegalArgumentException("Username is too long");
-        }
-        if (!USERNAME_PATTERN.matcher(username).matches()) {
+        if (!SETUP_USERNAME_PATTERN.matcher(username).matches()) {
             throw new IllegalArgumentException("Username contains invalid characters");
         }
+    }
+
+    private void validateTechnicalUsername(String username) {
+        if (username.length() > MAX_TECHNICAL_IDENTIFIER_LENGTH) {
+            throw new IllegalArgumentException("Username is too long");
+        }
+    }
+
+    private String getTechnicalUsername(String username, long gameId) {
+        return username.toLowerCase(Locale.ROOT) + "_" + gameId;
     }
 
     private void checkUsernameAvailable(String username) throws StorageException {
@@ -441,37 +335,13 @@ public class WizardMemberService {
         if (storage.getObject(User.class, new Request(
                 new Columns.Include("id"), new Condition.Or(
                         new Condition.Equals("LOWER(login)", lowerUsername),
-                        new Condition.Equals("LOWER(email)", lowerUsername + GAME_EMAIL_DOMAIN)))) != null) {
+                        new Condition.Equals("LOWER(email)", lowerUsername + GENERATED_EMAIL_DOMAIN)))) != null) {
             throw new IllegalArgumentException("Username is already used");
         }
         if (storage.getObject(Device.class, new Request(
                 new Columns.Include("id"), new Condition.Equals("LOWER(uniqueId)", lowerUsername))) != null) {
             throw new IllegalArgumentException("Username is already used as device identifier");
         }
-    }
-
-    private WizardReusablePlayer toReusablePlayer(Player player) throws StorageException {
-        WizardReusablePlayer view = new WizardReusablePlayer();
-        view.setPlayerId(player.getId());
-        view.setUserId(player.getUserId());
-        view.setDeviceId(player.getDeviceId());
-        view.setActive(player.getActive());
-
-        User user = storage.getObject(User.class, new Request(
-                new Columns.All(), new Condition.Equals("id", player.getUserId())));
-        if (user != null) {
-            view.setUsername(user.getLogin());
-            view.setUserName(user.getName());
-        }
-
-        Device device = storage.getObject(Device.class, new Request(
-                new Columns.All(), new Condition.Equals("id", player.getDeviceId())));
-        if (device != null) {
-            view.setDeviceName(device.getName());
-            view.setDeviceUniqueId(device.getUniqueId());
-            view.setClientSetupLink(clientSetupService.buildSetupLink(device.getUniqueId()));
-        }
-        return view;
     }
 
 }

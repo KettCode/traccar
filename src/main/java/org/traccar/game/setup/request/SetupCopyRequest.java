@@ -1,10 +1,10 @@
-package org.traccar.game.setup.wizard.request;
+package org.traccar.game.setup.request;
 
-public class WizardCopyRequest {
+public class SetupCopyRequest {
 
     private String name;
     private Boolean copySettings;
-    private Boolean copyPlayers;
+    private Boolean copyMembers;
     private Boolean copyGeofences;
 
     public String getName() {
@@ -23,12 +23,12 @@ public class WizardCopyRequest {
         this.copySettings = copySettings;
     }
 
-    public boolean getCopyPlayers() {
-        return copyPlayers == null || copyPlayers;
+    public boolean getCopyMembers() {
+        return copyMembers == null || copyMembers;
     }
 
-    public void setCopyPlayers(Boolean copyPlayers) {
-        this.copyPlayers = copyPlayers;
+    public void setCopyMembers(Boolean copyMembers) {
+        this.copyMembers = copyMembers;
     }
 
     public boolean getCopyGeofences() {

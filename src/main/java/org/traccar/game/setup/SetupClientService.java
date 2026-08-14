@@ -1,4 +1,4 @@
-package org.traccar.game.setup.wizard;
+package org.traccar.game.setup;
 
 import jakarta.inject.Inject;
 import org.traccar.BaseProtocol;
@@ -11,7 +11,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
-public class WizardClientSetupService {
+public class SetupClientService {
 
     private static final String CLIENT_SCHEME = "org.traccar.client";
     private static final String PROTOCOL = BaseProtocol.nameFromClass(OsmAndProtocol.class);

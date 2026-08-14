@@ -1,12 +1,12 @@
 package org.traccar.game.setup.view;
 
-public class SetupPlayerView {
+public class PlayerView {
 
     private long playerId;
     private long userId;
     private long deviceId;
-    private String username;
-    private String userName;
+    private String userLogin;
+    private String userDisplayName;
     private String deviceName;
     private String deviceUniqueId;
     private String clientSetupLink;
@@ -36,20 +36,20 @@ public class SetupPlayerView {
         this.deviceId = deviceId;
     }
 
-    public String getUsername() {
-        return username;
+    public String getUserLogin() {
+        return userLogin;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setUserLogin(String userLogin) {
+        this.userLogin = userLogin;
     }
 
-    public String getUserName() {
-        return userName;
+    public String getUserDisplayName() {
+        return userDisplayName;
     }
 
-    public void setUserName(String userName) {
-        this.userName = userName;
+    public void setUserDisplayName(String userDisplayName) {
+        this.userDisplayName = userDisplayName;
     }
 
     public String getDeviceName() {

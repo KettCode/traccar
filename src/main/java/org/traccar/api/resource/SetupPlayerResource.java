@@ -8,11 +8,13 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.traccar.api.BaseResource;
+import org.traccar.game.setup.request.SetupPasswordRequest;
 import org.traccar.game.setup.SetupPlayerService;
 
 @Path("setup/players")
@@ -29,6 +31,16 @@ public class SetupPlayerResource extends BaseResource {
     @GET
     public Response get(@QueryParam("includeInactive") boolean includeInactive) throws Exception {
         return Response.ok(setupPlayerService.getPlayers(getUserId(), includeInactive)).build();
+    }
+
+    @Path("{playerId}/password")
+    @PUT
+    public Response updatePassword(
+            @PathParam("playerId") long playerId, SetupPasswordRequest password) throws Exception {
+        if (!setupPlayerService.updatePassword(getUserId(), playerId, password, request)) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.noContent().build();
     }
 
     @Path("{playerId}")

@@ -4,7 +4,6 @@ import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
-import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
@@ -24,11 +23,6 @@ public class SetupGeofenceResource extends BaseResource {
 
     @Context
     private HttpServletRequest request;
-
-    @GET
-    public Response get() throws Exception {
-        return Response.ok(setupGeofenceService.getGeofences(getUserId())).build();
-    }
 
     @Path("{geofenceId}")
     @DELETE

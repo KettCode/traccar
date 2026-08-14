@@ -1,6 +1,6 @@
 package org.traccar.game.setup.wizard.view;
 
-public class WizardGeofence {
+public class WizardGeofenceView {
 
     private long id;
     private long geofenceId;
