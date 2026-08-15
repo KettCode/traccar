@@ -30,9 +30,6 @@ public class GameRuntimePermissionService {
         if (game == null) {
             return null;
         }
-        if (!Game.STATUS_RUNNING.equals(game.getStatus())) {
-            throw new IllegalArgumentException("Runtime permissions require a running game");
-        }
 
         Player player = gameStorage.getPlayerByUser(userId);
         if (player == null) {
@@ -47,15 +44,35 @@ public class GameRuntimePermissionService {
         return new GameRuntimeContext(userId, game, member, player);
     }
 
-    public GameRuntimeContext requireRunningMember(long userId, long gameId) throws StorageException {
+    public GameRuntimeContext requireViewableMember(long userId, long gameId) throws StorageException {
         GameRuntimeContext context = getContext(userId, gameId);
         if (context == null) {
             return null;
+        }
+        if (!isViewableStatus(context.game())) {
+            throw new IllegalArgumentException("Game state access requires a viewable game");
         }
         if (!context.isActive() && !context.isCaught()) {
             throw new SecurityException("Game member access denied");
         }
         return context;
+    }
+
+    public GameRuntimeContext requireRunningMember(long userId, long gameId) throws StorageException {
+        GameRuntimeContext context = requireViewableMember(userId, gameId);
+        if (context == null) {
+            return null;
+        }
+        if (!context.isRunning()) {
+            throw new IllegalArgumentException("Runtime permissions require a running game");
+        }
+        return context;
+    }
+
+    private boolean isViewableStatus(Game game) {
+        return Game.STATUS_DRAFT.equals(game.getStatus())
+                || Game.STATUS_RUNNING.equals(game.getStatus())
+                || Game.STATUS_FINISHED.equals(game.getStatus());
     }
 
     public GameRuntimeContext requireActiveMember(long userId, long gameId) throws StorageException {
@@ -119,17 +136,25 @@ public class GameRuntimePermissionService {
     }
 
     public boolean canStartSpeedhunt(GameRuntimeContext context) {
-        return context.isActive() && (context.isGameManagement()
+        return context.isRunning() && context.isActive() && (context.isGameManagement()
                 || context.isHunter() && context.member().getCanStartSpeedhunt());
     }
 
     public boolean canRequestSpeedhuntPing(GameRuntimeContext context) {
-        return context.isActive() && (context.isGameManagement()
+        return context.isRunning() && context.isActive() && (context.isGameManagement()
                 || context.isHunter() && context.member().getCanRequestSpeedhuntPing());
     }
 
+    public boolean canUseJoker(GameRuntimeContext context) {
+        return context.isRunning() && context.isActive() && (context.isGameManagement() || context.isHunted());
+    }
+
+    public boolean canManageRuntime(GameRuntimeContext context) {
+        return context.isRunning() && context.isActive() && context.isGameManagement();
+    }
+
     public boolean canUseJoker(GameRuntimeContext context, GameJoker joker) {
-        if (!context.isActive()) {
+        if (!canUseJoker(context)) {
             return false;
         }
         if (context.isGameManagement()) {

@@ -42,6 +42,18 @@ public class GameStorage {
                 new Columns.All(), new Condition.Equals("status", Game.STATUS_RUNNING), new Order("id")));
     }
 
+    public List<Game> getGamesByMembers(List<GameMember> members) throws StorageException {
+        Condition condition = null;
+        for (GameMember member : members) {
+            condition = addOrEquals(condition, "id", member.getGameId());
+        }
+        if (condition == null) {
+            return List.of();
+        }
+
+        return storage.getObjects(Game.class, new Request(new Columns.All(), condition, new Order("id")));
+    }
+
     public GameMember getGameMember(long gameId, long memberId) throws StorageException {
         return storage.getObject(GameMember.class, new Request(
                 new Columns.All(), new Condition.And(
@@ -54,6 +66,15 @@ public class GameStorage {
                 new Columns.All(), new Condition.And(
                         new Condition.Equals("gameId", gameId),
                         new Condition.Equals("playerId", playerId))));
+    }
+
+    public List<GameMember> getViewableGameMembersByPlayer(long playerId) throws StorageException {
+        return storage.getObjects(GameMember.class, new Request(
+                new Columns.All(), new Condition.And(
+                        new Condition.Equals("playerId", playerId),
+                        new Condition.Or(
+                                new Condition.Equals("status", GameMember.STATUS_ACTIVE),
+                                new Condition.Equals("status", GameMember.STATUS_CAUGHT))), new Order("id")));
     }
 
     public List<GameMember> getGameMembers(long gameId) throws StorageException {

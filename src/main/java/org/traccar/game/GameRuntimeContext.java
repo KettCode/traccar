@@ -6,6 +6,10 @@ import org.traccar.model.Player;
 
 public record GameRuntimeContext(long userId, Game game, GameMember member, Player player) {
 
+    public boolean isRunning() {
+        return Game.STATUS_RUNNING.equals(game.getStatus());
+    }
+
     public boolean isGameManagement() {
         return GameMember.ROLE_GAME_MANAGEMENT.equals(member.getRole());
     }

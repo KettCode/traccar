@@ -10,15 +10,29 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.traccar.api.BaseResource;
+import org.traccar.game.GameCurrentService;
 import org.traccar.game.state.GameStateService;
 
 @Path("games")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class GameStateResource extends BaseResource {
+public class GameRuntimeResource extends BaseResource {
+
+    @Inject
+    private GameCurrentService currentService;
 
     @Inject
     private GameStateService stateService;
+
+    @Path("current")
+    @GET
+    public Response getCurrent() throws Exception {
+        var current = currentService.getCurrent(getUserId());
+        if (current == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(current).build();
+    }
 
     @Path("{gameId}/state")
     @GET

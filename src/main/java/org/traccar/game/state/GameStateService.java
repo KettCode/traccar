@@ -45,7 +45,7 @@ public class GameStateService {
     private GameStorage gameStorage;
 
     public GameStateView getState(long userId, long gameId, String include) throws StorageException {
-        GameRuntimeContext context = runtimePermissionService.requireRunningMember(userId, gameId);
+        GameRuntimeContext context = runtimePermissionService.requireViewableMember(userId, gameId);
         if (context == null) {
             return null;
         }
@@ -251,8 +251,8 @@ public class GameStateService {
         var view = new GameStateView.AllowedActionsView();
         view.setCanStartSpeedhunt(runtimePermissionService.canStartSpeedhunt(context));
         view.setCanRequestSpeedhuntPing(runtimePermissionService.canRequestSpeedhuntPing(context));
-        view.setCanUseJoker(context.isActive() && (context.isGameManagement() || context.isHunted()));
-        view.setCanManageRuntime(context.isActive() && context.isGameManagement());
+        view.setCanUseJoker(runtimePermissionService.canUseJoker(context));
+        view.setCanManageRuntime(runtimePermissionService.canManageRuntime(context));
         return view;
     }
 
