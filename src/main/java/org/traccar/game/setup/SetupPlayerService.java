@@ -161,6 +161,7 @@ public class SetupPlayerService {
             Player player, Map<Long, User> usersById, Map<Long, Device> devicesById) {
         PlayerView view = new PlayerView();
         view.setPlayerId(player.getId());
+        view.setName(player.getName());
         view.setUserId(player.getUserId());
         view.setDeviceId(player.getDeviceId());
         view.setActive(player.getActive());

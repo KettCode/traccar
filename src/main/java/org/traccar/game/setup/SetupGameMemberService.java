@@ -194,7 +194,7 @@ public class SetupGameMemberService {
 
         User playerUser = addUser(userId, technicalUsername, request.getPassword(), httpRequest);
         Device device = addDevice(userId, technicalUsername, httpRequest);
-        Player player = addPlayer(userId, playerUser, device, httpRequest);
+        Player player = addPlayer(userId, displayName, playerUser, device, httpRequest);
 
         ensurePlayerPermissions(userId, player, httpRequest);
 
@@ -279,9 +279,10 @@ public class SetupGameMemberService {
     }
 
     private Player addPlayer(
-            long userId, User playerUser, Device device,
+            long userId, String displayName, User playerUser, Device device,
             HttpServletRequest httpRequest) throws StorageException {
         Player player = new Player();
+        player.setName(displayName);
         player.setUserId(playerUser.getId());
         player.setDeviceId(device.getId());
         player.setActive(true);

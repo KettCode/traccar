@@ -70,6 +70,9 @@
       <column name="id" type="INT" autoIncrement="true">
         <constraints primaryKey="true" nullable="false" />
       </column>
+      <column name="name" type="VARCHAR(128)">
+        <constraints nullable="false" />
+      </column>
       <column name="userid" type="INT">
         <constraints nullable="false" />
       </column>
@@ -122,7 +125,9 @@
       <column name="status" type="VARCHAR(16)" defaultValue="active">
         <constraints nullable="false" />
       </column>
-      <column name="displayName" type="VARCHAR(128)" />
+      <column name="displayName" type="VARCHAR(128)">
+        <constraints nullable="false" />
+      </column>
       <column name="canStartSpeedhunt" type="BOOLEAN" defaultValueBoolean="false">
         <constraints nullable="false" />
       </column>

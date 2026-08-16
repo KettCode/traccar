@@ -7,11 +7,20 @@ import java.util.Date;
 @StorageName("tc_players")
 public class Player extends BaseModel {
 
+    private String name;
     private long userId;
     private long deviceId;
     private boolean active = true;
     private Date createdAt = new Date();
     private Date updatedAt;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
 
     public long getUserId() {
         return userId;

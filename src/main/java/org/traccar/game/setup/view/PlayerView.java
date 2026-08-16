@@ -3,6 +3,7 @@ package org.traccar.game.setup.view;
 public class PlayerView {
 
     private long playerId;
+    private String name;
     private long userId;
     private long deviceId;
     private String userLogin;
@@ -18,6 +19,14 @@ public class PlayerView {
 
     public void setPlayerId(long playerId) {
         this.playerId = playerId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public long getUserId() {
