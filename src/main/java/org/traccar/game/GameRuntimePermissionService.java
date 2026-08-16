@@ -20,13 +20,10 @@ public class GameRuntimePermissionService {
     private Storage storage;
 
     @Inject
-    private GameService gameService;
-
-    @Inject
     private GameStorage gameStorage;
 
     public GameRuntimeContext getContext(long userId, long gameId) throws StorageException {
-        Game game = gameService.getGame(gameId);
+        Game game = gameStorage.getGame(gameId);
         if (game == null) {
             return null;
         }

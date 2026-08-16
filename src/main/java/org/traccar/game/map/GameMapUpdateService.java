@@ -4,7 +4,6 @@ import jakarta.inject.Inject;
 import org.traccar.game.GameStorage;
 import org.traccar.game.GameRuntimeContext;
 import org.traccar.game.GameRuntimePermissionService;
-import org.traccar.game.GameService;
 import org.traccar.game.map.message.GameMapUpdateMessage;
 import org.traccar.game.map.view.GameMapGeofence;
 import org.traccar.game.map.view.GameMapMarker;
@@ -27,9 +26,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 public class GameMapUpdateService {
-
-    @Inject
-    private GameService gameService;
 
     @Inject
     private GameStorage gameStorage;
@@ -111,7 +107,7 @@ public class GameMapUpdateService {
     }
 
     public void notifyGeofenceUpdated(GameGeofence gameGeofence) throws StorageException {
-        Game game = gameService.getGame(gameGeofence.getGameId());
+        Game game = gameStorage.getGame(gameGeofence.getGameId());
         if (game == null) {
             return;
         }
