@@ -47,7 +47,8 @@ public class WizardStateService {
 
         var members = setupStorage.getActiveMembers(gameId);
 
-        var issues = validator.getIssues(game, members);
+        var editable = Game.STATUS_DRAFT.equals(game.getStatus());
+        var issues = editable ? validator.getIssues(game, members) : List.<String>of();
 
         WizardState state = new WizardState();
         state.setGame(game);
@@ -56,7 +57,7 @@ public class WizardStateService {
         state.setAvailableRoles(gameLookupService.getMemberRoles());
         state.setAvailableGeofenceTypes(gameLookupService.getGeofenceTypes());
         state.setIssues(issues);
-        state.setReady(issues.isEmpty());
+        state.setReady(editable && issues.isEmpty());
         return state;
     }
 
