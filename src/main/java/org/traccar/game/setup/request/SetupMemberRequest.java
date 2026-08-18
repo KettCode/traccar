@@ -32,6 +32,26 @@ public class SetupMemberRequest {
         this.role = role;
     }
 
+    private boolean canStartSpeedhunt;
+
+    public boolean getCanStartSpeedhunt() {
+        return canStartSpeedhunt;
+    }
+
+    public void setCanStartSpeedhunt(boolean canStartSpeedhunt) {
+        this.canStartSpeedhunt = canStartSpeedhunt;
+    }
+
+    private boolean canRequestSpeedhuntPing;
+
+    public boolean getCanRequestSpeedhuntPing() {
+        return canRequestSpeedhuntPing;
+    }
+
+    public void setCanRequestSpeedhuntPing(boolean canRequestSpeedhuntPing) {
+        this.canRequestSpeedhuntPing = canRequestSpeedhuntPing;
+    }
+
     private String password;
 
     public String getPassword() {

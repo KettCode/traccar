@@ -14,6 +14,8 @@ public class WizardMemberView {
     private String displayName;
     private String role;
     private String status;
+    private boolean canStartSpeedhunt;
+    private boolean canRequestSpeedhuntPing;
 
     public long getMemberId() {
         return memberId;
@@ -109,6 +111,22 @@ public class WizardMemberView {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public boolean getCanStartSpeedhunt() {
+        return canStartSpeedhunt;
+    }
+
+    public void setCanStartSpeedhunt(boolean canStartSpeedhunt) {
+        this.canStartSpeedhunt = canStartSpeedhunt;
+    }
+
+    public boolean getCanRequestSpeedhuntPing() {
+        return canRequestSpeedhuntPing;
+    }
+
+    public void setCanRequestSpeedhuntPing(boolean canRequestSpeedhuntPing) {
+        this.canRequestSpeedhuntPing = canRequestSpeedhuntPing;
     }
 
 }

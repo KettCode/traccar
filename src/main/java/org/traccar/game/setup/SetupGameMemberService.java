@@ -134,8 +134,10 @@ public class SetupGameMemberService {
         memberUpdate.setId(memberId);
         memberUpdate.setDisplayName(displayName);
         memberUpdate.setRole(role);
+        memberUpdate.setCanStartSpeedhunt(canUseSpeedhuntFlags(role) && request.getCanStartSpeedhunt());
+        memberUpdate.setCanRequestSpeedhuntPing(canUseSpeedhuntFlags(role) && request.getCanRequestSpeedhuntPing());
         storage.updateObject(memberUpdate, new Request(
-                new Columns.Include("displayName", "role"),
+                new Columns.Include("displayName", "role", "canStartSpeedhunt", "canRequestSpeedhuntPing"),
                 new Condition.Equals("id", memberId)));
         cacheManager.invalidateObject(true, GameMember.class, memberId, ObjectOperation.UPDATE);
         actionLogger.edit(httpRequest, userId, memberUpdate);
@@ -182,7 +184,7 @@ public class SetupGameMemberService {
             validator.validateRole(member.getRole());
             ensurePlayerPermissions(userId, player, httpRequest);
             addedMembers.add(addGameMember(userId, targetGame, player, member.getDisplayName(), member.getRole(),
-                    httpRequest));
+                    member.getCanStartSpeedhunt(), member.getCanRequestSpeedhuntPing(), httpRequest));
         }
         if (!addedMembers.isEmpty()) {
             notifyMembersChanged(targetGame.getId(), addedMembers, GameNotificationMessage.TYPE_MEMBER_ADDED, true);
@@ -224,7 +226,8 @@ public class SetupGameMemberService {
 
         ensurePlayerPermissions(userId, player, httpRequest);
 
-        return addGameMember(userId, game, player, displayName, role, httpRequest);
+        return addGameMember(userId, game, player, displayName, role,
+                request.getCanStartSpeedhunt(), request.getCanRequestSpeedhuntPing(), httpRequest);
     }
 
     private GameMember addExistingPlayer(
@@ -253,7 +256,8 @@ public class SetupGameMemberService {
         }
 
         ensurePlayerPermissions(userId, player, httpRequest);
-        return addGameMember(userId, game, player, displayName, role, httpRequest);
+        return addGameMember(userId, game, player, displayName, role,
+                request.getCanStartSpeedhunt(), request.getCanRequestSpeedhuntPing(), httpRequest);
     }
 
     private void ensurePlayerPermissions(
@@ -320,6 +324,7 @@ public class SetupGameMemberService {
 
     private GameMember addGameMember(
             long userId, Game game, Player player, String displayName, String role,
+            boolean canStartSpeedhunt, boolean canRequestSpeedhuntPing,
             HttpServletRequest httpRequest) throws StorageException {
         GameMember member = new GameMember();
         member.setGameId(game.getId());
@@ -327,9 +332,15 @@ public class SetupGameMemberService {
         member.setDisplayName(displayName);
         member.setRole(role);
         member.setStatus(GameMember.STATUS_ACTIVE);
+        member.setCanStartSpeedhunt(canUseSpeedhuntFlags(role) && canStartSpeedhunt);
+        member.setCanRequestSpeedhuntPing(canUseSpeedhuntFlags(role) && canRequestSpeedhuntPing);
         member.setId(storage.addObject(member, new Request(new Columns.Exclude("id"))));
         actionLogger.create(httpRequest, userId, member);
         return member;
+    }
+
+    private boolean canUseSpeedhuntFlags(String role) {
+        return GameMember.ROLE_HUNTER.equals(role);
     }
 
     private void validatePassword(String password) {

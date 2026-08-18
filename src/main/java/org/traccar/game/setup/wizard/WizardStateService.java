@@ -74,6 +74,8 @@ public class WizardStateService {
             view.setDisplayName(member.getDisplayName());
             view.setRole(member.getRole());
             view.setStatus(member.getStatus());
+            view.setCanStartSpeedhunt(member.getCanStartSpeedhunt());
+            view.setCanRequestSpeedhuntPing(member.getCanRequestSpeedhuntPing());
 
             Player player = playersById.get(member.getPlayerId());
             if (player != null) {
