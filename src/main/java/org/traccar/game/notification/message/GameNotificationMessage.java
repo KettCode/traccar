@@ -12,9 +12,18 @@ public class GameNotificationMessage {
     public static final String TYPE_JOKER_CHANGED = "jokerChanged";
     public static final String TYPE_REGULAR_PING_CREATED = "regularPingCreated";
     public static final String TYPE_MEMBER_CONVERTED_TO_HUNTER = "memberConvertedToHunter";
+    public static final String TYPE_CURRENT_GAME_CHANGED = "currentGameChanged";
+    public static final String TYPE_GAME_ACTIVATED = "gameActivated";
+    public static final String TYPE_GAME_FINISHED = "gameFinished";
+    public static final String TYPE_GAME_DELETED = "gameDeleted";
+    public static final String TYPE_GAME_SETTINGS_CHANGED = "gameSettingsChanged";
+    public static final String TYPE_MEMBER_ADDED = "memberAdded";
+    public static final String TYPE_MEMBER_REMOVED = "memberRemoved";
+    public static final String TYPE_MEMBER_CHANGED = "memberChanged";
 
     private long gameId;
     private String type;
+    private boolean currentGameRefresh;
     private boolean stateRefresh;
     private Long gameGeofenceId;
     private Long speedhuntId;
@@ -38,6 +47,14 @@ public class GameNotificationMessage {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public boolean getCurrentGameRefresh() {
+        return currentGameRefresh;
+    }
+
+    public void setCurrentGameRefresh(boolean currentGameRefresh) {
+        this.currentGameRefresh = currentGameRefresh;
     }
 
     public boolean getStateRefresh() {

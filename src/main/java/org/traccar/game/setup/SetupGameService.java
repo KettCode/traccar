@@ -6,10 +6,14 @@ import org.traccar.api.security.PermissionsService;
 import org.traccar.api.security.ServiceAccountUser;
 import org.traccar.game.GamePermissionService;
 import org.traccar.game.GameService;
+import org.traccar.game.GameStorage;
 import org.traccar.game.GameValidatorService;
+import org.traccar.game.notification.GameNotificationService;
+import org.traccar.game.notification.message.GameNotificationMessage;
 import org.traccar.game.setup.request.SetupCopyRequest;
 import org.traccar.helper.LogAction;
 import org.traccar.model.Game;
+import org.traccar.model.GameMember;
 import org.traccar.model.ObjectOperation;
 import org.traccar.model.User;
 import org.traccar.session.cache.CacheManager;
@@ -45,7 +49,13 @@ public class SetupGameService {
     private GameService gameService;
 
     @Inject
+    private GameStorage gameStorage;
+
+    @Inject
     private GameValidatorService validator;
+
+    @Inject
+    private GameNotificationService notificationService;
 
     @Inject
     private SetupGameMemberService gameMemberService;
@@ -112,6 +122,9 @@ public class SetupGameService {
         cacheManager.invalidateObject(true, Game.class, gameId, ObjectOperation.UPDATE);
         actionLogger.edit(request, userId, update);
 
+        notificationService.notifyGameMembers(gameId, notificationService.createCurrentGameChangedMessage(
+                gameId, GameNotificationMessage.TYPE_GAME_SETTINGS_CHANGED, true));
+
         return game;
     }
 
@@ -121,9 +134,14 @@ public class SetupGameService {
             return false;
         }
 
+        List<GameMember> members = gameStorage.getGameMembers(gameId);
+
         storage.removeObject(Game.class, new Request(new Condition.Equals("id", gameId)));
         cacheManager.invalidateObject(true, Game.class, gameId, ObjectOperation.DELETE);
         actionLogger.remove(request, userId, Game.class, gameId);
+
+        notificationService.notifyMembers(members, notificationService.createCurrentGameChangedMessage(
+                gameId, GameNotificationMessage.TYPE_GAME_DELETED));
 
         return true;
     }

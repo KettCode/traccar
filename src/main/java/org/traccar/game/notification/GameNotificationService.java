@@ -37,6 +37,17 @@ public class GameNotificationService {
         return createMessage(gameId, type, true);
     }
 
+    public GameNotificationMessage createCurrentGameChangedMessage(
+            long gameId, String type, boolean stateRefresh) {
+        GameNotificationMessage message = createMessage(gameId, type, stateRefresh);
+        message.setCurrentGameRefresh(true);
+        return message;
+    }
+
+    public GameNotificationMessage createCurrentGameChangedMessage(long gameId, String type) {
+        return createCurrentGameChangedMessage(gameId, type, false);
+    }
+
     public void notifyGameMembers(long gameId, GameNotificationMessage message) throws StorageException {
         notifyMembers(gameStorage.getGameMembers(gameId), message);
     }
@@ -48,7 +59,7 @@ public class GameNotificationService {
         }
     }
 
-    private void notifyMembers(List<GameMember> members, GameNotificationMessage message) throws StorageException {
+    public void notifyMembers(List<GameMember> members, GameNotificationMessage message) throws StorageException {
         Map<Long, Player> playersById = gameStorage.getPlayersByMembers(members);
         Set<Long> userIds = new HashSet<>();
         addMemberUserIds(userIds, members, playersById);

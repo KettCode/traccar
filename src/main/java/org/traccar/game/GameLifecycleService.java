@@ -2,6 +2,8 @@ package org.traccar.game;
 
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
+import org.traccar.game.notification.GameNotificationService;
+import org.traccar.game.notification.message.GameNotificationMessage;
 import org.traccar.helper.LogAction;
 import org.traccar.model.Game;
 import org.traccar.model.ObjectOperation;
@@ -33,6 +35,9 @@ public class GameLifecycleService {
     @Inject
     private GameDevicePermissionService devicePermissionService;
 
+    @Inject
+    private GameNotificationService notificationService;
+
     public Game activate(long userId, long gameId, HttpServletRequest httpRequest) throws Exception {
         Game game = gameService.getEditableDraftGame(userId, gameId);
         if (game == null) {
@@ -53,6 +58,9 @@ public class GameLifecycleService {
 
         cacheManager.invalidateObject(true, Game.class, gameId, ObjectOperation.UPDATE);
         actionLogger.edit(httpRequest, userId, update);
+
+        notificationService.notifyGameMembers(gameId, notificationService.createCurrentGameChangedMessage(
+                gameId, GameNotificationMessage.TYPE_GAME_ACTIVATED, true));
 
         return storage.getObject(Game.class, new Request(
                 new Columns.All(), new Condition.Equals("id", gameId)));
@@ -77,6 +85,9 @@ public class GameLifecycleService {
 
         cacheManager.invalidateObject(true, Game.class, gameId, ObjectOperation.UPDATE);
         actionLogger.edit(httpRequest, userId, update);
+
+        notificationService.notifyGameMembers(gameId, notificationService.createCurrentGameChangedMessage(
+                gameId, GameNotificationMessage.TYPE_GAME_FINISHED, true));
 
         return storage.getObject(Game.class, new Request(
                 new Columns.All(), new Condition.Equals("id", gameId)));

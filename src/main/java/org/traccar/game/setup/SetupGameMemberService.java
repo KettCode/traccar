@@ -7,6 +7,8 @@ import org.traccar.api.security.ServiceAccountUser;
 import org.traccar.game.GamePermissionService;
 import org.traccar.game.GameService;
 import org.traccar.game.GameValidatorService;
+import org.traccar.game.notification.GameNotificationService;
+import org.traccar.game.notification.message.GameNotificationMessage;
 import org.traccar.game.setup.request.SetupMemberRequest;
 import org.traccar.helper.LogAction;
 import org.traccar.model.Device;
@@ -23,6 +25,7 @@ import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;
 import org.traccar.storage.query.Request;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 import java.util.List;
@@ -57,6 +60,9 @@ public class SetupGameMemberService {
     private GameValidatorService validator;
 
     @Inject
+    private GameNotificationService notificationService;
+
+    @Inject
     private SetupStorage setupStorage;
 
     public boolean addMembers(
@@ -71,9 +77,11 @@ public class SetupGameMemberService {
             return false;
         }
 
+        var addedMembers = new ArrayList<GameMember>();
         for (SetupMemberRequest request : requests) {
-            addMember(userId, game, request, httpRequest);
+            addedMembers.add(addMember(userId, game, request, httpRequest));
         }
+        notifyMembersChanged(gameId, addedMembers, GameNotificationMessage.TYPE_MEMBER_ADDED, true);
         return true;
     }
 
@@ -88,9 +96,11 @@ public class SetupGameMemberService {
         if (game == null) {
             return false;
         }
+        var addedMembers = new ArrayList<GameMember>();
         for (GameMember request : requests) {
-            addExistingPlayer(userId, game, request, httpRequest);
+            addedMembers.add(addExistingPlayer(userId, game, request, httpRequest));
         }
+        notifyMembersChanged(gameId, addedMembers, GameNotificationMessage.TYPE_MEMBER_ADDED, true);
         return true;
     }
 
@@ -130,6 +140,8 @@ public class SetupGameMemberService {
         cacheManager.invalidateObject(true, GameMember.class, memberId, ObjectOperation.UPDATE);
         actionLogger.edit(httpRequest, userId, memberUpdate);
 
+        notifyMembersChanged(gameId, List.of(member), GameNotificationMessage.TYPE_MEMBER_CHANGED, true);
+
         return true;
     }
 
@@ -149,6 +161,9 @@ public class SetupGameMemberService {
         cacheManager.invalidateObject(true, GameMember.class, memberId, ObjectOperation.DELETE);
         actionLogger.remove(httpRequest, userId, GameMember.class, memberId);
 
+        notificationService.notifyMembers(List.of(member), notificationService.createCurrentGameChangedMessage(
+                gameId, GameNotificationMessage.TYPE_MEMBER_REMOVED));
+
         return true;
     }
 
@@ -158,6 +173,7 @@ public class SetupGameMemberService {
         gameService.getEditableDraftGame(userId, targetGame.getId());
 
         var members = setupStorage.getActiveMembers(sourceGameId);
+        var addedMembers = new ArrayList<GameMember>();
         for (GameMember member : members) {
             Player player = setupStorage.getPlayer(member.getPlayerId());
             if (player == null || !player.getActive() || player.getUserId() == 0 || player.getDeviceId() == 0) {
@@ -165,11 +181,21 @@ public class SetupGameMemberService {
             }
             validator.validateRole(member.getRole());
             ensurePlayerPermissions(userId, player, httpRequest);
-            addGameMember(userId, targetGame, player, member.getDisplayName(), member.getRole(), httpRequest);
+            addedMembers.add(addGameMember(userId, targetGame, player, member.getDisplayName(), member.getRole(),
+                    httpRequest));
+        }
+        if (!addedMembers.isEmpty()) {
+            notifyMembersChanged(targetGame.getId(), addedMembers, GameNotificationMessage.TYPE_MEMBER_ADDED, true);
         }
     }
 
-    private void addMember(
+    private void notifyMembersChanged(
+            long gameId, List<GameMember> members, String type, boolean stateRefresh) throws StorageException {
+        notificationService.notifyMembers(members, notificationService.createCurrentGameChangedMessage(
+                gameId, type, stateRefresh));
+    }
+
+    private GameMember addMember(
             long userId, Game game, SetupMemberRequest request,
             HttpServletRequest httpRequest) throws Exception {
         if (request == null) {
@@ -198,10 +224,10 @@ public class SetupGameMemberService {
 
         ensurePlayerPermissions(userId, player, httpRequest);
 
-        addGameMember(userId, game, player, displayName, role, httpRequest);
+        return addGameMember(userId, game, player, displayName, role, httpRequest);
     }
 
-    private void addExistingPlayer(
+    private GameMember addExistingPlayer(
             long userId, Game game, GameMember request,
             HttpServletRequest httpRequest) throws Exception {
         if (request == null || request.getPlayerId() == 0) {
@@ -227,7 +253,7 @@ public class SetupGameMemberService {
         }
 
         ensurePlayerPermissions(userId, player, httpRequest);
-        addGameMember(userId, game, player, displayName, role, httpRequest);
+        return addGameMember(userId, game, player, displayName, role, httpRequest);
     }
 
     private void ensurePlayerPermissions(
