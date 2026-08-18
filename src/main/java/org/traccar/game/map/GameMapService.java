@@ -40,10 +40,18 @@ public class GameMapService {
     private GameMapMapper mapMapper;
 
     public GameMapView getMap(long userId, long gameId, String include) throws StorageException {
-        GameRuntimeContext context = runtimePermissionService.requireRunningMember(userId, gameId);
+        GameRuntimeContext context = runtimePermissionService.requireViewableMember(userId, gameId);
         if (context == null) {
             return null;
         }
+        if (!context.isRunning()) {
+            return getLatestPositionMap(context, gameId);
+        }
+        return getRunningMap(context, gameId, include);
+    }
+
+    private GameMapView getRunningMap(
+            GameRuntimeContext context, long gameId, String include) throws StorageException {
         Set<String> includes = parseIncludes(include);
 
         List<GameMember> members = gameStorage.getGameMembers(gameId);
@@ -55,6 +63,29 @@ public class GameMapService {
         view.getGeofences().addAll(getGeofences(context));
         if (includes.contains(INCLUDE_REVEALS)) {
             view.getRevealedMarkers().addAll(getRevealMarkers(context, membersById));
+        }
+        return view;
+    }
+
+    private GameMapView getLatestPositionMap(GameRuntimeContext context, long gameId) throws StorageException {
+        GameMapView view = new GameMapView();
+        view.setGameId(gameId);
+
+        List<GameMember> members = gameStorage.getNonLeftGameMembers(gameId);
+        Map<Long, Player> playersById = gameStorage.getPlayersByMembers(members);
+        Map<Long, Position> latestPositionsByDeviceId = gameStorage.getLatestPositionsByDeviceIds(
+                playersById.values().stream()
+                        .map(Player::getDeviceId)
+                        .filter(deviceId -> deviceId != 0)
+                        .collect(Collectors.toSet()));
+
+        for (GameMember member : members) {
+            Player player = playersById.get(member.getPlayerId());
+            Position position = player != null ? latestPositionsByDeviceId.get(player.getDeviceId()) : null;
+            GameMapMarker marker = mapMapper.toLiveMarker(gameId, member, player, position);
+            if (marker != null) {
+                view.getMemberMarkers().add(marker);
+            }
         }
         return view;
     }
