@@ -64,7 +64,7 @@ public class GameJokerService {
 
     public GameJoker unlockJoker(
             long userId, long gameId, long memberId, String type, HttpServletRequest request) throws Exception {
-        GameRuntimeContext context = runtimePermissionService.requireGameManagement(userId, gameId);
+        GameRuntimeContext context = runtimePermissionService.requireCanUnlockJoker(userId, gameId);
         if (context == null) {
             return null;
         }

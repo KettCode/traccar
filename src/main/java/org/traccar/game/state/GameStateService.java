@@ -281,6 +281,7 @@ public class GameStateService {
         view.setCanUseJoker(runtimePermissionService.canUseJoker(context));
         view.setCanManageRuntime(runtimePermissionService.canManageRuntime(context));
         view.setCanManageGeofences(runtimePermissionService.canManageGeofences(context));
+        view.setCanUnlockJoker(runtimePermissionService.canUnlockJoker(context));
         return view;
     }
 

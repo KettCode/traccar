@@ -357,6 +357,7 @@ public class GameStateView {
         private boolean canUseJoker;
         private boolean canManageRuntime;
         private boolean canManageGeofences;
+        private boolean canUnlockJoker;
 
         public boolean getCanStartSpeedhunt() {
             return canStartSpeedhunt;
@@ -396,6 +397,14 @@ public class GameStateView {
 
         public void setCanManageGeofences(boolean canManageGeofences) {
             this.canManageGeofences = canManageGeofences;
+        }
+
+        public boolean getCanUnlockJoker() {
+            return canUnlockJoker;
+        }
+
+        public void setCanUnlockJoker(boolean canUnlockJoker) {
+            this.canUnlockJoker = canUnlockJoker;
         }
     }
 
