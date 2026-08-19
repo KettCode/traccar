@@ -37,6 +37,9 @@ public class SetupGameMemberService {
     private static final String GENERATED_EMAIL_DOMAIN = "@game.local";
     private static final int MAX_TECHNICAL_IDENTIFIER_LENGTH = MAX_USER_EMAIL_LENGTH - GENERATED_EMAIL_DOMAIN.length();
     private static final Pattern SETUP_USERNAME_PATTERN = Pattern.compile("[A-Za-z0-9._-]+");
+    private static final String GENERATED_PLAYER_DEFAULT_MAP = "locationIqStreets";
+    private static final String GENERATED_PLAYER_ACTIVE_MAP_STYLES =
+            "locationIqStreets,googleRoad,googleHybrid,openFreeMap,osm";
 
     @Inject
     private Storage storage;
@@ -290,6 +293,8 @@ public class SetupGameMemberService {
         playerUser.setDisableReports(true);
         playerUser.setDeviceLimit(0);
         playerUser.setUserLimit(0);
+        playerUser.setMap(GENERATED_PLAYER_DEFAULT_MAP);
+        playerUser.getAttributes().put("activeMapStyles", GENERATED_PLAYER_ACTIVE_MAP_STYLES);
         playerUser.setId(storage.addObject(playerUser, new Request(new Columns.Exclude("id"))));
         storage.updateObject(playerUser, new Request(
                 new Columns.Include("hashedPassword", "salt"),
