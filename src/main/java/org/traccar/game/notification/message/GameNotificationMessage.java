@@ -20,14 +20,11 @@ public class GameNotificationMessage {
     public static final String TYPE_MEMBER_ADDED = "memberAdded";
     public static final String TYPE_MEMBER_REMOVED = "memberRemoved";
     public static final String TYPE_MEMBER_CHANGED = "memberChanged";
-    public static final String TYPE_GAME_GEOFENCE_ACTIVATED = "gameGeofenceActivated";
-    public static final String TYPE_GAME_GEOFENCE_DEACTIVATED = "gameGeofenceDeactivated";
 
     private long gameId;
     private String type;
     private boolean currentGameRefresh;
     private boolean stateRefresh;
-    private Long gameGeofenceId;
     private Long speedhuntId;
     private Long pingId;
     private Long memberId;
@@ -65,14 +62,6 @@ public class GameNotificationMessage {
 
     public void setStateRefresh(boolean stateRefresh) {
         this.stateRefresh = stateRefresh;
-    }
-
-    public Long getGameGeofenceId() {
-        return gameGeofenceId;
-    }
-
-    public void setGameGeofenceId(Long gameGeofenceId) {
-        this.gameGeofenceId = gameGeofenceId;
     }
 
     public Long getSpeedhuntId() {

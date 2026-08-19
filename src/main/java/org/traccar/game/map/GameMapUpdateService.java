@@ -137,7 +137,7 @@ public class GameMapUpdateService {
             GameRuntimeContext context = new GameRuntimeContext(player.getUserId(), game, member, player);
             if (runtimePermissionService.canViewGeofence(context, gameGeofence)) {
                 GameMapUpdateMessage update = createUpdate(
-                        gameGeofence.getGameId(), GameMapUpdateMessage.TYPE_GAME_GEOFENCE_UPDATED, false);
+                        gameGeofence.getGameId(), GameMapUpdateMessage.TYPE_GAME_GEOFENCE_UPDATED, true);
                 update.getGeofences().add(geofence);
                 gameConnectionManager.updateGameMap(player.getUserId(), update);
             }

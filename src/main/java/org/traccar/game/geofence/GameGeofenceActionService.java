@@ -5,8 +5,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.traccar.game.GameStorage;
 import org.traccar.game.GameRuntimePermissionService;
 import org.traccar.game.map.GameMapUpdateService;
-import org.traccar.game.notification.GameNotificationService;
-import org.traccar.game.notification.message.GameNotificationMessage;
 import org.traccar.helper.LogAction;
 import org.traccar.model.GameGeofence;
 import org.traccar.model.ObjectOperation;
@@ -37,9 +35,6 @@ public class GameGeofenceActionService {
 
     @Inject
     private GameMapUpdateService mapUpdateService;
-
-    @Inject
-    private GameNotificationService notificationService;
 
     public GameGeofence activateGeofence(
             long userId, long gameId, long gameGeofenceId, HttpServletRequest request) throws Exception {
@@ -79,18 +74,7 @@ public class GameGeofenceActionService {
         } else {
             mapUpdateService.notifyGeofenceRemoved(gameId, gameGeofenceId);
         }
-        notifyGeofenceChanged(gameId, gameGeofenceId, active);
         return gameGeofence;
-    }
-
-    private void notifyGeofenceChanged(long gameId, long gameGeofenceId, boolean active) throws Exception {
-        GameNotificationMessage message = notificationService.createStateChangedMessage(
-                gameId,
-                active
-                        ? GameNotificationMessage.TYPE_GAME_GEOFENCE_ACTIVATED
-                        : GameNotificationMessage.TYPE_GAME_GEOFENCE_DEACTIVATED);
-        message.setGameGeofenceId(gameGeofenceId);
-        notificationService.notifyGameMembers(gameId, message);
     }
 
 }
