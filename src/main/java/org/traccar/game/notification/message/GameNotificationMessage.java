@@ -20,6 +20,8 @@ public class GameNotificationMessage {
     public static final String TYPE_MEMBER_ADDED = "memberAdded";
     public static final String TYPE_MEMBER_REMOVED = "memberRemoved";
     public static final String TYPE_MEMBER_CHANGED = "memberChanged";
+    public static final String TYPE_GAME_GEOFENCE_ACTIVATED = "gameGeofenceActivated";
+    public static final String TYPE_GAME_GEOFENCE_DEACTIVATED = "gameGeofenceDeactivated";
 
     private long gameId;
     private String type;

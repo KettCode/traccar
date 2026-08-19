@@ -94,6 +94,17 @@ public class GameRuntimePermissionService {
         return context;
     }
 
+    public GameRuntimeContext requireCanManageGeofences(long userId, long gameId) throws StorageException {
+        GameRuntimeContext context = requireViewableMember(userId, gameId);
+        if (context == null) {
+            return null;
+        }
+        if (!canManageGeofences(context)) {
+            throw new SecurityException("Game geofence management access required");
+        }
+        return context;
+    }
+
     public GameRuntimeContext requireCanStartSpeedhunt(long userId, long gameId) throws StorageException {
         GameRuntimeContext context = requireActiveMember(userId, gameId);
         if (context == null) {
@@ -148,6 +159,10 @@ public class GameRuntimePermissionService {
 
     public boolean canManageRuntime(GameRuntimeContext context) {
         return context.isRunning() && context.isActive() && context.isGameManagement();
+    }
+
+    public boolean canManageGeofences(GameRuntimeContext context) {
+        return context.isActive() && context.isGameManagement();
     }
 
     public boolean canUseJoker(GameRuntimeContext context, GameJoker joker) {

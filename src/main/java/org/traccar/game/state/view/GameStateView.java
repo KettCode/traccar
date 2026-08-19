@@ -10,6 +10,7 @@ public class GameStateView {
     private SummaryView summary;
     private AllowedActionsView allowedActions;
     private List<MemberView> members;
+    private List<GeofenceView> geofences;
     private List<SpeedhuntView> speedhuntHistory;
     private List<JokerView> jokers;
 
@@ -51,6 +52,14 @@ public class GameStateView {
 
     public void setMembers(List<MemberView> members) {
         this.members = members;
+    }
+
+    public List<GeofenceView> getGeofences() {
+        return geofences;
+    }
+
+    public void setGeofences(List<GeofenceView> geofences) {
+        this.geofences = geofences;
     }
 
     public List<SpeedhuntView> getSpeedhuntHistory() {
@@ -294,11 +303,60 @@ public class GameStateView {
         }
     }
 
+    public static class GeofenceView {
+        private long id;
+        private String name;
+        private String type;
+        private String role;
+        private boolean active;
+
+        public long getId() {
+            return id;
+        }
+
+        public void setId(long id) {
+            this.id = id;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        public String getRole() {
+            return role;
+        }
+
+        public void setRole(String role) {
+            this.role = role;
+        }
+
+        public boolean getActive() {
+            return active;
+        }
+
+        public void setActive(boolean active) {
+            this.active = active;
+        }
+    }
+
     public static class AllowedActionsView {
         private boolean canStartSpeedhunt;
         private boolean canRequestSpeedhuntPing;
         private boolean canUseJoker;
         private boolean canManageRuntime;
+        private boolean canManageGeofences;
 
         public boolean getCanStartSpeedhunt() {
             return canStartSpeedhunt;
@@ -330,6 +388,14 @@ public class GameStateView {
 
         public void setCanManageRuntime(boolean canManageRuntime) {
             this.canManageRuntime = canManageRuntime;
+        }
+
+        public boolean getCanManageGeofences() {
+            return canManageGeofences;
+        }
+
+        public void setCanManageGeofences(boolean canManageGeofences) {
+            this.canManageGeofences = canManageGeofences;
         }
     }
 

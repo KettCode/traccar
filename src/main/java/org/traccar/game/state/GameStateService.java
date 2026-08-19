@@ -6,6 +6,7 @@ import org.traccar.game.GameRuntimeContext;
 import org.traccar.game.GameRuntimePermissionService;
 import org.traccar.game.state.view.GameStateView;
 import org.traccar.model.Game;
+import org.traccar.model.GameGeofence;
 import org.traccar.model.GameJoker;
 import org.traccar.model.GameMember;
 import org.traccar.model.GamePendingEffect;
@@ -32,6 +33,7 @@ import java.util.Set;
 public class GameStateService {
 
     private static final String INCLUDE_MEMBERS = "members";
+    private static final String INCLUDE_GEOFENCES = "geofences";
     private static final String INCLUDE_SPEEDHUNT_HISTORY = "speedhuntHistory";
     private static final String INCLUDE_JOKERS = "jokers";
 
@@ -77,6 +79,9 @@ public class GameStateService {
         if (includes.contains(INCLUDE_MEMBERS)) {
             state.setMembers(members.stream().map(this::toMemberView).toList());
         }
+        if (includes.contains(INCLUDE_GEOFENCES)) {
+            state.setGeofences(getGeofences(context));
+        }
         if (includeSpeedhuntHistory) {
             state.setSpeedhuntHistory(getSpeedhuntHistory(context, speedhunts, membersById, pingsBySpeedhuntId));
         }
@@ -101,11 +106,13 @@ public class GameStateService {
             String normalized = value.toLowerCase(Locale.ROOT);
             if ("all".equals(normalized) || "management".equals(normalized)) {
                 result.add(INCLUDE_MEMBERS);
+                result.add(INCLUDE_GEOFENCES);
                 result.add(INCLUDE_SPEEDHUNT_HISTORY);
                 result.add(INCLUDE_JOKERS);
             } else {
                 switch (normalized) {
                     case "members" -> result.add(INCLUDE_MEMBERS);
+                    case "geofences" -> result.add(INCLUDE_GEOFENCES);
                     case "speedhunthistory" -> result.add(INCLUDE_SPEEDHUNT_HISTORY);
                     case "jokers" -> result.add(INCLUDE_JOKERS);
                     default -> { }
@@ -173,6 +180,26 @@ public class GameStateService {
         view.setRole(member.getRole());
         view.setStatus(member.getStatus());
         view.setCaughtAt(member.getCaughtAt());
+        return view;
+    }
+
+    private List<GameStateView.GeofenceView> getGeofences(GameRuntimeContext context) throws StorageException {
+        if (!context.isGameManagement()) {
+            return List.of();
+        }
+
+        return gameStorage.getGameGeofences(context.game().getId()).stream()
+                .map(this::toGeofenceView)
+                .toList();
+    }
+
+    private GameStateView.GeofenceView toGeofenceView(GameGeofence geofence) {
+        var view = new GameStateView.GeofenceView();
+        view.setId(geofence.getId());
+        view.setName(geofence.getName());
+        view.setType(geofence.getType());
+        view.setRole(geofence.getRole());
+        view.setActive(geofence.getActive());
         return view;
     }
 
@@ -253,6 +280,7 @@ public class GameStateService {
         view.setCanRequestSpeedhuntPing(runtimePermissionService.canRequestSpeedhuntPing(context));
         view.setCanUseJoker(runtimePermissionService.canUseJoker(context));
         view.setCanManageRuntime(runtimePermissionService.canManageRuntime(context));
+        view.setCanManageGeofences(runtimePermissionService.canManageGeofences(context));
         return view;
     }
 
@@ -306,13 +334,18 @@ public class GameStateService {
 
     private List<GameStateView.JokerView> getJokers(
             GameRuntimeContext context, Map<Long, GameMember> membersById) throws StorageException {
-        if (!context.isGameManagement()) {
+        if (!context.isGameManagement() && !context.isHunted()) {
             return List.of();
+        }
+
+        Condition condition = new Condition.Equals("gameId", context.game().getId());
+        if (!context.isGameManagement()) {
+            condition = new Condition.And(condition, new Condition.Equals("memberId", context.member().getId()));
         }
 
         var result = new ArrayList<GameStateView.JokerView>();
         for (GameJoker joker : storage.getObjects(GameJoker.class, new Request(
-                new Columns.All(), new Condition.Equals("gameId", context.game().getId()), new Order("id")))) {
+                new Columns.All(), condition, new Order("id")))) {
             if (runtimePermissionService.canViewJoker(context, joker)) {
                 result.add(toJokerView(context, joker, membersById));
             }

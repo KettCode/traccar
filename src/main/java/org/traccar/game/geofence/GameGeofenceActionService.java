@@ -5,6 +5,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.traccar.game.GameStorage;
 import org.traccar.game.GameRuntimePermissionService;
 import org.traccar.game.map.GameMapUpdateService;
+import org.traccar.game.notification.GameNotificationService;
+import org.traccar.game.notification.message.GameNotificationMessage;
 import org.traccar.helper.LogAction;
 import org.traccar.model.GameGeofence;
 import org.traccar.model.ObjectOperation;
@@ -36,6 +38,9 @@ public class GameGeofenceActionService {
     @Inject
     private GameMapUpdateService mapUpdateService;
 
+    @Inject
+    private GameNotificationService notificationService;
+
     public GameGeofence activateGeofence(
             long userId, long gameId, long gameGeofenceId, HttpServletRequest request) throws Exception {
         return setGeofenceActive(userId, gameId, gameGeofenceId, true, request);
@@ -48,7 +53,7 @@ public class GameGeofenceActionService {
 
     private GameGeofence setGeofenceActive(
             long userId, long gameId, long gameGeofenceId, boolean active, HttpServletRequest request) throws Exception {
-        if (runtimePermissionService.requireGameManagement(userId, gameId) == null) {
+        if (runtimePermissionService.requireCanManageGeofences(userId, gameId) == null) {
             return null;
         }
 
@@ -74,7 +79,18 @@ public class GameGeofenceActionService {
         } else {
             mapUpdateService.notifyGeofenceRemoved(gameId, gameGeofenceId);
         }
+        notifyGeofenceChanged(gameId, gameGeofenceId, active);
         return gameGeofence;
+    }
+
+    private void notifyGeofenceChanged(long gameId, long gameGeofenceId, boolean active) throws Exception {
+        GameNotificationMessage message = notificationService.createStateChangedMessage(
+                gameId,
+                active
+                        ? GameNotificationMessage.TYPE_GAME_GEOFENCE_ACTIVATED
+                        : GameNotificationMessage.TYPE_GAME_GEOFENCE_DEACTIVATED);
+        message.setGameGeofenceId(gameGeofenceId);
+        notificationService.notifyGameMembers(gameId, message);
     }
 
 }
