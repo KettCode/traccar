@@ -23,6 +23,7 @@ public class Game extends BaseModel {
     private int locationReminderIntervalSeconds = 300;
     private Date plannedEndAt;
     private Date startedAt;
+    private Date activatedAt;
     private Date finishedAt;
     private Date createdAt = new Date();
     private Date updatedAt;
@@ -121,6 +122,14 @@ public class Game extends BaseModel {
 
     public void setStartedAt(Date startedAt) {
         this.startedAt = startedAt;
+    }
+
+    public Date getActivatedAt() {
+        return activatedAt;
+    }
+
+    public void setActivatedAt(Date activatedAt) {
+        this.activatedAt = activatedAt;
     }
 
     public Date getFinishedAt() {

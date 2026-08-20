@@ -83,6 +83,7 @@ public class GameStateView {
         private String name;
         private String status;
         private Date startedAt;
+        private Date activatedAt;
         private Date plannedEndAt;
         private Date finishedAt;
         private Long remainingSeconds;
@@ -117,6 +118,14 @@ public class GameStateView {
 
         public void setStartedAt(Date startedAt) {
             this.startedAt = startedAt;
+        }
+
+        public Date getActivatedAt() {
+            return activatedAt;
+        }
+
+        public void setActivatedAt(Date activatedAt) {
+            this.activatedAt = activatedAt;
         }
 
         public Date getPlannedEndAt() {

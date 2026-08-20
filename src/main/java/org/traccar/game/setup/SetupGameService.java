@@ -82,6 +82,7 @@ public class SetupGameService {
         game.setName(normalizeRequiredName(entity.getName()));
         game.setStatus(Game.STATUS_DRAFT);
         applySetupSettings(entity, game);
+        game.setStartedAt(entity.getStartedAt());
         game.setPlannedEndAt(entity.getPlannedEndAt());
         return addDraftGame(userId, game, request);
     }
@@ -102,6 +103,7 @@ public class SetupGameService {
         update.setId(gameId);
         update.setName(normalizeRequiredName(settings.getName()));
         applySetupSettings(settings, update);
+        update.setStartedAt(settings.getStartedAt());
         update.setPlannedEndAt(settings.getPlannedEndAt());
         update.setUpdatedAt(new Date());
 
@@ -115,6 +117,7 @@ public class SetupGameService {
                         "locationReminderEnabled",
                         "maxPositionAgeSeconds",
                         "locationReminderIntervalSeconds",
+                        "startedAt",
                         "plannedEndAt",
                         "updatedAt"),
                 new Condition.Equals("id", gameId)));
@@ -184,6 +187,8 @@ public class SetupGameService {
         target.setLocationReminderEnabled(source.getLocationReminderEnabled());
         target.setMaxPositionAgeSeconds(source.getMaxPositionAgeSeconds());
         target.setLocationReminderIntervalSeconds(source.getLocationReminderIntervalSeconds());
+        target.setStartedAt(source.getStartedAt());
+        target.setPlannedEndAt(source.getPlannedEndAt());
     }
 
     private Game createCopiedDraftGame(

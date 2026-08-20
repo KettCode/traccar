@@ -14,6 +14,8 @@ import org.traccar.storage.query.Columns;
 import org.traccar.storage.query.Condition;
 import org.traccar.storage.query.Request;
 
+import java.util.Date;
+
 public class GameRuntimePermissionService {
 
     @Inject
@@ -91,6 +93,9 @@ public class GameRuntimePermissionService {
         if (!context.isGameManagement()) {
             throw new SecurityException("Game management access required");
         }
+        if (!hasGameStarted(context)) {
+            throw new SecurityException("Game has not started yet");
+        }
         return context;
     }
 
@@ -155,21 +160,22 @@ public class GameRuntimePermissionService {
     }
 
     public boolean canStartSpeedhunt(GameRuntimeContext context) {
-        return context.isRunning() && context.isActive() && (context.isGameManagement()
+        return context.isRunning() && context.isActive() && hasGameStarted(context) && (context.isGameManagement()
                 || context.isHunter() && context.member().getCanStartSpeedhunt());
     }
 
     public boolean canRequestSpeedhuntPing(GameRuntimeContext context) {
-        return context.isRunning() && context.isActive() && (context.isGameManagement()
+        return context.isRunning() && context.isActive() && hasGameStarted(context) && (context.isGameManagement()
                 || context.isHunter() && context.member().getCanRequestSpeedhuntPing());
     }
 
     public boolean canUseJoker(GameRuntimeContext context) {
-        return context.isRunning() && context.isActive() && (context.isGameManagement() || context.isHunted());
+        return context.isRunning() && context.isActive() && hasGameStarted(context)
+                && (context.isGameManagement() || context.isHunted());
     }
 
     public boolean canManageRuntime(GameRuntimeContext context) {
-        return context.isRunning() && context.isActive() && context.isGameManagement();
+        return context.isRunning() && context.isActive() && hasGameStarted(context) && context.isGameManagement();
     }
 
     public boolean canManageGeofences(GameRuntimeContext context) {
@@ -277,6 +283,10 @@ public class GameRuntimePermissionService {
             }
         }
         return false;
+    }
+
+    private boolean hasGameStarted(GameRuntimeContext context) {
+        return context.game().getStartedAt() == null || !new Date().before(context.game().getStartedAt());
     }
 
 }

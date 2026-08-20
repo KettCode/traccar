@@ -75,10 +75,6 @@ public class SetupGameGeofenceService {
         if (gameGeofence == null) {
             return false;
         }
-        if (!gameGeofence.getActive()) {
-            throw new IllegalArgumentException("Only active setup geofences can be changed");
-        }
-
         String name = normalizeName(request.getName(), gameGeofence.getName());
         String type = normalizeType(request.getType(), gameGeofence.getType());
         String role = normalizeRole(request.getRole());
@@ -88,9 +84,10 @@ public class SetupGameGeofenceService {
         update.setName(name);
         update.setType(type);
         update.setRole(role);
+        update.setActive(request.getActive());
         update.setUpdatedAt(new Date());
         storage.updateObject(update, new Request(
-                new Columns.Include("name", "type", "role", "updatedAt"),
+                new Columns.Include("name", "type", "role", "active", "updatedAt"),
                 new Condition.Equals("id", gameGeofenceId)));
         cacheManager.invalidateObject(true, GameGeofence.class, gameGeofenceId, ObjectOperation.UPDATE);
         actionLogger.edit(httpRequest, userId, update);
@@ -161,7 +158,7 @@ public class SetupGameGeofenceService {
         gameGeofence.setName(name);
         gameGeofence.setType(type);
         gameGeofence.setRole(role);
-        gameGeofence.setActive(true);
+        gameGeofence.setActive(request.getActive());
         gameGeofence.setCreatedAt(new Date());
         gameGeofence.setId(storage.addObject(gameGeofence, new Request(new Columns.Exclude("id"))));
         actionLogger.create(httpRequest, userId, gameGeofence);

@@ -103,7 +103,7 @@ public class WizardStateService {
 
     private List<WizardGeofenceView> getSetupGeofences(long gameId) throws StorageException {
         var result = new ArrayList<WizardGeofenceView>();
-        var gameGeofences = setupStorage.getActiveGameGeofences(gameId);
+        var gameGeofences = setupStorage.getGameGeofences(gameId);
         Map<Long, Geofence> geofencesById = setupStorage.getGeofencesByGameGeofences(gameGeofences);
         for (GameGeofence gameGeofence : gameGeofences) {
             Geofence geofence = geofencesById.get(gameGeofence.getGeofenceId());

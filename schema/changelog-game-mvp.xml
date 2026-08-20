@@ -420,4 +420,10 @@
 
   </changeSet>
 
+  <changeSet author="author" id="changelog-game-mvp-activated-at">
+    <addColumn tableName="tc_games">
+      <column name="activatedAt" type="timestamp" />
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>

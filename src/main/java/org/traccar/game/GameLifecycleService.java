@@ -47,13 +47,15 @@ public class GameLifecycleService {
         validator.validateSettings(game);
         devicePermissionService.validateAndSyncGameDevicePermissions(userId, gameId, httpRequest);
 
+        Date now = new Date();
         Game update = new Game();
         update.setId(gameId);
         update.setStatus(Game.STATUS_RUNNING);
-        update.setStartedAt(new Date());
-        update.setUpdatedAt(new Date());
+        update.setStartedAt(game.getStartedAt() != null ? game.getStartedAt() : now);
+        update.setActivatedAt(now);
+        update.setUpdatedAt(now);
         storage.updateObject(update, new Request(
-                new Columns.Include("status", "startedAt", "updatedAt"),
+                new Columns.Include("status", "startedAt", "activatedAt", "updatedAt"),
                 new Condition.Equals("id", gameId)));
 
         cacheManager.invalidateObject(true, Game.class, gameId, ObjectOperation.UPDATE);

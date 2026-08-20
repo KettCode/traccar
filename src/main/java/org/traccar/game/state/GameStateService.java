@@ -160,6 +160,7 @@ public class GameStateService {
         view.setName(game.getName());
         view.setStatus(game.getStatus());
         view.setStartedAt(game.getStartedAt());
+        view.setActivatedAt(game.getActivatedAt());
         view.setPlannedEndAt(game.getPlannedEndAt());
         view.setFinishedAt(game.getFinishedAt());
         view.setRemainingSeconds(getRemainingSeconds(game.getPlannedEndAt(), now));

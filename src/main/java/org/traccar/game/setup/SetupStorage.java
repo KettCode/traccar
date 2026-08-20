@@ -63,6 +63,11 @@ public class SetupStorage {
                         new Condition.Equals("active", true)), new Order("id")));
     }
 
+    public List<GameGeofence> getGameGeofences(long gameId) throws StorageException {
+        return storage.getObjects(GameGeofence.class, new Request(
+                new Columns.All(), new Condition.Equals("gameId", gameId), new Order("id")));
+    }
+
     public Set<Long> getMemberPlayerIds(long gameId) throws StorageException {
         var playerIds = new HashSet<Long>();
         var members = storage.getObjects(GameMember.class, new Request(
