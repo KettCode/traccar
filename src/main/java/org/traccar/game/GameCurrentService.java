@@ -85,6 +85,7 @@ public class GameCurrentService {
         view.setName(game.getName());
         view.setStatus(game.getStatus());
         view.setMemberId(member.getId());
+        view.setMemberDisplayName(member.getDisplayName());
         view.setMemberRole(member.getRole());
         view.setMemberStatus(member.getStatus());
         view.setReadonly(!Game.STATUS_RUNNING.equals(game.getStatus()));

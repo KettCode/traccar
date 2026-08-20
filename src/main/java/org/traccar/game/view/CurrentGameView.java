@@ -6,6 +6,7 @@ public class CurrentGameView {
     private String name;
     private String status;
     private long memberId;
+    private String memberDisplayName;
     private String memberRole;
     private String memberStatus;
     private boolean readonly;
@@ -40,6 +41,14 @@ public class CurrentGameView {
 
     public void setMemberId(long memberId) {
         this.memberId = memberId;
+    }
+
+    public String getMemberDisplayName() {
+        return memberDisplayName;
+    }
+
+    public void setMemberDisplayName(String memberDisplayName) {
+        this.memberDisplayName = memberDisplayName;
     }
 
     public String getMemberRole() {
