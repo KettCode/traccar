@@ -45,7 +45,7 @@ public class WizardStateService {
             return null;
         }
 
-        var members = setupStorage.getActiveMembers(gameId);
+        var members = setupStorage.getGameMembers(gameId);
 
         var editable = Game.STATUS_DRAFT.equals(game.getStatus());
         var issues = editable ? validator.getIssues(game, members) : List.<String>of();

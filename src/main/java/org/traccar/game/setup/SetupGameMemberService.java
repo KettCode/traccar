@@ -122,10 +122,6 @@ public class SetupGameMemberService {
         if (member == null) {
             return false;
         }
-        if (!GameMember.STATUS_ACTIVE.equals(member.getStatus())) {
-            throw new IllegalArgumentException("Only active setup players can be changed");
-        }
-
         String displayName = request.getDisplayName() != null ? request.getDisplayName().trim() : null;
         if (displayName == null || displayName.isEmpty()) {
             throw new IllegalArgumentException("Display name is required");
@@ -172,12 +168,12 @@ public class SetupGameMemberService {
         return true;
     }
 
-    public void copyActiveMembers(
+    public void copyMembers(
             long userId, long sourceGameId, Game targetGame,
             HttpServletRequest httpRequest) throws Exception {
         gameService.getEditableDraftGame(userId, targetGame.getId());
 
-        var members = setupStorage.getActiveMembers(sourceGameId);
+        var members = setupStorage.getGameMembers(sourceGameId);
         var addedMembers = new ArrayList<GameMember>();
         for (GameMember member : members) {
             Player player = setupStorage.getPlayer(member.getPlayerId());

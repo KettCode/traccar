@@ -166,10 +166,10 @@ public class SetupGameService {
                 userId, source, name, request == null || request.getCopySettings(), httpRequest);
 
         if (request == null || request.getCopyMembers()) {
-            gameMemberService.copyActiveMembers(userId, source.getId(), game, httpRequest);
+            gameMemberService.copyMembers(userId, source.getId(), game, httpRequest);
         }
         if (request == null || request.getCopyGeofences()) {
-            gameGeofenceService.copyActiveGeofences(userId, source.getId(), game, httpRequest);
+            gameGeofenceService.copyGeofences(userId, source.getId(), game, httpRequest);
         }
 
         return game;

@@ -114,12 +114,12 @@ public class SetupGameGeofenceService {
         return true;
     }
 
-    public void copyActiveGeofences(
+    public void copyGeofences(
             long userId, long sourceGameId, Game targetGame,
             HttpServletRequest httpRequest) throws Exception {
         gameService.getEditableDraftGame(userId, targetGame.getId());
 
-        var gameGeofences = setupStorage.getActiveGameGeofences(sourceGameId);
+        var gameGeofences = setupStorage.getGameGeofences(sourceGameId);
         for (GameGeofence gameGeofence : gameGeofences) {
             permissionsService.checkPermission(Geofence.class, userId, gameGeofence.getGeofenceId());
             GameGeofence targetGameGeofence = new GameGeofence();
@@ -128,7 +128,7 @@ public class SetupGameGeofenceService {
             targetGameGeofence.setName(gameGeofence.getName());
             targetGameGeofence.setType(gameGeofence.getType());
             targetGameGeofence.setRole(gameGeofence.getRole());
-            targetGameGeofence.setActive(true);
+            targetGameGeofence.setActive(gameGeofence.getActive());
             targetGameGeofence.setCreatedAt(new Date());
             targetGameGeofence.setId(storage.addObject(targetGameGeofence, new Request(new Columns.Exclude("id"))));
             actionLogger.create(httpRequest, userId, targetGameGeofence);

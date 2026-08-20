@@ -56,6 +56,11 @@ public class SetupStorage {
                         new Condition.Equals("status", GameMember.STATUS_ACTIVE)), new Order("id")));
     }
 
+    public List<GameMember> getGameMembers(long gameId) throws StorageException {
+        return storage.getObjects(GameMember.class, new Request(
+                new Columns.All(), new Condition.Equals("gameId", gameId), new Order("id")));
+    }
+
     public List<GameGeofence> getActiveGameGeofences(long gameId) throws StorageException {
         return storage.getObjects(GameGeofence.class, new Request(
                 new Columns.All(), new Condition.And(
