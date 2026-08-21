@@ -9,7 +9,6 @@ public class GameMapView {
     private long gameId;
     private List<GameMapMarker> memberMarkers = new ArrayList<>();
     private List<GameMapGeofence> geofences = new ArrayList<>();
-    private List<GameMapRevealMarker> revealedMarkers = new ArrayList<>();
     private Date createdAt = new Date();
 
     public long getGameId() {
@@ -34,14 +33,6 @@ public class GameMapView {
 
     public void setGeofences(List<GameMapGeofence> geofences) {
         this.geofences = geofences;
-    }
-
-    public List<GameMapRevealMarker> getRevealedMarkers() {
-        return revealedMarkers;
-    }
-
-    public void setRevealedMarkers(List<GameMapRevealMarker> revealedMarkers) {
-        this.revealedMarkers = revealedMarkers;
     }
 
     public Date getCreatedAt() {

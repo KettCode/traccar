@@ -7,6 +7,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.traccar.game.GameStorage;
 import org.traccar.game.GameRuntimeContext;
 import org.traccar.game.GameRuntimePermissionService;
+import org.traccar.game.joker.view.GameJokerRevealLocationsView;
+import org.traccar.game.map.GameMapMapper;
 import org.traccar.game.joker.request.ActivateJokerRequest;
 import org.traccar.game.notification.message.GameNotificationMessage;
 import org.traccar.game.notification.GameNotificationService;
@@ -55,6 +57,9 @@ public class GameJokerService {
 
     @Inject
     private GameStorage gameStorage;
+
+    @Inject
+    private GameMapMapper mapMapper;
 
     @Inject
     private GameNotificationService notificationService;
@@ -171,6 +176,49 @@ public class GameJokerService {
         joker.setCancelledAt(update.getCancelledAt());
         notifyJokerChanged(gameId, joker);
         return joker;
+    }
+
+    public GameJokerRevealLocationsView getRevealedLocations(long userId, long gameId, long jokerId)
+            throws Exception {
+        GameRuntimeContext context = runtimePermissionService.requireViewableMember(userId, gameId);
+        if (context == null) {
+            return null;
+        }
+
+        GameJoker joker = gameStorage.getGameJoker(gameId, jokerId);
+        if (joker == null) {
+            return null;
+        }
+        if (!GameJoker.TYPE_REQUEST_HUNTER_LOCATIONS.equals(joker.getType())) {
+            throw new IllegalArgumentException("Joker does not contain revealed hunter locations");
+        }
+        if (!GameJoker.STATUS_USED.equals(joker.getStatus())) {
+            throw new IllegalArgumentException("Joker has not revealed locations yet");
+        }
+        if (!runtimePermissionService.canViewJoker(context, joker)) {
+            throw new SecurityException("Joker is not visible");
+        }
+
+        var view = new GameJokerRevealLocationsView();
+        view.setJokerId(jokerId);
+
+        GameReveal reveal = gameStorage.getHunterLocationRevealByJoker(gameId, joker.getMemberId(), jokerId);
+        if (reveal == null || !runtimePermissionService.canViewReveal(context, reveal)) {
+            return view;
+        }
+
+        view.setRevealId(reveal.getId());
+        view.setRevealedAt(reveal.getRevealedAt());
+
+        Map<Long, GameMember> membersById = gameStorage.getGameMembers(gameId).stream()
+                .collect(Collectors.toMap(GameMember::getId, member -> member));
+        for (GameRevealedPosition revealedPosition : gameStorage.getRevealedPositions(reveal.getId())) {
+            GameMember member = membersById.get(revealedPosition.getMemberId());
+            if (member != null) {
+                view.getMarkers().add(mapMapper.toRevealMarker(reveal, revealedPosition, member));
+            }
+        }
+        return view;
     }
 
     private void createPendingEffect(

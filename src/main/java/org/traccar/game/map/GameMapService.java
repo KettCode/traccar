@@ -6,29 +6,20 @@ import org.traccar.game.GameRuntimeContext;
 import org.traccar.game.GameRuntimePermissionService;
 import org.traccar.game.map.view.GameMapGeofence;
 import org.traccar.game.map.view.GameMapMarker;
-import org.traccar.game.map.view.GameMapRevealMarker;
 import org.traccar.game.map.view.GameMapView;
 import org.traccar.model.GameGeofence;
 import org.traccar.model.GameMember;
 import org.traccar.model.GamePing;
-import org.traccar.model.GameReveal;
-import org.traccar.model.GameRevealedPosition;
 import org.traccar.model.Player;
 import org.traccar.model.Position;
 import org.traccar.storage.StorageException;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class GameMapService {
-
-    private static final String INCLUDE_REVEALS = "reveals";
 
     @Inject
     private GameRuntimePermissionService runtimePermissionService;
@@ -39,7 +30,7 @@ public class GameMapService {
     @Inject
     private GameMapMapper mapMapper;
 
-    public GameMapView getMap(long userId, long gameId, String include) throws StorageException {
+    public GameMapView getMap(long userId, long gameId) throws StorageException {
         GameRuntimeContext context = runtimePermissionService.requireViewableMember(userId, gameId);
         if (context == null) {
             return null;
@@ -47,23 +38,16 @@ public class GameMapService {
         if (!context.isRunning()) {
             return getLatestPositionMap(context, gameId);
         }
-        return getRunningMap(context, gameId, include);
+        return getRunningMap(context, gameId);
     }
 
-    private GameMapView getRunningMap(
-            GameRuntimeContext context, long gameId, String include) throws StorageException {
-        Set<String> includes = parseIncludes(include);
-
+    private GameMapView getRunningMap(GameRuntimeContext context, long gameId) throws StorageException {
         List<GameMember> members = gameStorage.getGameMembers(gameId);
-        Map<Long, GameMember> membersById = indexMembers(members);
 
         GameMapView view = new GameMapView();
         view.setGameId(gameId);
         view.getMemberMarkers().addAll(getMemberMarkers(context, members));
         view.getGeofences().addAll(getGeofences(context));
-        if (includes.contains(INCLUDE_REVEALS)) {
-            view.getRevealedMarkers().addAll(getRevealMarkers(context, membersById));
-        }
         return view;
     }
 
@@ -88,20 +72,6 @@ public class GameMapService {
             }
         }
         return view;
-    }
-
-    private Set<String> parseIncludes(String include) {
-        Set<String> result = new HashSet<>();
-        if (include == null || include.isBlank()) {
-            return result;
-        }
-        for (String rawValue : include.split(",")) {
-            String value = rawValue.trim().toLowerCase(Locale.ROOT);
-            if (INCLUDE_REVEALS.equals(value) || "all".equals(value)) {
-                result.add(INCLUDE_REVEALS);
-            }
-        }
-        return result;
     }
 
     private List<GameMapMarker> getMemberMarkers(GameRuntimeContext context, List<GameMember> members) throws StorageException {
@@ -151,43 +121,6 @@ public class GameMapService {
                     result.add(geofence);
                 }
             }
-        }
-        return result;
-    }
-
-    private List<GameMapRevealMarker> getRevealMarkers(
-            GameRuntimeContext context, Map<Long, GameMember> membersById) throws StorageException {
-        var result = new ArrayList<GameMapRevealMarker>();
-        GameReveal reveal = getLatestOwnHunterLocationReveal(context);
-        if (reveal == null) {
-            return result;
-        }
-
-        for (GameRevealedPosition revealedPosition : gameStorage.getRevealedPositions(reveal.getId())) {
-            GameMember member = membersById.get(revealedPosition.getMemberId());
-            if (member != null) {
-                result.add(mapMapper.toRevealMarker(reveal, revealedPosition, member));
-            }
-        }
-        return result;
-    }
-
-    private GameReveal getLatestOwnHunterLocationReveal(GameRuntimeContext context) throws StorageException {
-        if (context.isGameManagement()) {
-            return null;
-        }
-
-        GameReveal reveal = gameStorage.getLatestHunterLocationReveal(context.game().getId(), context.member().getId());
-        if (reveal != null && runtimePermissionService.canViewReveal(context, reveal)) {
-            return reveal;
-        }
-        return null;
-    }
-
-    private Map<Long, GameMember> indexMembers(List<GameMember> members) {
-        var result = new HashMap<Long, GameMember>();
-        for (GameMember member : members) {
-            result.put(member.getId(), member);
         }
         return result;
     }

@@ -308,12 +308,14 @@ public class GameStorage {
                         new Condition.Equals("source", GamePing.SOURCE_SPEEDHUNT)), new Order("id")));
     }
 
-    public GameReveal getLatestHunterLocationReveal(long gameId, long memberId) throws StorageException {
+    public GameReveal getHunterLocationRevealByJoker(long gameId, long memberId, long jokerId) throws StorageException {
         var reveals = storage.getObjects(GameReveal.class, new Request(
                 new Columns.All(), new Condition.And(
                         new Condition.And(
-                                new Condition.Equals("gameId", gameId),
-                                new Condition.Equals("memberId", memberId)),
+                                new Condition.And(
+                                        new Condition.Equals("gameId", gameId),
+                                        new Condition.Equals("memberId", memberId)),
+                                new Condition.Equals("jokerId", jokerId)),
                         new Condition.Equals("type", GameReveal.TYPE_HUNTER_LOCATIONS)), new Order("id", true, 1)));
         for (GameReveal reveal : reveals) {
             if (reveal.getInvalidatedAt() == null) {

@@ -3,6 +3,7 @@ package org.traccar.api.resource;
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -60,6 +61,17 @@ public class GameJokerActionResource extends BaseResource {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         return Response.ok(joker).build();
+    }
+
+    @Path("{gameId}/jokers/{jokerId}/revealed-locations")
+    @GET
+    public Response getRevealedLocations(
+            @PathParam("gameId") long gameId, @PathParam("jokerId") long jokerId) throws Exception {
+        var view = jokerService.getRevealedLocations(getUserId(), gameId, jokerId);
+        if (view == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(view).build();
     }
 
 }
