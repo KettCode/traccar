@@ -16,6 +16,7 @@ public class GameMapUpdateMessage {
     private String type;
     private boolean stateRefresh;
     private List<GameMapMarker> markers = new ArrayList<>();
+    private List<GameMapMarker> knowledgeMarkers = new ArrayList<>();
     private List<GameMapGeofence> geofences = new ArrayList<>();
     private List<Long> removedMemberIds = new ArrayList<>();
     private List<Long> removedGeofenceIds = new ArrayList<>();
@@ -51,6 +52,14 @@ public class GameMapUpdateMessage {
 
     public void setMarkers(List<GameMapMarker> markers) {
         this.markers = markers;
+    }
+
+    public List<GameMapMarker> getKnowledgeMarkers() {
+        return knowledgeMarkers;
+    }
+
+    public void setKnowledgeMarkers(List<GameMapMarker> knowledgeMarkers) {
+        this.knowledgeMarkers = knowledgeMarkers;
     }
 
     public List<GameMapGeofence> getGeofences() {

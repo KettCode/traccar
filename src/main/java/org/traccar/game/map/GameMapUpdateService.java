@@ -80,10 +80,45 @@ public class GameMapUpdateService {
             return;
         }
 
-        for (long userId : getRecipientUserIds(members, playersById, runtimePermissionService::canReceivePingMapUpdates)) {
+        notifyHunterPingMarkers(gameId, members, playersById, markers);
+
+        if (GameNotificationMessage.TYPE_REGULAR_PING_CREATED.equals(notificationType)) {
+            notifyHuntedKnownRegularPing(pings, membersById, playersById);
+        }
+    }
+
+    private void notifyHunterPingMarkers(
+            long gameId, List<GameMember> members, Map<Long, Player> playersById,
+            List<GameMapMarker> markers) {
+        for (long userId : getRecipientUserIds(
+                members, playersById, runtimePermissionService::canReceivePingMapUpdates)) {
             GameMapUpdateMessage update = createUpdate(gameId, GameMapUpdateMessage.TYPE_GAME_POSITION_UPDATED, false);
             update.getMarkers().addAll(markers);
             gameConnectionManager.updateGameMap(userId, update);
+        }
+    }
+
+    private void notifyHuntedKnownRegularPing(
+            List<GamePing> pings, Map<Long, GameMember> membersById, Map<Long, Player> playersById) {
+        Set<Long> notifiedUserIds = new HashSet<>();
+        for (GamePing ping : pings) {
+            GameMember target = membersById.get(ping.getTargetMemberId());
+            if (target == null || !runtimePermissionService.canReceiveMapUpdates(target)) {
+                continue;
+            }
+
+            GameMapMarker marker = mapMapper.toKnownRegularPingMarker(ping, target);
+            if (marker == null) {
+                continue;
+            }
+
+            long userId = getUserId(target, playersById);
+            if (userId != 0 && notifiedUserIds.add(userId)) {
+                GameMapUpdateMessage update = createUpdate(
+                        ping.getGameId(), GameMapUpdateMessage.TYPE_GAME_POSITION_UPDATED, false);
+                update.getKnowledgeMarkers().add(marker);
+                gameConnectionManager.updateGameMap(userId, update);
+            }
         }
     }
 

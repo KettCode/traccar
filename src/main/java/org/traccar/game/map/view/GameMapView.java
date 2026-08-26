@@ -8,6 +8,7 @@ public class GameMapView {
 
     private long gameId;
     private List<GameMapMarker> memberMarkers = new ArrayList<>();
+    private List<GameMapMarker> knowledgeMarkers = new ArrayList<>();
     private List<GameMapGeofence> geofences = new ArrayList<>();
     private Date createdAt = new Date();
 
@@ -25,6 +26,14 @@ public class GameMapView {
 
     public void setMemberMarkers(List<GameMapMarker> memberMarkers) {
         this.memberMarkers = memberMarkers;
+    }
+
+    public List<GameMapMarker> getKnowledgeMarkers() {
+        return knowledgeMarkers;
+    }
+
+    public void setKnowledgeMarkers(List<GameMapMarker> knowledgeMarkers) {
+        this.knowledgeMarkers = knowledgeMarkers;
     }
 
     public List<GameMapGeofence> getGeofences() {

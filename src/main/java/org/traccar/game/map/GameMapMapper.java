@@ -15,6 +15,7 @@ import org.traccar.model.Position;
 public class GameMapMapper {
 
     private static final String SOURCE_LIVE = "live";
+    public static final String SOURCE_KNOWN_REGULAR_PING = "known_regular_ping";
 
     public GameMapMarker toLiveMarker(long gameId, GameMember member, Player player, Position position) {
         if (player == null || player.getDeviceId() == 0 || position == null) {
@@ -50,6 +51,15 @@ public class GameMapMapper {
         marker.setLatitude(ping.getLatitude());
         marker.setLongitude(ping.getLongitude());
         marker.setAccuracy(ping.getAccuracy());
+        return marker;
+    }
+
+    public GameMapMarker toKnownRegularPingMarker(GamePing ping, GameMember member) {
+        GameMapMarker marker = toPingMarker(ping, member);
+        if (marker != null) {
+            marker.setSource(SOURCE_KNOWN_REGULAR_PING);
+            marker.setDeviceId(null);
+        }
         return marker;
     }
 

@@ -47,6 +47,7 @@ public class GameMapService {
         GameMapView view = new GameMapView();
         view.setGameId(gameId);
         view.getMemberMarkers().addAll(getMemberMarkers(context, members));
+        view.getKnowledgeMarkers().addAll(getKnowledgeMarkers(context));
         view.getGeofences().addAll(getGeofences(context));
         return view;
     }
@@ -107,6 +108,20 @@ public class GameMapService {
             }
         }
         return result;
+    }
+
+    private List<GameMapMarker> getKnowledgeMarkers(GameRuntimeContext context) throws StorageException {
+        if (!context.isActive() || !context.isHunted()) {
+            return List.of();
+        }
+
+        GamePing ping = gameStorage.getLatestRegularPing(context.game().getId(), context.member().getId());
+        if (ping == null) {
+            return List.of();
+        }
+
+        GameMapMarker marker = mapMapper.toKnownRegularPingMarker(ping, context.member());
+        return marker != null ? List.of(marker) : List.of();
     }
 
     private List<GameMapGeofence> getGeofences(GameRuntimeContext context) throws StorageException {
