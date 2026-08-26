@@ -21,7 +21,7 @@ import java.util.Set;
 public class GamePushNotificationService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GamePushNotificationService.class);
-    private static final String NOTIFICATOR_FIREBASE = "firebase";
+    private static final String NOTIFICATOR_TRACCAR = "traccar";
     private static final String SUBJECT = "Stadtjagd";
 
     @Inject
@@ -95,16 +95,16 @@ public class GamePushNotificationService {
     }
 
     private void notifyMembers(List<GameMember> members, String body, boolean priority) throws StorageException {
-        if (members.isEmpty() || !isFirebaseEnabled()) {
+        if (members.isEmpty() || !isTraccarEnabled()) {
             return;
         }
 
-        Notificator notificator = getFirebaseNotificator();
+        Notificator notificator = getTraccarNotificator();
         if (notificator == null) {
             return;
         }
 
-        NotificationMessage message = new NotificationMessage(SUBJECT, null, body, priority);
+        NotificationMessage message = new NotificationMessage(SUBJECT, body, body, priority);
         Map<Long, User> usersByMemberId = gameStorage.getUsersByMembers(members);
         Set<Long> notifiedUserIds = new HashSet<>();
         for (GameMember member : members) {
@@ -119,20 +119,20 @@ public class GamePushNotificationService {
         }
     }
 
-    private boolean isFirebaseEnabled() {
+    private boolean isTraccarEnabled() {
         for (Typed type : notificatorManager.getAllNotificatorTypes()) {
-            if (NOTIFICATOR_FIREBASE.equals(type.type())) {
+            if (NOTIFICATOR_TRACCAR.equals(type.type())) {
                 return true;
             }
         }
         return false;
     }
 
-    private Notificator getFirebaseNotificator() {
+    private Notificator getTraccarNotificator() {
         try {
-            return notificatorManager.getNotificator(NOTIFICATOR_FIREBASE);
+            return notificatorManager.getNotificator(NOTIFICATOR_TRACCAR);
         } catch (RuntimeException e) {
-            LOGGER.debug("Firebase notificator unavailable", e);
+            LOGGER.debug("Traccar notificator unavailable", e);
             return null;
         }
     }
