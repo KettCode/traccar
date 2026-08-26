@@ -43,6 +43,7 @@
         <constraints nullable="false" />
       </column>
       <column name="plannedEndAt" type="timestamp" />
+      <column name="activatedAt" type="timestamp" />
       <column name="startedAt" type="timestamp" />
       <column name="finishedAt" type="timestamp" />
       <column name="createdAt" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP">
@@ -418,12 +419,6 @@
     <addForeignKeyConstraint baseTableName="tc_game_pending_effects" baseColumnNames="consumedPingid"
       referencedTableName="tc_game_pings" referencedColumnNames="id" constraintName="fk_game_pending_effects_consumed_ping" />
 
-  </changeSet>
-
-  <changeSet author="author" id="changelog-game-mvp-activated-at">
-    <addColumn tableName="tc_games">
-      <column name="activatedAt" type="timestamp" />
-    </addColumn>
   </changeSet>
 
 </databaseChangeLog>
