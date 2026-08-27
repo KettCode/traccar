@@ -18,18 +18,20 @@ public class GameMapMapper {
     public static final String SOURCE_KNOWN_REGULAR_PING = "known_regular_ping";
 
     public GameMapMarker toLiveMarker(long gameId, GameMember member, Player player, Position position) {
-        if (player == null || player.getDeviceId() == 0 || position == null) {
+        if (player == null || player.getDeviceId() == 0) {
             return null;
         }
 
         GameMapMarker marker = createMarker(gameId, member);
         marker.setDeviceId(player.getDeviceId());
         marker.setSource(SOURCE_LIVE);
-        marker.setPositionId(position.getId());
-        marker.setFixTime(position.getFixTime());
-        marker.setLatitude(position.getLatitude());
-        marker.setLongitude(position.getLongitude());
-        marker.setAccuracy(position.getAccuracy());
+        if (position != null) {
+            marker.setPositionId(position.getId());
+            marker.setFixTime(position.getFixTime());
+            marker.setLatitude(position.getLatitude());
+            marker.setLongitude(position.getLongitude());
+            marker.setAccuracy(position.getAccuracy());
+        }
         return marker;
     }
 
