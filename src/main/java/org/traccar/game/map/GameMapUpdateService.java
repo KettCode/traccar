@@ -75,16 +75,16 @@ public class GameMapUpdateService {
         }
 
         Map<Long, Player> playersById = gameStorage.getPlayersByMembers(members);
-        if (markers.isEmpty()) {
-            notifyActiveHunters(members, playersById, createPingStateChangedMessage(gameId, notificationType, pings));
-            return;
+        GameNotificationMessage stateRefreshMessage = createPingStateChangedMessage(gameId, notificationType, pings);
+        if (!markers.isEmpty()) {
+            notifyHunterPingMarkers(gameId, members, playersById, markers);
+
+            if (GameNotificationMessage.TYPE_REGULAR_PING_CREATED.equals(notificationType)) {
+                notifyHuntedKnownRegularPing(pings, membersById, playersById);
+            }
         }
 
-        notifyHunterPingMarkers(gameId, members, playersById, markers);
-
-        if (GameNotificationMessage.TYPE_REGULAR_PING_CREATED.equals(notificationType)) {
-            notifyHuntedKnownRegularPing(pings, membersById, playersById);
-        }
+        notificationService.notifyGameMembers(gameId, stateRefreshMessage);
     }
 
     private void notifyHunterPingMarkers(
@@ -131,14 +131,6 @@ public class GameMapUpdateService {
             message.setPingId(ping.getId());
         }
         return message;
-    }
-
-    private void notifyActiveHunters(
-            List<GameMember> members, Map<Long, Player> playersById, GameNotificationMessage message) {
-        for (long userId : getRecipientUserIds(
-                members, playersById, runtimePermissionService::canReceivePingMapUpdates)) {
-            gameConnectionManager.updateGameNotification(userId, message);
-        }
     }
 
     public void notifyGeofenceUpdated(GameGeofence gameGeofence) throws StorageException {
