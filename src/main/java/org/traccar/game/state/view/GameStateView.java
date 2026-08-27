@@ -87,6 +87,13 @@ public class GameStateView {
         private Date plannedEndAt;
         private Date finishedAt;
         private Long remainingSeconds;
+        private int pingIntervalSeconds;
+        private int speedhuntLimit;
+        private int speedhuntPingLimit;
+        private boolean allowConsecutiveSpeedhuntsSameTarget;
+        private boolean locationReminderEnabled;
+        private int maxPositionAgeSeconds;
+        private int locationReminderIntervalSeconds;
 
         public long getId() {
             return id;
@@ -150,6 +157,62 @@ public class GameStateView {
 
         public void setRemainingSeconds(Long remainingSeconds) {
             this.remainingSeconds = remainingSeconds;
+        }
+
+        public int getPingIntervalSeconds() {
+            return pingIntervalSeconds;
+        }
+
+        public void setPingIntervalSeconds(int pingIntervalSeconds) {
+            this.pingIntervalSeconds = pingIntervalSeconds;
+        }
+
+        public int getSpeedhuntLimit() {
+            return speedhuntLimit;
+        }
+
+        public void setSpeedhuntLimit(int speedhuntLimit) {
+            this.speedhuntLimit = speedhuntLimit;
+        }
+
+        public int getSpeedhuntPingLimit() {
+            return speedhuntPingLimit;
+        }
+
+        public void setSpeedhuntPingLimit(int speedhuntPingLimit) {
+            this.speedhuntPingLimit = speedhuntPingLimit;
+        }
+
+        public boolean getAllowConsecutiveSpeedhuntsSameTarget() {
+            return allowConsecutiveSpeedhuntsSameTarget;
+        }
+
+        public void setAllowConsecutiveSpeedhuntsSameTarget(boolean allowConsecutiveSpeedhuntsSameTarget) {
+            this.allowConsecutiveSpeedhuntsSameTarget = allowConsecutiveSpeedhuntsSameTarget;
+        }
+
+        public boolean getLocationReminderEnabled() {
+            return locationReminderEnabled;
+        }
+
+        public void setLocationReminderEnabled(boolean locationReminderEnabled) {
+            this.locationReminderEnabled = locationReminderEnabled;
+        }
+
+        public int getMaxPositionAgeSeconds() {
+            return maxPositionAgeSeconds;
+        }
+
+        public void setMaxPositionAgeSeconds(int maxPositionAgeSeconds) {
+            this.maxPositionAgeSeconds = maxPositionAgeSeconds;
+        }
+
+        public int getLocationReminderIntervalSeconds() {
+            return locationReminderIntervalSeconds;
+        }
+
+        public void setLocationReminderIntervalSeconds(int locationReminderIntervalSeconds) {
+            this.locationReminderIntervalSeconds = locationReminderIntervalSeconds;
         }
     }
 
@@ -365,6 +428,7 @@ public class GameStateView {
         private boolean canRequestSpeedhuntPing;
         private boolean canUseJoker;
         private boolean canManageRuntime;
+        private boolean canManageRuntimeSettings;
         private boolean canManageGeofences;
         private boolean canUnlockJoker;
 
@@ -398,6 +462,14 @@ public class GameStateView {
 
         public void setCanManageRuntime(boolean canManageRuntime) {
             this.canManageRuntime = canManageRuntime;
+        }
+
+        public boolean getCanManageRuntimeSettings() {
+            return canManageRuntimeSettings;
+        }
+
+        public void setCanManageRuntimeSettings(boolean canManageRuntimeSettings) {
+            this.canManageRuntimeSettings = canManageRuntimeSettings;
         }
 
         public boolean getCanManageGeofences() {

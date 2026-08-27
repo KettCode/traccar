@@ -110,6 +110,17 @@ public class GameRuntimePermissionService {
         return context;
     }
 
+    public GameRuntimeContext requireCanManageRuntimeSettings(long userId, long gameId) throws StorageException {
+        GameRuntimeContext context = requireActiveMember(userId, gameId);
+        if (context == null) {
+            return null;
+        }
+        if (!canManageRuntimeSettings(context)) {
+            throw new SecurityException("Runtime settings management access required");
+        }
+        return context;
+    }
+
     public GameRuntimeContext requireCanUnlockJoker(long userId, long gameId) throws StorageException {
         GameRuntimeContext context = requireViewableMember(userId, gameId);
         if (context == null) {
@@ -176,6 +187,10 @@ public class GameRuntimePermissionService {
 
     public boolean canManageRuntime(GameRuntimeContext context) {
         return context.isRunning() && context.isActive() && hasGameStarted(context) && context.isGameManagement();
+    }
+
+    public boolean canManageRuntimeSettings(GameRuntimeContext context) {
+        return context.isRunning() && context.isActive() && context.isGameManagement();
     }
 
     public boolean canManageGeofences(GameRuntimeContext context) {

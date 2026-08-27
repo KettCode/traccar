@@ -164,6 +164,13 @@ public class GameStateService {
         view.setPlannedEndAt(game.getPlannedEndAt());
         view.setFinishedAt(game.getFinishedAt());
         view.setRemainingSeconds(getRemainingSeconds(game.getPlannedEndAt(), now));
+        view.setPingIntervalSeconds(game.getPingIntervalSeconds());
+        view.setSpeedhuntLimit(game.getSpeedhuntLimit());
+        view.setSpeedhuntPingLimit(game.getSpeedhuntPingLimit());
+        view.setAllowConsecutiveSpeedhuntsSameTarget(game.getAllowConsecutiveSpeedhuntsSameTarget());
+        view.setLocationReminderEnabled(game.getLocationReminderEnabled());
+        view.setMaxPositionAgeSeconds(game.getMaxPositionAgeSeconds());
+        view.setLocationReminderIntervalSeconds(game.getLocationReminderIntervalSeconds());
         return view;
     }
 
@@ -281,6 +288,7 @@ public class GameStateService {
         view.setCanRequestSpeedhuntPing(runtimePermissionService.canRequestSpeedhuntPing(context));
         view.setCanUseJoker(runtimePermissionService.canUseJoker(context));
         view.setCanManageRuntime(runtimePermissionService.canManageRuntime(context));
+        view.setCanManageRuntimeSettings(runtimePermissionService.canManageRuntimeSettings(context));
         view.setCanManageGeofences(runtimePermissionService.canManageGeofences(context));
         view.setCanUnlockJoker(runtimePermissionService.canUnlockJoker(context));
         return view;
