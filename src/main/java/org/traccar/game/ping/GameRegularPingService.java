@@ -9,14 +9,11 @@ import org.traccar.model.Game;
 import org.traccar.model.GameMember;
 import org.traccar.model.GamePendingEffect;
 import org.traccar.model.GamePing;
-import org.traccar.model.ObjectOperation;
 import org.traccar.model.Player;
 import org.traccar.model.Position;
-import org.traccar.session.cache.CacheManager;
 import org.traccar.storage.Storage;
 import org.traccar.storage.StorageException;
 import org.traccar.storage.query.Columns;
-import org.traccar.storage.query.Condition;
 import org.traccar.storage.query.Request;
 
 import java.util.ArrayList;
@@ -39,9 +36,6 @@ public class GameRegularPingService {
 
     @Inject
     private LogAction actionLogger;
-
-    @Inject
-    private CacheManager cacheManager;
 
     @Inject
     private GameStorage gameStorage;
@@ -89,7 +83,6 @@ public class GameRegularPingService {
         Map<Long, GamePendingEffect> effectsByMemberId = pingService.getNextPendingEffects(
                 game.getId(), targets.stream().map(GameMember::getId).collect(Collectors.toSet()));
         var createdPings = new ArrayList<GamePing>();
-        var dueMissingLocationTargets = new ArrayList<GameMember>();
 
         for (GameMember target : targets) {
             if (completedMemberIds.contains(target.getId())) {
@@ -104,17 +97,10 @@ public class GameRegularPingService {
                 Player player = playersById.get(target.getPlayerId());
                 Position position = player != null && player.getDeviceId() != 0
                         ? latestPositionsByDeviceId.get(player.getDeviceId()) : null;
-                boolean locationMissingOrStale = position == null || !pingService.isPositionValid(game, position);
                 if (position != null) {
                     pingService.applyPosition(ping, position, GamePing.SOURCE_REGULAR);
-                }
-                if (locationMissingOrStale) {
-                    if (markLocationReminderIfDue(game, target, now)) {
-                        dueMissingLocationTargets.add(target);
-                    }
-                    if (position == null) {
-                        continue;
-                    }
+                } else {
+                    continue;
                 }
             }
 
@@ -133,32 +119,7 @@ public class GameRegularPingService {
             mapUpdateService.notifyRegularPingsCreated(createdPings);
             pushNotificationService.notifyRegularPingsCreated(game.getId());
         }
-        if (!dueMissingLocationTargets.isEmpty()) {
-            pushNotificationService.notifyOwnLocationMissing(dueMissingLocationTargets);
-            pushNotificationService.notifyRegularPingLocationsMissing(game.getId(), dueMissingLocationTargets);
-        }
         return !createdPings.isEmpty();
-    }
-
-    private boolean markLocationReminderIfDue(Game game, GameMember target, Date now) throws Exception {
-        if (!game.getLocationReminderEnabled() || game.getLocationReminderIntervalSeconds() <= 0) {
-            return false;
-        }
-        if (target.getLastLocationReminderAt() != null
-                && target.getLastLocationReminderAt().after(new Date(
-                        now.getTime() - game.getLocationReminderIntervalSeconds() * 1000L))) {
-            return false;
-        }
-
-        GameMember update = new GameMember();
-        update.setId(target.getId());
-        update.setLastLocationReminderAt(now);
-        storage.updateObject(update, new Request(
-                new Columns.Include("lastLocationReminderAt"),
-                new Condition.Equals("id", target.getId())));
-        cacheManager.invalidateObject(true, GameMember.class, target.getId(), ObjectOperation.UPDATE);
-        target.setLastLocationReminderAt(now);
-        return true;
     }
 
     private GamePing createPing(Game game, GameMember target, RegularPingSlot slot, Date now) {

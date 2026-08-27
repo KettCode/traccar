@@ -51,6 +51,7 @@ public class ScheduleManager implements LifecycleObject {
                 TaskReports.class,
                 TaskDeviceInactivityCheck.class,
                 TaskSessionTimeout.class,
+                TaskGameLocationReminders.class,
                 TaskGameRegularPings.class,
                 TaskWebSocketKeepalive.class)
                 .forEachOrdered(taskClass -> {

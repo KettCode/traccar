@@ -71,13 +71,13 @@ public class GamePushNotificationService {
         notifyMembers(targets, "Dein Standort ist nicht aktuell. Bitte pruefe deine Standortfreigabe.", true);
     }
 
-    public void notifyRegularPingLocationsMissing(long gameId, List<GameMember> targets) throws StorageException {
+    public void notifyLocationsMissingForManagement(long gameId, List<GameMember> targets) throws StorageException {
         if (targets.isEmpty()) {
             return;
         }
         notifyMembers(
                 gameStorage.getActiveManagementMembers(gameId),
-                "Keine aktuellen Standorte fuer Regular-Pings von " + formatMemberNames(targets) + ".", true);
+                "Keine aktuellen Standorte fuer " + formatMemberNames(targets) + ".", true);
     }
 
     private String formatMemberNames(List<GameMember> members) {
