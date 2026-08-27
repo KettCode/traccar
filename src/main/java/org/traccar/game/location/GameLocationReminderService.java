@@ -16,11 +16,15 @@ import org.traccar.storage.query.Request;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class GameLocationReminderService {
+
+    private final Map<Long, Long> lastCheckMillisByGameId = new HashMap<>();
 
     @Inject
     private Storage storage;
@@ -36,10 +40,20 @@ public class GameLocationReminderService {
 
     public void runDueReminders() throws Exception {
         Date now = new Date();
-        for (Game game : gameStorage.getRunningGames()) {
-            if (shouldCheckGame(game, now)) {
-                checkGame(game, now);
+        List<Game> runningGames = gameStorage.getRunningGames();
+        Set<Long> runningGameIds = runningGames.stream().map(Game::getId).collect(Collectors.toSet());
+        lastCheckMillisByGameId.keySet().retainAll(runningGameIds);
+
+        for (Game game : runningGames) {
+            if (!shouldCheckGame(game, now)) {
+                lastCheckMillisByGameId.remove(game.getId());
+                continue;
             }
+            if (!isCheckDue(game, now)) {
+                continue;
+            }
+            checkGame(game, now);
+            lastCheckMillisByGameId.put(game.getId(), now.getTime());
         }
     }
 
@@ -48,6 +62,12 @@ public class GameLocationReminderService {
                 && game.getLocationReminderIntervalSeconds() > 0
                 && game.getStartedAt() != null
                 && !now.before(game.getStartedAt());
+    }
+
+    private boolean isCheckDue(Game game, Date now) {
+        Long lastCheckMillis = lastCheckMillisByGameId.get(game.getId());
+        return lastCheckMillis == null
+                || lastCheckMillis <= now.getTime() - game.getLocationReminderIntervalSeconds() * 1000L;
     }
 
     private void checkGame(Game game, Date now) throws Exception {
