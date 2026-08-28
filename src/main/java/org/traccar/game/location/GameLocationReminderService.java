@@ -71,7 +71,9 @@ public class GameLocationReminderService {
     }
 
     private void checkGame(Game game, Date now) throws Exception {
-        List<GameMember> targets = gameStorage.getActiveHuntedMembers(game.getId());
+        List<GameMember> targets = gameStorage.getActiveGameMembers(game.getId()).stream()
+                .filter(member -> !GameMember.ROLE_GAME_MANAGEMENT.equals(member.getRole()))
+                .toList();
         if (targets.isEmpty()) {
             return;
         }
