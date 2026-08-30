@@ -9,6 +9,7 @@ public class CurrentGameView {
     private String memberDisplayName;
     private String memberRole;
     private String memberStatus;
+    private String clientSetupLink;
     private boolean readonly;
 
     public long getId() {
@@ -65,6 +66,14 @@ public class CurrentGameView {
 
     public void setMemberStatus(String memberStatus) {
         this.memberStatus = memberStatus;
+    }
+
+    public String getClientSetupLink() {
+        return clientSetupLink;
+    }
+
+    public void setClientSetupLink(String clientSetupLink) {
+        this.clientSetupLink = clientSetupLink;
     }
 
     public boolean getReadonly() {

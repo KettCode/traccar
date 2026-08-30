@@ -1,6 +1,7 @@
 package org.traccar.game;
 
 import jakarta.inject.Inject;
+import org.traccar.model.Device;
 import org.traccar.model.Game;
 import org.traccar.model.GameCatch;
 import org.traccar.model.GameGeofence;
@@ -233,6 +234,11 @@ public class GameStorage {
     public User getUser(long userId) throws StorageException {
         return storage.getObject(User.class, new Request(
                 new Columns.All(), new Condition.Equals("id", userId)));
+    }
+
+    public Device getDevice(long deviceId) throws StorageException {
+        return storage.getObject(Device.class, new Request(
+                new Columns.All(), new Condition.Equals("id", deviceId)));
     }
 
     public Map<Long, User> getUsersByMembers(List<GameMember> members) throws StorageException {

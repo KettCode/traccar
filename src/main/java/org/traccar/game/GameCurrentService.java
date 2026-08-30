@@ -1,7 +1,9 @@
 package org.traccar.game;
 
 import jakarta.inject.Inject;
+import org.traccar.game.setup.SetupClientService;
 import org.traccar.game.view.CurrentGameView;
+import org.traccar.model.Device;
 import org.traccar.model.Game;
 import org.traccar.model.GameMember;
 import org.traccar.model.Player;
@@ -16,6 +18,9 @@ public class GameCurrentService {
 
     @Inject
     private GameStorage gameStorage;
+
+    @Inject
+    private SetupClientService setupClientService;
 
     public CurrentGameView getCurrent(long userId) throws StorageException {
         Player player = gameStorage.getPlayerByUser(userId);
@@ -33,7 +38,7 @@ public class GameCurrentService {
         for (Game game : games) {
             GameMember member = membersByGameId.get(game.getId());
             if (member != null) {
-                return toView(game, member);
+                return toView(game, member, getClientSetupLink(member, player));
             }
         }
         return null;
@@ -79,7 +84,16 @@ public class GameCurrentService {
         return date != null ? date.getTime() : 0;
     }
 
-    private CurrentGameView toView(Game game, GameMember member) {
+    private String getClientSetupLink(GameMember member, Player player) throws StorageException {
+        if (GameMember.ROLE_GAME_MANAGEMENT.equals(member.getRole()) || player.getDeviceId() == 0) {
+            return null;
+        }
+
+        Device device = gameStorage.getDevice(player.getDeviceId());
+        return device != null ? setupClientService.buildSetupLink(device.getUniqueId()) : null;
+    }
+
+    private CurrentGameView toView(Game game, GameMember member, String clientSetupLink) {
         var view = new CurrentGameView();
         view.setId(game.getId());
         view.setName(game.getName());
@@ -88,6 +102,7 @@ public class GameCurrentService {
         view.setMemberDisplayName(member.getDisplayName());
         view.setMemberRole(member.getRole());
         view.setMemberStatus(member.getStatus());
+        view.setClientSetupLink(clientSetupLink);
         view.setReadonly(!Game.STATUS_RUNNING.equals(game.getStatus()));
         return view;
     }
