@@ -9,7 +9,7 @@ import java.util.List;
 
 public class GameValidatorService {
 
-    public static final int MIN_PING_INTERVAL_SECONDS = 300;
+    public static final int MIN_PING_INTERVAL_SECONDS = 120;
     public static final int MIN_MAX_POSITION_AGE_SECONDS = 60;
     public static final int MIN_LOCATION_REMINDER_INTERVAL_SECONDS = 120;
 
@@ -32,7 +32,7 @@ public class GameValidatorService {
 
     public void validateSettings(Game game) {
         if (game.getPingIntervalSeconds() < MIN_PING_INTERVAL_SECONDS) {
-            throw new IllegalArgumentException("Ping interval must be at least 300 seconds");
+            throw new IllegalArgumentException("Ping interval must be at least 120 seconds");
         }
         if (game.getMaxPositionAgeSeconds() < MIN_MAX_POSITION_AGE_SECONDS) {
             throw new IllegalArgumentException("Maximum position age must be at least 60 seconds");
@@ -57,7 +57,7 @@ public class GameValidatorService {
             issues.add("Game is not in draft status");
         }
         if (game.getPingIntervalSeconds() < MIN_PING_INTERVAL_SECONDS) {
-            issues.add("Ping interval must be at least 300 seconds");
+            issues.add("Ping interval must be at least 120 seconds");
         }
         if (game.getMaxPositionAgeSeconds() < MIN_MAX_POSITION_AGE_SECONDS) {
             issues.add("Maximum position age must be at least 60 seconds");
