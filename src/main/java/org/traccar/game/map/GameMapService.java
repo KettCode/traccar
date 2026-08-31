@@ -7,6 +7,7 @@ import org.traccar.game.GameRuntimePermissionService;
 import org.traccar.game.map.view.GameMapGeofence;
 import org.traccar.game.map.view.GameMapMarker;
 import org.traccar.game.map.view.GameMapView;
+import org.traccar.model.Game;
 import org.traccar.model.GameGeofence;
 import org.traccar.model.GameMember;
 import org.traccar.model.GamePing;
@@ -35,6 +36,9 @@ public class GameMapService {
         if (context == null) {
             return null;
         }
+        if (Game.STATUS_DRAFT.equals(context.game().getStatus())) {
+            return getDraftMap(context, gameId);
+        }
         if (!context.isRunning()) {
             return getLatestPositionMap(context, gameId);
         }
@@ -48,6 +52,21 @@ public class GameMapService {
         view.setGameId(gameId);
         view.getMemberMarkers().addAll(getMemberMarkers(context, members));
         view.getKnowledgeMarkers().addAll(getKnowledgeMarkers(context));
+        view.getGeofences().addAll(getGeofences(context));
+        return view;
+    }
+
+    private GameMapView getDraftMap(GameRuntimeContext context, long gameId) throws StorageException {
+        GameMapView view = new GameMapView();
+        view.setGameId(gameId);
+
+        Player player = context.player();
+        Position position = player.getDeviceId() != 0
+                ? gameStorage.getLatestPositionByDeviceId(player.getDeviceId()) : null;
+        GameMapMarker marker = mapMapper.toLiveMarker(gameId, context.member(), player, position);
+        if (marker != null) {
+            view.getMemberMarkers().add(marker);
+        }
         view.getGeofences().addAll(getGeofences(context));
         return view;
     }
