@@ -1,5 +1,8 @@
 package org.traccar.game.map.view;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class GameMapGeofence {
 
     private long id;
@@ -9,6 +12,7 @@ public class GameMapGeofence {
     private String type;
     private String role;
     private String area;
+    private Map<String, Object> attributes = new HashMap<>();
 
     public long getId() {
         return id;
@@ -64,6 +68,14 @@ public class GameMapGeofence {
 
     public void setArea(String area) {
         this.area = area;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes != null ? attributes : new HashMap<>();
     }
 
 }

@@ -1,5 +1,8 @@
 package org.traccar.game.map;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.traccar.game.map.view.GameMapGeofence;
 import org.traccar.game.map.view.GameMapMarker;
 import org.traccar.game.map.view.GameMapRevealMarker;
@@ -16,6 +19,9 @@ public class GameMapMapper {
 
     private static final String SOURCE_LIVE = "live";
     public static final String SOURCE_KNOWN_REGULAR_PING = "known_regular_ping";
+    private static final String ATTRIBUTE_COLOR = "color";
+    private static final String ATTRIBUTE_MAP_LINE_WIDTH = "mapLineWidth";
+    private static final String ATTRIBUTE_MAP_LINE_OPACITY = "mapLineOpacity";
 
     public GameMapMarker toLiveMarker(long gameId, GameMember member, Player player, Position position) {
         if (player == null || player.getDeviceId() == 0) {
@@ -98,7 +104,19 @@ public class GameMapMapper {
         view.setType(gameGeofence.getType());
         view.setRole(gameGeofence.getRole());
         view.setArea(geofence.getArea());
+        view.setAttributes(getMapAttributes(geofence));
         return view;
+    }
+
+    private Map<String, Object> getMapAttributes(Geofence geofence) {
+        Map<String, Object> attributes = new HashMap<>();
+        String color = geofence.getString(ATTRIBUTE_COLOR);
+        if (color != null) {
+            attributes.put(ATTRIBUTE_COLOR, color);
+        }
+        attributes.put(ATTRIBUTE_MAP_LINE_WIDTH, geofence.getDouble(ATTRIBUTE_MAP_LINE_WIDTH, 2.0));
+        attributes.put(ATTRIBUTE_MAP_LINE_OPACITY, geofence.getDouble(ATTRIBUTE_MAP_LINE_OPACITY, 1.0));
+        return attributes;
     }
 
     private GameMapMarker createMarker(long gameId, GameMember member) {
